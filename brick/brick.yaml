@@ -1,0 +1,32 @@
+name: flutter_all_template
+description: Production-ready Flutter template — pick only the modules you need
+version: 0.1.0+1
+environment:
+  mason: ">=0.1.0-dev.52 <0.1.0"
+
+vars:
+  app_name:
+    type: string
+    description: App name (will be snake_cased for the package name)
+    prompt: What is the app name?
+    default: my_flutter_app
+  app_org:
+    type: string
+    description: Organization identifier (e.g. com.example)
+    prompt: What is the organization? (e.g. com.example)
+    default: com.example
+  use_firebase:
+    type: boolean
+    description: Include Firebase (firebase_core + firebase_messaging)
+    prompt: Include Firebase?
+    default: false
+  use_notifications:
+    type: boolean
+    description: Include push notifications — FCM + awesome_notifications (requires Firebase)
+    prompt: Include push notifications?
+    default: false
+  use_permissions:
+    type: boolean
+    description: Include 10 permission screens + PermissionBloc + route guard
+    prompt: Include permission screens?
+    default: false

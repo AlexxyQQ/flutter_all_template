@@ -1,0 +1,629 @@
+{
+  "common": {
+    "errors": {
+      "network": {
+        "noInternet": "No internet connection, please try again",
+        "unauthorized": "Unauthorized",
+        "connectionTimeout": "Connection timeout with server.",
+        "canceledRequest": "Request to server was cancelled.",
+        "unexpectedError": "Unexpected error occurred. Please try again later.",
+        "badCertificate": "Bad Certificate",
+        "case400": "Bad request. Please check your input.",
+        "case401": "Unauthorized. Please login again.",
+        "case403": "You do not have permission to access this resource.",
+        "case404": "Resource not found.",
+        "case500": "Internal server error. Please try again later.",
+        "case503": "Service unavailable.",
+        "invalidStatusCode": "Received invalid status code: {statusCode}"
+      },
+      "somethingWentWrong": "Something went wrong!!",
+      "noDataFound": "No data found!!",
+      "validation": {
+        "required": "{field} is required",
+        "invalid": "Invalid {field} format",
+        "minLength": "{field} must be at least {minLength} characters",
+        "doesNotMatch": "{newField} does not match {oldField}",
+        "uppercaseRequired": "{field} must contain at least one uppercase letter",
+        "lowercaseRequired": "{field} must contain at least one lowercase letter",
+        "numberRequired": "{field} must contain at least one number",
+        "specialCharacterRequired": "{field} must contain at least one special character",
+        "passwordsDoNotMatch": "Passwords do not match",
+        "invalidEmailFormat": "Invalid email format",
+        "invalidPhoneNumber": "Invalid phone number format",
+        "invalidPostalCode": "Invalid postal code format",
+        "invalidCreditCard": "Invalid credit card number",
+        "passwordRequirements": "Password must be at least {minLength} characters long, and include uppercase, lowercase, number, and special characters",
+        "notSelected": "No {title} Selected."
+      }
+    },
+    "success": {
+      "loggedOut": "Logged out successfully.",
+      "createdSuccessfully": "{name} created successfully.",
+      "updatedSuccessfully": "{name} updated successfully.",
+      "deletedSuccessfully": "{name} deleted successfully."
+    },
+    "words": {
+      "continue": "Continue",
+      "cancel": "Cancel",
+      "ok": "Ok",
+      "yes": "Yes",
+      "no": "No",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "update": "Update",
+      "view": "View",
+      "retry": "Retry",
+      "close": "Close",
+      "back": "Back",
+      "reset": "Reset",
+      "apply": "Apply",
+      "search": "Search",
+      "filter": "Filter",
+      "sort": "Sort",
+      "date": "Date",
+      "time": "Time",
+      "range": "Range",
+      "select": "Select",
+      "confirm": "Confirm",
+      "submit": "Submit",
+      "dismiss": "Dismiss",
+      "next": "Next",
+      "previous": "Previous"
+    },
+    "sentences": {
+      "mayBeLater": "May Be Later",
+      "loadMore": "Load More",
+      "noMoreData": "No More Data",
+      "tryAgain": "Try Again"
+    },
+    "currencies": {
+      "symbol": {
+        "INR": "₹",
+        "NPR": "₨",
+        "USD": "$",
+        "EUR": "€",
+        "GBP": "£"
+      }
+    },
+    "form_field": {
+      "titles": {
+        "email": "Email",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "fullName": "Full Name",
+        "username": "Username",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmNewPassword": "Confirm New Password",
+        "phoneNumber": "Phone Number",
+        "url": "URL",
+        "postalCode": "Postal Code",
+        "creditCard": "Credit Card",
+        "creditCardNumber": "Credit Card Number",
+        "yourEmail": "Your email",
+        "yourFullName": "Your full name",
+        "yourPassword": "your password",
+        "location": "Location",
+        "country": "Country",
+        "city": "City",
+        "address": "Address",
+        "flatHouseNo": "Flat/House No.",
+        "street": "Street",
+        "state": "State",
+        "zipCode": "Zip Code",
+        "companyCode": "Company Code",
+        "company": "Company",
+        "firstName": "First Name",
+        "middleName": "Middle Name",
+        "lastName": "Last Name",
+        "personalEmail": "Personal Email",
+        "permanentAddress": "Permanent Address",
+        "temporaryAddress": "Temporary Address",
+        "phoneNo": "Phone Number",
+        "accountNumber": "Account Number",
+        "bankName": "Bank Name",
+        "dob": "DOB",
+        "dateOfBirth": "Date of Birth",
+        "selectDate": "Select Date",
+        "selectDateRange": "Select Date Range",
+        "selectTime": "Select Time",
+        "gender": "Select Gender"
+      },
+      "hints": {
+        "email": "Enter your email",
+        "password": "Enter your password",
+        "confirmPassword": "Confirm your password",
+        "fullName": "Enter your full name",
+        "username": "Enter your username",
+        "currentPassword": "Enter your current password",
+        "newPassword": "Enter your new password",
+        "confirmNewPassword": "Confirm your new password",
+        "phoneNumber": "Enter your phone number",
+        "url": "Enter your URL",
+        "postalCode": "Enter your postal code",
+        "creditCard": "Enter your credit card number",
+        "creditCardNumber": "Enter your credit card number",
+        "yourEmail": "Enter your email",
+        "yourFullName": "Enter your full name",
+        "yourPassword": "Enter your password",
+        "location": "Enter your location",
+        "country": "Enter your country",
+        "city": "Enter your city",
+        "address": "Enter your address",
+        "flatHouseNo": "Enter your flat/house number",
+        "street": "Enter your street",
+        "state": "Enter your state",
+        "zipCode": "Enter your zip code",
+        "companyCode": "Enter your company code",
+        "company": "Enter your company",
+        "firstName": "Enter your first name",
+        "middleName": "Enter your middle name",
+        "lastName": "Enter your last name",
+        "personalEmail": "Enter your personal email",
+        "permanentAddress": "Enter your permanent address",
+        "temporaryAddress": "Enter your temporary address",
+        "phoneNo": "Enter your phone number",
+        "accountNumber": "Enter your account number",
+        "bankName": "Enter your bank name",
+        "dob": "Enter your date of birth",
+        "dateOfBirth": "Enter your date of birth",
+        "selectDate": "Select a date",
+        "selectDateRange": "Select a date range",
+        "selectTime": "Select a time",
+        "gender": "Select your gender"
+      },
+      "placeholders": {
+        "email": "test@rmail.com",
+        "password": "password",
+        "confirmPassword": "confirm password",
+        "fullName": "John Doe",
+        "username": "john_doe",
+        "currentPassword": "current password",
+        "newPassword": "new password",
+        "confirmNewPassword": "confirm new password",
+        "phoneNumber": "1234567890",
+        "url": "https://example.com",
+        "postalCode": "12345",
+        "creditCard": "1234 5678 9012 3456",
+        "creditCardNumber": "1234 5678 9012 3456",
+        "yourEmail": "test@rmail.com",
+        "yourFullName": "John Doe",
+        "yourPassword": "password",
+        "location": "New York",
+        "country": "USA",
+        "city": "New York",
+        "address": "123 Main St",
+        "flatHouseNo": "123",
+        "street": "Main St",
+        "state": "NY",
+        "zipCode": "12345",
+        "companyCode": "ABC123",
+        "company": "Acme Inc.",
+        "firstName": "John",
+        "middleName": "Doe",
+        "lastName": "Smith",
+        "personalEmail": "test@rmail.com",
+        "permanentAddress": "123 Main St",
+        "temporaryAddress": "456 Elm St",
+        "accountNumber": "123456789",
+        "bankName": "Bank of America",
+        "dob": "01/01/1990",
+        "dateOfBirth": "01/01/1990",
+        "selectDate": "Select a date",
+        "gender": "Male",
+        "time": "12:00 PM"
+      }
+    },
+    "calender": {
+      "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday",
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "months": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December",
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+      },
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "yesterday": "Yesterday",
+      "last7Days": "Last 7 Days",
+      "thisWeek": "This Week",
+      "nextWeek": "Next Week",
+      "lastWeek": "Last Week",
+      "thisMonth": "This Month",
+      "nextMonth": "Next Month",
+      "lastMonth": "Last Month",
+      "thisYear": "This Year"
+    },
+    "languages": {
+      "english": "English",
+      "spanish": "Spanish",
+      "french": "French",
+      "german": "German",
+      "nepali": "Nepali",
+      "arabic": "Arabic",
+      "short": {
+        "english": "en",
+        "spanish": "es",
+        "french": "fr",
+        "german": "de",
+        "nepali": "ne",
+        "arabic": "ar"
+      }
+    }
+  },
+  "core": {
+    "common": {
+      "features": {
+        "permission": {
+          "presentation": {
+            "screens": {
+              "camera_permission_screen": {
+                "title": "Camera Permission Title",
+                "message": "Camera Permission Message",
+                "dialog": {
+                  "reAskTitle": "Ask Camera Permission Again Title",
+                  "reAskMessage": "Ask Camera Permission Again Message"
+                }
+              },
+              "notification_permission_screen": {
+                "title": "Notification Permission Title",
+                "message": "Notification Permission Message",
+                "dialog": {
+                  "reAskTitle": "Ask Notification Permission Again Title",
+                  "reAskMessage": "Ask Notification Permission Again Message"
+                }
+              },
+              "storage_permission_screen": {
+                "title": "Storage Permission Title",
+                "message": "Storage Permission Message",
+                "dialog": {
+                  "reAskTitle": "Ask Storage Permission Again Title",
+                  "reAskMessage": "Ask Storage Permission Again Message"
+                }
+              },
+              "location_permission_screen": {
+                "title": "Location Permission Title",
+                "message": "Location Permission Message",
+                "dialog": {
+                  "reAskTitle": "Ask Location Permission Again Title",
+                  "reAskMessage": "Ask Location Permission Again Message"
+                }
+              },
+              "microphone_permission_screen": {
+                "title": "Microphone Permission Title",
+                "message": "Microphone Permission Message",
+                "dialog": {
+                  "reAskTitle": "Ask Microphone Permission Again Title",
+                  "reAskMessage": "Ask Microphone Permission Again Message"
+                }
+              },
+              "contacts_permission_screen": {
+                "title": "Contacts Permission",
+                "message": "This app needs access to your contacts to provide a better experience.",
+                "dialog": {
+                  "reAskTitle": "Allow Contacts Access",
+                  "reAskMessage": "Please enable contacts access in Settings to continue."
+                }
+              },
+              "calendar_permission_screen": {
+                "title": "Calendar Permission",
+                "message": "This app needs access to your calendar to manage and schedule events.",
+                "dialog": {
+                  "reAskTitle": "Allow Calendar Access",
+                  "reAskMessage": "Please enable calendar access in Settings to continue."
+                }
+              },
+              "bluetooth_permission_screen": {
+                "title": "Bluetooth Permission",
+                "message": "This app uses Bluetooth to connect and communicate with nearby devices.",
+                "dialog": {
+                  "reAskTitle": "Allow Bluetooth Access",
+                  "reAskMessage": "Please enable Bluetooth access in Settings to continue."
+                }
+              },
+              "phone_permission_screen": {
+                "title": "Phone Permission",
+                "message": "This app needs access to phone features to provide calling functionality.",
+                "dialog": {
+                  "reAskTitle": "Allow Phone Access",
+                  "reAskMessage": "Please enable phone access in Settings to continue."
+                }
+              },
+              "activity_recognition_permission_screen": {
+                "title": "Activity Recognition Permission",
+                "message": "This app needs access to motion and fitness data to track your activity.",
+                "dialog": {
+                  "reAskTitle": "Allow Activity Recognition Access",
+                  "reAskMessage": "Please enable activity recognition access in Settings to continue."
+                }
+              }
+            }
+          }
+        }
+      },
+      "presentation": {
+        "helpers": {
+          "date_time_helper": {
+            "yearsAgo": "{years}y ago",
+            "monthsAgo": "{months}m ago",
+            "weeksAgo": "{weeks}w ago",
+            "daysAgo": "{days}y ago",
+            "hoursAgo": "{hours}h ago",
+            "minutesAgo": "{minutes}min ago",
+            "secondsAgo": "{seconds}s ago",
+            "daysLeft": "{days} day(s) left",
+            "resetDue": "Reset Due",
+            "morning": "Morning",
+            "afternoon": "Afternoon",
+            "evening": "Evening",
+            "night": "Night"
+          }
+        },
+        "pages": {
+          "bottom_sheets": {
+            "delete_item_bottom_sheet": {
+              "confirmationMessage": "This action cannot be undone. The item will be permanently removed."
+            }
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "splash": {
+      "presentation": {
+        "views": {
+          "widgets": {
+            "design_components": {
+              "dc_text": {
+                "this_is_app_text": "This is app text",
+                "this_is_a_note_text": "This is a note text"
+              },
+              "dc_common_data_handling": {
+                "data_handlers_error_states": "Data Handlers & Error States",
+                "k_1_failure_object_source": "1. Failure Object Source",
+                "uses_failuremessage_and_failur": "Uses Failure.message and Failure.data (subtitle)",
+                "network_connection_failed": "Network Connection Failed",
+                "we_could_not_reach_the_server_": "We could not reach the server. Please check your internet.",
+                "home": "/home",
+                "k_2_string_source_minimal": "2. String Source (Minimal)",
+                "uses_errormessage_only_falls_b": "Uses errorMessage only. Falls back to default icon.",
+                "simple_error_occurred": "Simple Error Occurred",
+                "k_3_variant_custom_icon": "3. Variant: Custom Icon",
+                "access_denied": "Access Denied",
+                "you_do_not_have_permission_to_": "You do not have permission to view this section.",
+                "k_4_variant_svg_asset": "4. Variant: SVG Asset",
+                "transaction_failed": "Transaction Failed",
+                "k_5_variant_image_asset": "5. Variant: Image Asset",
+                "nothing_to_see_here": "Nothing to see here",
+                "k_6_no_retry_button_info_state": "6. No Retry Button (Info State)",
+                "passing_onretry_null_hides_the": "Passing onRetry: null hides the button.",
+                "no_results_found": "No Results Found",
+                "empty_state": "Empty State",
+                "error": "Error",
+                "try_adjusting_your_search_filt": "Try adjusting your search filters to find what you are looking for.",
+                "k_7_long_text_wrap_check": "7. Long Text Wrap Check",
+                "this_is_a_very_long_error_mess": "This is a very long error message to test how the text wraps on smaller devices",
+                "similarly_this_subtitle_is_qui": "Similarly, this subtitle is quite long to ensure that the layout does not break when the backend sends verbose error descriptions."
+              },
+              "dc_button": {
+                "check_buttons": "Check Buttons",
+                "primary_buttons": "Primary Buttons",
+                "primary": "Primary",
+                "loading": "Loading",
+                "disabled": "Disabled",
+                "with_icon": "With Icon",
+                "with_icon_disabled": "With Icon Disabled",
+                "primary_expanded": "Primary Expanded",
+                "loading_expanded": "Loading Expanded",
+                "disabled_expanded": "Disabled Expanded",
+                "with_icon_expanded": "With Icon Expanded",
+                "with_icon_disabled_expanded": "With Icon Disabled Expanded",
+                "secondary_buttons": "Secondary Buttons",
+                "secondary": "Secondary",
+                "secondary_expanded": "Secondary Expanded",
+                "tertiary_buttons": "Tertiary Buttons",
+                "tertiary": "Tertiary",
+                "tertiary_expanded": "Tertiary Expanded",
+                "stroke_buttons": "Stroke Buttons",
+                "stroke": "Stroke",
+                "stroke_expanded": "Stroke Expanded",
+                "ghost_buttons": "Ghost Buttons",
+                "ghost": "Ghost",
+                "ghost_expanded": "Ghost Expanded",
+                "icon_buttons": "Icon Buttons",
+                "destructive_buttons": "Destructive Buttons",
+                "destructive": "Destructive",
+                "destructive_expanded": "Destructive Expanded"
+              },
+              "dc_chips": {
+                "all": "All",
+                "popular": "Popular",
+                "recent": "Recent",
+                "trending": "Trending",
+                "wifi": "Wifi",
+                "parking": "Parking",
+                "pool": "Pool",
+                "gym": "Gym",
+                "card": "card",
+                "chips_showcase": "Chips Showcase",
+                "choice_chips_text_only": "Choice Chips (Text Only)",
+                "single_selection_behavior_usin": "Single selection behavior using AppChipWidget.detail",
+                "filter_chips_with_icons": "Filter Chips (With Icons)",
+                "multiple_selection_behavior_us": "Multiple selection behavior using AppChipWidget.icon",
+                "payment_methods_svg_colors": "Payment Methods (SVG & Colors)",
+                "complex_layout_using_appchipwi": "Complex layout using AppChipWidget.svg with \"noBlend\"",
+                "credit_card": "Credit Card",
+                "cash": "Cash",
+                "apple_pay": "Apple Pay",
+                "applepay": "apple_pay",
+                "semantic_status_chips": "Semantic Status Chips",
+                "overdue": "Overdue",
+                "pending": "Pending",
+                "completed": "Completed",
+                "breakfast": "Breakfast",
+                "filter_chips_icon": "Filter Chips (Icon)",
+                "multiple_selection_with_dynami": "Multiple selection with dynamic icons using .icon factory.",
+                "svg_chips_brand_blend": "SVG Chips (Brand & Blend)",
+                "use_noblend_true_to_keep_origi": "Use `noBlend: true` to keep original brand colors (e.g., Apple Pay). Default blends with theme color.",
+                "color": "color",
+                "apple": "apple",
+                "google_pay": "Google Pay",
+                "google": "google",
+                "overriding_defaults_using_cust": "Overriding defaults using CustomAppChipTheme for Success, Error, and Warning states."
+              },
+              "dc_image": {
+                "k_1_appimage_bitmap_assets": "1. AppImage (Bitmap Assets)",
+                "normal_asset_fitcontain": "Normal Asset (Fit.contain)",
+                "icon_mode_circular_border_back": "Icon Mode (Circular + Border + Background)",
+                "k_2_appimage_memory": "2. AppImage (Memory)",
+                "loaded_from_uint8list_base64": "Loaded from Uint8List (Base64)",
+                "k_3_appsvgpicture_network": "3. AppSvgPicture (Network)",
+                "network_svg_success": "Network SVG (Success)",
+                "network_svg_icon_themed": "Network SVG Icon (Themed)",
+                "k_4_appsvgpicture_error_states": "4. AppSvgPicture (Error States)",
+                "network_404_triggers_nodatawid": "Network 404 (Triggers NoDataWidget)",
+                "profile_image": "Profile Image",
+                "missing_asset_triggers_nodataw": "Missing Asset (Triggers NoDataWidget)",
+                "logo": "Logo",
+                "k_5_interactivity": "5. Interactivity",
+                "tap_detection": "Tap Detection",
+                "image_tapped": "Image Tapped!"
+              },
+              "dc_text_field": {
+                "text_form_field_showcase": "Text Form Field Showcase",
+                "identity_contact": "Identity & Contact",
+                "full_name": "Full Name",
+                "eg_john_doe": "e.g. John Doe",
+                "email_address": "Email Address",
+                "userexamplecom": "user@example.com",
+                "phone_number": "Phone Number",
+                "eg_1234567890": "e.g. 1234567890",
+                "security": "Security",
+                "min_8_chars_1_upper_1_lower_1_": "Min 8 chars, 1 Upper, 1 Lower, 1 Digit",
+                "confirm_password": "Confirm Password",
+                "reenter_password": "Re-enter password",
+                "financial_banking": "Financial & Banking",
+                "credit_card": "Credit Card",
+                "xxxx_xxxx_xxxx_xxxx": "XXXX XXXX XXXX XXXX",
+                "account_number": "Account Number",
+                "bank_account_no": "Bank account no.",
+                "amount": "Amount",
+                "web_social": "Web & Social",
+                "website_url": "Website URL",
+                "social_handle": "Social Handle",
+                "username": "@username",
+                "handle": "Handle",
+                "postal_code": "Postal Code",
+                "zip_pin": "ZIP / PIN",
+                "specialized_inputs": "Specialized Inputs",
+                "hours": "Hours",
+                "minutes": "Minutes",
+                "system_pickers": "System Pickers",
+                "date_of_birth": "Date of Birth",
+                "date": "Date",
+                "meeting_time": "Meeting Time",
+                "time": "Time",
+                "select_date_range": "Select Date Range",
+                "layout_utility": "Layout & Utility",
+                "bio_description": "Bio / Description",
+                "tell_us_about_yourself": "Tell us about yourself...",
+                "bio": "Bio",
+                "search_products": "Search products...",
+                "read_only_field": "Read Only Field",
+                "this_cannot_be_edited": "This cannot be edited",
+                "value": "value",
+                "otp": "OTP"
+              },
+              "dc_changable": {
+                "locales": "Locales",
+                "theme_modes": "Theme Modes"
+              },
+              "dc_switch": {
+                "switch_showcase": "Switch Showcase",
+                "basic_variations": "Basic Variations",
+                "standard_toggles_with_and_with": "Standard toggles with and without labels.",
+                "standalone_no_title": "Standalone (No Title):",
+                "push_notifications": "Push Notifications",
+                "dark_mode_bold_style": "Dark Mode (Bold Style)",
+                "descriptive_layouts": "Descriptive & Layouts",
+                "switches_with_helper_notes_and": "Switches with helper notes and long text handling.",
+                "location_services": "Location Services",
+                "allows_the_app_to_access_your_": "Allows the app to access your precise location for delivery.",
+                "allow_automatic_downloads_for_": "Allow automatic downloads for updates when connected to Wi-Fi",
+                "this_might_consume_significant": "This might consume significant bandwidth.",
+                "controlled_state": "Controlled State",
+                "using_appswitchcontroller_to_t": "Using AppSwitchController to toggle state programmatically.",
+                "biometric_login": "Biometric Login",
+                "toggle_via_button": "Toggle via Button",
+                "set_true": "Set True",
+                "set_false": "Set False"
+              },
+              "dc_file_picker": {
+                "filePicker": "File Picker",
+                "pickAFileFrom": "Pick a File from Another Screen",
+                "fileSelectorDemo": "File Selector Demo"
+              }
+            }
+          },
+          "screens": {
+            "splash_screen": {
+              "splashScreen": "SplashScreen"
+            }
+          }
+        }
+      }
+    },
+    "another": {
+      "presentation": {
+        "views": {
+          "screens": {
+            "another_screen": {
+              "anotherScreenRoute": "AnotherScreenRoute",
+              "another": "Another",
+              "label": "label",
+              "tets": "Tets",
+              "testLocationPermission": "Test Location Permission"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Flutter All Template</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>flutter_all_template</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<!-- Notification Setup -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used for local notifications</string>
+	<!-- Notification Setup -->
+	<!-- Permissions -->
+	<!-- Camera -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to the camera to take profile pictures.</string>
+	<!-- Microphone -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the microphone for voice notes.</string>
+	<!-- Location -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs your location to show nearby services.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs your location to track rides even when in the background.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs your location to track rides in the background.</string>
+	<!-- Photos -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your gallery to upload images.</string>
+	<!-- Contacts -->
+	<key>NSContactsUsageDescription</key>
+	<string>This app needs access to your contacts.</string>
+	<!-- Calendar -->
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>This app needs full access to your calendar to manage events.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>This app needs access to your calendar to manage events.</string>
+	<!-- Bluetooth -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app uses Bluetooth to connect to nearby devices.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>This app uses Bluetooth to connect to nearby devices.</string>
+	<!-- Activity Recognition / Motion -->
+	<key>NSMotionUsageDescription</key>
+	<string>This app needs motion and fitness data to track your activity.</string>
+	<!-- Permissions -->
+
+
+</dict>
+</plist>

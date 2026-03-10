@@ -1,0 +1,254 @@
+name: flutter_all_template
+description: "A new Flutter project."
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+  flutter: ^3.38.5
+
+dependencies:
+  # ============================================================
+  # 🎯 Core & UI Framework
+  # ============================================================
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8 # iOS style icons
+  flutter_screenutil: ^5.9.3 # Screen adaptation & responsive UI
+  flutter_svg: ^2.2.3 # SVG rendering support
+  upgrader: ^12.3.0 # Prompt users to upgrade app version
+  google_fonts: ^8.0.0
+
+  # ============================================================
+  # 🏗️ Architecture & State Management
+  # ============================================================
+  flutter_bloc: ^9.1.1 # BLoC pattern for state management
+  get_it: ^9.2.0 # Service Locator for DI
+  injectable: ^2.7.1+4 # Code generator for GetIt
+  equatable: ^2.0.8 # Value equality comparisons (helps Bloc)
+  nested: any # Simplifies nested builder widgets
+  fpdart: ^1.2.0 # Functional programming (Either, Option)
+
+  # ============================================================
+  # 🧭 Navigation & Routing
+  # ============================================================
+  auto_route: ^11.1.0 # Robust navigation package with code gen
+
+  # ============================================================
+  # 🌐 Networking & Connectivity
+  # ============================================================
+  dio: ^5.9.0 # Powerful HTTP client
+  connectivity_plus: ^7.0.0 # Check internet connection status
+  flutter_dotenv: ^6.0.0 # Load environment variables (.env)
+
+  # ============================================================
+  # 💾 Data, Storage & Serialization
+  # ============================================================
+  flutter_secure_storage: ^10.0.0 # Secure storage for keys/tokens
+  json_annotation: ^4.9.0 # Annotations for JSON serialization
+  jwt_decoder: ^2.0.1 # Decode JWT tokens
+
+  # ============================================================
+  # 📱 Device Features & Permissions
+  # ============================================================
+  permission_handler: ^12.0.1 # Handle OS permissions
+  geolocator: ^14.0.2 # Access GPS/Location services
+  app_settings: ^7.0.0 # Open device settings from app
+  file_picker: ^10.3.8 # Native file explorer picker
+  image_picker: ^1.2.1 # Pick images from gallery/camera
+
+  # ============================================================
+  # 🔔 Notifications & Firebase
+  # ============================================================
+  firebase_core: ^4.4.0 # Core Firebase setup
+  firebase_messaging: ^16.1.1 # FCM (Push Notifications)
+  awesome_notifications: ^0.10.1 # Local notifications & custom sounds
+
+  # ============================================================
+  # 🌍 Localization & Formatting
+  # ============================================================
+  easy_localization: ^3.0.8 # Internationalization (i18n) wrapper
+
+  # ============================================================
+  # 🧩 UI Components & Widgets
+  # ============================================================
+  calendar_date_picker2: ^2.0.1 # Advanced calendar widget
+
+  # ============================================================
+  # 🛠️ Utilities & Helpers
+  # ============================================================
+  logger: ^2.6.2 # Pretty console logging
+  rxdart: ^0.28.0 # Reactive extensions (Streams)
+  cached_network_image: ^3.4.1
+
+dev_dependencies:
+  # ============================================================
+  # 🧪 Testing
+  # ============================================================
+  flutter_test:
+    sdk: flutter
+  mockito: ^5.6.3 # Mocking library for unit tests
+  bloc_test: ^10.0.0 # Testing helpers for BLoC
+  network_image_mock: ^2.1.1 # Mock network images in widget tests
+
+  # ============================================================
+  # 🏗️ Code Generation (Build Runner)
+  # ============================================================
+  build_runner: ^2.7.1 # Orchestrates code generation
+  injectable_generator: ^2.8.1 # Generates DI code for Injectable
+  json_serializable: ^6.11.1 # Generates JSON serialization logic
+  freezed: ^3.2.3 # Generates unions/data classes
+  auto_route_generator: ^10.2.4 # Generates routing code
+  flutter_gen_runner: ^5.12.0 # Generates assets/fonts references
+
+  # ============================================================
+  # 🧹 Linting & Quality Control
+  # ============================================================
+  flutter_lints: ^6.0.0 # Official Flutter lint rules
+  custom_lint_builder: ^0.8.1 # Framework for creating custom lint rules
+  app_custom_lints: # Custom lint rules from Git
+    git:
+      url: https://github.com/AlexxyQQ/custom_lints.git
+      ref: main
+
+# ============================================================
+# 🎨 FlutterGen (Assets) Configuration
+# ============================================================
+flutter_gen:
+  output: lib/config/constants/gen
+
+flutter:
+  uses-material-design: true
+
+  # Asset directories
+  assets:
+    - env/
+    - assets/icons/
+    - assets/images/
+    - assets/images/onboarding/
+    - assets/videos/
+    - assets/translations/
+    - assets/lottie/
+
+#============================================================
+# 📜 Custom Scripts (via `rps`)
+#  dart pub global activate rps
+#  EG: rps clean
+#============================================================
+scripts:
+  #============================================================
+  # 🧹 Maintenance & Code Quality
+  #============================================================
+  get: flutter clean && flutter pub get
+  clean: flutter clean && flutter pub get && dart fix --apply && dart format . &&flutter analyze && dart analyze && dart run custom_lint
+  fix: dart fix --apply
+  format: dart format .
+  imports: dart run import_sorter:main
+  analyze: flutter clean && flutter pub get && flutter analyze && dart analyze && dart run custom_lint
+
+  #============================================================
+  # 🧬 Code Generation
+  #============================================================
+  build: dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs && rps gen
+  watch: dart run build_runner clean && rps gen && dart run build_runner watch --delete-conflicting-outputs
+  gen: dart run easy_localization:generate -S assets/translations -f keys -O lib/config/constants/gen -o locale_keys.g.dart
+  icons: dart run splash_master create && dart run icons_launcher:create
+
+  #============================================================
+  # 📦 Build Commands (Non-Flavored)
+  #============================================================
+  build:web: flutter clean && flutter pub get && flutter build web --release
+  build:windows: flutter clean && flutter pub get && flutter build windows --release
+  build:macos: flutter clean && flutter pub get && flutter build macos --release
+  build:linux: flutter clean && flutter pub get && flutter build linux --release
+  build:apk: flutter clean && flutter pub get && flutter build apk --release
+  build:appbundle: flutter clean && flutter pub get && flutter build appbundle --release
+  build:ipa: flutter clean && flutter pub get && flutter build ipa --release
+  build:archive: flutter clean && flutter pub get && flutter build xcarchive --release
+
+  #============================================================
+  # Shorebird Release
+  #============================================================
+  shorebird:
+    release:
+      android: flutter clean && flutter pub get && dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs && shorebird release android --target ./lib/main.dart --flutter-version 3.35.4 --artifact apk
+      ios: flutter clean && flutter pub get && dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs && shorebird release ios --target ./lib/main.dart --flutter-version 3.35.4 --artifact apk
+    # ! Use this Manually for creating patch releases for specific versions
+    # patch:
+    # android: shorebird patch android --target ./lib/main.dart --flutter-version 3.35.4 --artifact apk --release-version 1.0.0+3
+    # ios: shorebird patch ios --target ./lib/main.dart --flutter-version 3.35.4 --artifact apk --release-version 1.0.0+3
+
+  #============================================================
+  # Custom Scripts
+  #============================================================
+  exports: dart run scripts/generate_exports.dart "lib\core" && dart run scripts/generate_exports.dart "lib\config" && dart scripts/fix_import.dart
+
+# dart run splash_master create
+splash_master:
+  # Use to specifies the color for the splash screen
+  color: "#154d70"
+  # Use to specifies the splash image
+  image: "assets/app-icons/ic_background.png"
+  # Provides content mode for splash image in iOS
+  # iOS content mode options: scaleToFill, scaleAspectFit, scaleAspectFill, redraw, center, top, bottom,
+  # left, right, topLeft, topRight, bottomLeft, bottomRight.
+  ios_content_mode: "center"
+  # Provides gravity for splash image in Android
+  # Android gravity options: center, clip_horizontal, clip_vertical, fill_horizontal, fill, center_vertical,
+  # bottom, fill_vertical, center_horizontal, top, end, left, right, start
+  android_gravity: "fill"
+  # Use to specifies the splash image
+  # background_image: "assets/background_image.png"
+  # Provided content mode for splash image in background for iOS
+  ios_background_content_mode: "center"
+  # Provides gravity for background image in Android
+  # Android gravity options: center, clip_horizontal, clip_vertical, fill_horizontal, fill, center_vertical,
+  # bottom, fill_vertical, center_horizontal, top, end, left, right, start
+  android_background_image_gravity: "fill"
+  # Use to specifies image for android in dark mode
+  image_dark_android: "assets/app-icons/ic_background.png"
+  # Provides gravity for splash image for Android in dark mode
+  android_dark_gravity_key: "center"
+  # Use to specifies the color for the splash screen for Android in dark mode
+  color_dark_android: "#154d70"
+  # Section to specifies the configuration for the splash in Android 12+
+  android_12_and_above:
+    # Provides the background color of splash screen
+    color: "#154d70"
+    # Provides custom icon to replace the default app icon
+    image: "assets/app-icons/ic_background.png"
+    # Provides branding image which is shown under main icon image.
+    # branding_image: "assets/branding_image.png"
+
+#dart run icons_launcher:create
+icons_launcher:
+  platforms:
+    android:
+      enable: true
+      image_path: "assets/app-icons/ic_logo_radius.png"
+      notification_image: "assets/app-icons/ic_foreground.png"
+      # adaptive_background_color: "#ffffff"
+      adaptive_background_image: "assets/app-icons/ic_background.png"
+      adaptive_foreground_image: "assets/app-icons/ic_foreground.png"
+      adaptive_monochrome_image: "assets/app-icons/ic_black_white.png"
+    ios:
+      enable: true
+      image_path: "assets/app-icons/ic_logo_rectangle_light.png"
+      # For iOS 18+ (support dark and tinted)
+      dark_path: "assets/app-icons/ic_logo_rectangle_dark.png"
+      tinted_path: "assets/app-icons/ic_logo_rectangle_tinted.png"
+    # web:
+    #   enable: true
+    #   image_path: "assets/app-icons/ic_logo_radius.png"
+    #   favicon_path: "assets/app-icons/ic_logo_round.png"
+    # macos:
+    #   enable: true
+    #   image_path: "assets/app-icons/ic_logo_radius.png"
+    # windows:
+    #   enable: false
+    #   image_path: "assets/app-icons/ic_logo_radius.png"
+    # linux:
+    #   enable: false
+    #   image_path: "assets/app-icons/ic_logo_radius.png"

@@ -1,0 +1,348 @@
+{
+  "languages": {
+    "english": "अङ्ग्रेजी",
+    "nepali": "नेपाली",
+    "spanish": "स्पेनिश"
+  },
+  "common": {
+    "errors": {
+      "somethingWentWrong": "केही गलत भयो",
+      "noInternetConnection": "इन्टरनेट जडान छैन",
+      "serverError": "सर्भर त्रुटि"
+    },
+    "commonFormFieldTitles": {
+      "email": "इमेल",
+      "password": "पासवर्ड",
+      "confirmPassword": "पासवर्ड पुष्टि गर्नुहोस्",
+      "fullName": "पूरा नाम",
+      "username": "प्रयोगकर्ता नाम",
+      "currentPassword": "हालको पासवर्ड",
+      "newPassword": "नयाँ पासवर्ड",
+      "confirmNewPassword": "नयाँ पासवर्ड पुष्टि गर्नुहोस्",
+      "phoneNumber": "फोन नम्बर",
+      "url": "URL",
+      "postalCode": "हुलाक कोड",
+      "creditCard": "क्रेडिट कार्ड",
+      "creditCardNumber": "क्रेडिट कार्ड नम्बर",
+      "yourEmail": "तपाईंको इमेल",
+      "yourFullName": "तपाईंको पूरा नाम",
+      "yourPassword": "तपाईंको पासवर्ड",
+      "location": "स्थान",
+      "country": "देश",
+      "city": "शहर",
+      "address": "ठेगाना",
+      "flatHouseNo": "फ्ल्याट/घर नं.",
+      "street": "सडक",
+      "state": "प्रदेश/राज्य",
+      "zipCode": "जिप कोड",
+      "companyCode": "कम्पनी कोड",
+      "company": "कम्पनी",
+      "firstName": "पहिलो नाम",
+      "middleName": "बीचको नाम",
+      "lastName": "थर",
+      "personalEmail": "व्यक्तिगत इमेल",
+      "permanentAddress": "स्थायी ठेगाना",
+      "temporaryAddress": "अस्थायी ठेगाना",
+      "phoneNo": "फोन नम्बर",
+      "accountNumber": "खाता नम्बर",
+      "bankName": "बैंकको नाम",
+      "dob": "जन्ममिति",
+      "dateOfBirth": "जन्म मिति"
+    },
+    "commonHintText": "{field} प्रविष्ट गर्नुहोस्",
+    "formValidationErrors": {
+      "required": "{field} आवश्यक छ",
+      "invalid": "अमान्य {field} ढाँचा",
+      "minLength": "{field} कम्तिमा {minLength} क्यारेक्टरको हुनुपर्छ",
+      "doesNotMatch": "{newField}, {oldField} सँग मेल खाँदैन",
+      "uppercaseRequired": "{field} मा कम्तिमा एउटा ठूलो अक्षर (uppercase) हुनुपर्छ",
+      "lowercaseRequired": "{field} मा कम्तिमा एउटा सानो अक्षर (lowercase) हुनुपर्छ",
+      "numberRequired": "{field} मा कम्तिमा एउटा अंक हुनुपर्छ",
+      "specialCharacterRequired": "{field} मा कम्तिमा एउटा विशेष वर्ण (special character) हुनुपर्छ",
+      "passwordsDoNotMatch": "पासवर्डहरू मेल खाएनन्",
+      "invalidEmailFormat": "अमान्य इमेल ढाँचा",
+      "invalidPhoneNumber": "अमान्य फोन नम्बर ढाँचा",
+      "invalidPostalCode": "अमान्य हुलाक कोड ढाँचा",
+      "invalidCreditCard": "अमान्य क्रेडिट कार्ड नम्बर",
+      "passwordRequirements": "पासवर्ड कम्तिमा {minLength} क्यारेक्टरको हुनुपर्छ, र यसमा ठूलो अक्षर, सानो अक्षर, अंक र विशेष वर्ण समावेश हुनुपर्छ"
+    }
+  },
+  "core": {
+    "generic": {
+      "data": {
+        "data_sources": {
+          "local": {
+            "secure_storage_data_source": {
+              "itemAlreadyExists": "वस्तु पहिले नै अवस्थित छ",
+              "indexOutOfBounds": "इन्डेक्स {index}, {length} लम्बाइको सूचीको सीमा बाहिर छ",
+              "keysNotSupported": "FlutterSecureStorage द्वारा सबै कुञ्जीहरू प्राप्त गर्न समर्थित छैन। यदि आवश्यक भएमा कुञ्जी ट्र्याकिङ संयन्त्र लागू गर्ने विचार गर्नुहोस्।",
+              "seedPathNotSet": "सीड सम्पत्ति मार्ग (Seed asset path) सेट गरिएको छैन",
+              "createFailed": "\"{modelKey}\" कुञ्जीको साथ वस्तु सिर्जना गर्न असफल: {error}",
+              "createMultipleFailed": "\"{modelKey}\" कुञ्जीको साथ धेरै वस्तुहरू सिर्जना गर्न असफल: {error}",
+              "readFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू पढ्न असफल: {error}",
+              "updateFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू अद्यावधिक गर्न असफल: {error}",
+              "updateByIndexFailed": "\"{modelKey}\" कुञ्जीको साथ इन्डेक्स {index} मा वस्तु अद्यावधिक गर्न असफल: {error}",
+              "updateWhereFailed": "\"{modelKey}\" कुञ्जीको लागि सर्त सहित वस्तु अद्यावधिक गर्न असफल: {error}",
+              "updateAllWhereFailed": "\"{modelKey}\" कुञ्जीको लागि सर्त सहित वस्तुहरू अद्यावधिक गर्न असफल: {error}",
+              "upsertFailed": "\"{modelKey}\" कुञ्जीको लागि वस्तु अपसर्ट (Upsert) गर्न असफल: {error}",
+              "deleteFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू मेटाउन असफल: {error}",
+              "deleteByIndexFailed": "\"{modelKey}\" कुञ्जीको साथ इन्डेक्स {index} मा वस्तु मेटाउन असफल: {error}",
+              "deleteWhereFailed": "\"{modelKey}\" कुञ्जीको लागि सर्त सहित वस्तुहरू मेटाउन असफल: {error}",
+              "clearFailed": "स्टोरेज खाली गर्न असफल: {error}",
+              "containsKeyFailed": "\"{modelKey}\" कुञ्जी अवस्थित छ कि छैन जाँच गर्न असफल: {error}",
+              "countFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू गणना गर्न असफल: {error}",
+              "isEmptyFailed": "\"{modelKey}\" कुञ्जीको लागि सूची खाली छ कि छैन जाँच गर्न असफल: {error}",
+              "whereFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू फिल्टर गर्न असफल: {error}",
+              "firstWhereFailed": "\"{modelKey}\" कुञ्जी भएको पहिलो वस्तु फेला पार्न असफल: {error}",
+              "readMultipleFailed": "धेरै कुञ्जीहरू पढ्न असफल: {error}",
+              "writeMultipleFailed": "धेरै वस्तुहरू लेख्न असफल: {error}",
+              "seedFailed": "डेटा सीड (Seed) गर्न असफल: {error}"
+            }
+          }
+        }
+      },
+      "presentation": {
+        "views": {
+          "widgets": {
+            "pagination_list_view_widget": {
+              "no_more_data": "थप डाटा छैन",
+              "no_data_found": "कुनै डाटा फेला परेन"
+            }
+          }
+        }
+      }
+    },
+    "common": {
+      "presentation": {
+        "views": {
+          "pages": {
+            "bottom_sheets": {
+              "app_date_selector_bottom_sheet": {
+                "reset": "रिसेट गर्नुहोस्"
+              }
+            }
+          },
+          "widgets": {
+            "system": {
+              "text_fields": {
+                "app_dropdown": {
+                  "required_char": "*"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "splash": {
+      "presentation": {
+        "views": {
+          "widgets": {
+            "design_components": {
+              "dc_text": {
+                "this_is_app_text": "यो एपको पाठ हो",
+                "this_is_a_note_text": "यो नोटको पाठ हो"
+              },
+              "dc_common_data_handling": {
+                "data_handlers_error_states": "डाटा ह्यान्डलर र त्रुटि अवस्थाहरू",
+                "k_1_failure_object_source": "१. विफलता वस्तु स्रोत (Failure Object Source)",
+                "uses_failuremessage_and_failur": "Failure.message र Failure.data प्रयोग गर्दछ (उपशीर्षक)",
+                "network_connection_failed": "नेटवर्क जडान असफल भयो",
+                "we_could_not_reach_the_server_": "हामी सर्भरमा पुग्न सकेनौं। कृपया आफ्नो इन्टरनेट जाँच गर्नुहोस्।",
+                "home": "/home",
+                "k_2_string_source_minimal": "२. स्ट्रिङ स्रोत (न्यूनतम)",
+                "uses_errormessage_only_falls_b": "errorMessage मात्र प्रयोग गर्दछ। पूर्वनिर्धारित आइकनमा फर्कन्छ।",
+                "simple_error_occurred": "सामान्य त्रुटि देखा पर्यो",
+                "k_3_variant_custom_icon": "३. भेरियन्ट: कस्टम आइकन",
+                "access_denied": "पहुँच अस्वीकृत",
+                "you_do_not_have_permission_to_": "तपाईंलाई यो खण्ड हेर्ने अनुमति छैन।",
+                "k_4_variant_svg_asset": "४. भेरियन्ट: SVG सम्पत्ति",
+                "transaction_failed": "कारोबार असफल भयो",
+                "k_5_variant_image_asset": "५. भेरियन्ट: छवि सम्पत्ति",
+                "nothing_to_see_here": "यहाँ हेर्न केही छैन",
+                "k_6_no_retry_button_info_state": "६. पुन: प्रयास बटन छैन (जानकारी अवस्था)",
+                "passing_onretry_null_hides_the": "onRetry: null पठाउँदा बटन लुक्छ।",
+                "no_results_found": "कुनै नतिजा फेला परेन",
+                "empty_state": "खाली अवस्था",
+                "error": "त्रुटि",
+                "try_adjusting_your_search_filt": "तपाईंले खोजिरहनुभएको कुरा फेला पार्न आफ्नो खोज फिल्टरहरू समायोजन गर्ने प्रयास गर्नुहोस्।",
+                "k_7_long_text_wrap_check": "७. लामो पाठ र्‍याप जाँच",
+                "this_is_a_very_long_error_mess": "यो सानो यन्त्रहरूमा पाठ कसरी र्‍याप हुन्छ भनेर परीक्षण गर्न धेरै लामो त्रुटि सन्देश हो",
+                "similarly_this_subtitle_is_qui": "त्यसैगरी, ब्याकएन्डले विस्तृत त्रुटि विवरण पठाउँदा लेआउट नबिग्रियोस् भन्नका लागि यो उपशीर्षक निकै लामो छ।"
+              },
+              "dc_button": {
+                "check_buttons": "बटनहरू जाँच गर्नुहोस्",
+                "primary_buttons": "प्राथमिक बटनहरू",
+                "primary": "प्राथमिक",
+                "loading": "लोड हुँदै",
+                "disabled": "अक्षम (Disabled)",
+                "with_icon": "आइकन सहित",
+                "with_icon_disabled": "आइकन सहित अक्षम",
+                "primary_expanded": "प्राथमिक विस्तारित",
+                "loading_expanded": "लोडिङ विस्तारित",
+                "disabled_expanded": "अक्षम विस्तारित",
+                "with_icon_expanded": "आइकन सहित विस्तारित",
+                "with_icon_disabled_expanded": "आइकन सहित अक्षम विस्तारित",
+                "secondary_buttons": "द्वितीयक बटनहरू",
+                "secondary": "द्वितीयक",
+                "secondary_expanded": "द्वितीयक विस्तारित",
+                "tertiary_buttons": "तृतीयक बटनहरू",
+                "tertiary": "तृतीयक",
+                "tertiary_expanded": "तृतीयक विस्तारित",
+                "stroke_buttons": "स्ट्रोक बटनहरू",
+                "stroke": "स्ट्रोक",
+                "stroke_expanded": "स्ट्रोक विस्तारित",
+                "ghost_buttons": "घोस्ट बटनहरू",
+                "ghost": "घोस्ट",
+                "ghost_expanded": "घोस्ट विस्तारित",
+                "icon_buttons": "आइकन बटनहरू",
+                "destructive_buttons": "विनाशकारी बटनहरू",
+                "destructive": "विनाशकारी",
+                "destructive_expanded": "विनाशकारी विस्तारित"
+              },
+              "dc_chips": {
+                "all": "सबै",
+                "popular": "लोकप्रिय",
+                "recent": "हालैको",
+                "trending": "चल्तीको (Trending)",
+                "wifi": "वाइफाइ",
+                "parking": "पार्किङ",
+                "pool": "पुल",
+                "gym": "जिम",
+                "card": "कार्ड",
+                "chips_showcase": "चिप्स शोकेस",
+                "choice_chips_text_only": "छनोट चिप्स (पाठ मात्र)",
+                "single_selection_behavior_usin": "AppChipWidget.detail प्रयोग गरी एकल चयन व्यवहार",
+                "filter_chips_with_icons": "फिल्टर चिप्स (आइकन सहित)",
+                "multiple_selection_behavior_us": "AppChipWidget.icon प्रयोग गरी बहु-चयन व्यवहार",
+                "payment_methods_svg_colors": "भुक्तानी विधिहरू (SVG र रङहरू)",
+                "complex_layout_using_appchipwi": "\"noBlend\" सँग AppChipWidget.svg प्रयोग गरी जटिल लेआउट",
+                "credit_card": "क्रेडिट कार्ड",
+                "cash": "नगद",
+                "apple_pay": "Apple Pay",
+                "applepay": "apple_pay",
+                "semantic_status_chips": "सिमान्टिक स्थिति चिप्स",
+                "overdue": "म्याद नाघेको",
+                "pending": "विचाराधीन (Pending)",
+                "completed": "पूरा भयो",
+                "breakfast": "ब्रेकफास्ट",
+                "filter_chips_icon": "फिल्टर चिप्स (आइकन)",
+                "multiple_selection_with_dynami": ".icon फ्याक्ट्री प्रयोग गरी गतिशील आइकनहरूसँग बहु-चयन।",
+                "svg_chips_brand_blend": "SVG चिप्स (ब्रान्ड र मिश्रण)",
+                "use_noblend_true_to_keep_origi": "मूल ब्रान्ड रङहरू राख्न `noBlend: true` प्रयोग गर्नुहोस् (जस्तै Apple Pay)। पूर्वनिर्धारितले थिमको रङसँग मिश्रण गर्छ।",
+                "color": "रङ",
+                "apple": "एप्पल",
+                "google_pay": "Google Pay",
+                "google": "गुगल",
+                "overriding_defaults_using_cust": "सफलता, त्रुटि र चेतावनी अवस्थाहरूको लागि CustomAppChipTheme प्रयोग गरी पूर्वनिर्धारितहरू ओभरराइड गर्दै।"
+              },
+              "dc_image": {
+                "k_1_appimage_bitmap_assets": "१. एप इमेज (बिटम्याप एसेट्स)",
+                "normal_asset_fitcontain": "सामान्य सम्पत्ति (Fit.contain)",
+                "icon_mode_circular_border_back": "आइकन मोड (गोलाकार + बोर्डर + पृष्ठभूमि)",
+                "k_2_appimage_memory": "२. एप इमेज (मेमोरी)",
+                "loaded_from_uint8list_base64": "Uint8List (Base64) बाट लोड गरिएको",
+                "k_3_appsvgpicture_network": "३. एप SVG तस्विर (नेटवर्क)",
+                "network_svg_success": "नेटवर्क SVG (सफलता)",
+                "network_svg_icon_themed": "नेटवर्क SVG आइकन (थिम गरिएको)",
+                "k_4_appsvgpicture_error_states": "४. एप SVG तस्विर (त्रुटि अवस्थाहरू)",
+                "network_404_triggers_nodatawid": "नेटवर्क 404 (NoDataWidget ट्रिगर गर्दछ)",
+                "profile_image": "प्रोफाइल तस्विर",
+                "missing_asset_triggers_nodataw": "हराएको सम्पत्ति (NoDataWidget ट्रिगर गर्दछ)",
+                "logo": "लोगो",
+                "k_5_interactivity": "५. अन्तरक्रियाशीलता",
+                "tap_detection": "ट्याप पहिचान",
+                "image_tapped": "तस्विर ट्याप गरियो!",
+                "ivborw0kggoaaaansuheugaaaaeaaa": "ivborw0kggoaaaansuheugaaaaeaaa"
+              },
+              "dc_text_field": {
+                "text_form_field_showcase": "टेक्स्ट फारम फिल्ड शोकेस",
+                "identity_contact": "परिचय र सम्पर्क",
+                "full_name": "पूरा नाम",
+                "eg_john_doe": "उदा. राम प्रसाद",
+                "email_address": "इमेल ठेगाना",
+                "userexamplecom": "user@example.com",
+                "phone_number": "फोन नम्बर",
+                "eg_1234567890": "उदा. ९८१२३४५६७८",
+                "security": "सुरक्षा",
+                "min_8_chars_1_upper_1_lower_1_": "न्यूनतम ८ अक्षर, १ ठूलो, १ सानो, १ अंक",
+                "confirm_password": "पासवर्ड पुष्टि गर्नुहोस्",
+                "reenter_password": "पासवर्ड पुनः प्रविष्ट गर्नुहोस्",
+                "financial_banking": "वित्तीय र बैंकिङ",
+                "credit_card": "क्रेडिट कार्ड",
+                "xxxx_xxxx_xxxx_xxxx": "XXXX XXXX XXXX XXXX",
+                "account_number": "खाता नम्बर",
+                "bank_account_no": "बैंक खाता नं.",
+                "amount": "रकम",
+                "web_social": "वेब र सामाजिक",
+                "website_url": "वेबसाइट URL",
+                "social_handle": "सामाजिक ह्यान्डल",
+                "username": "@प्रयोगकर्ता_नाम",
+                "handle": "ह्यान्डल",
+                "postal_code": "हुलाक कोड",
+                "zip_pin": "ZIP / PIN",
+                "specialized_inputs": "विशिष्ट इनपुटहरू",
+                "hours": "घन्टा",
+                "minutes": "मिनेट",
+                "system_pickers": "प्रणाली पिकरहरू",
+                "date_of_birth": "जन्म मिति",
+                "date": "मिति",
+                "meeting_time": "बैठकको समय",
+                "time": "समय",
+                "select_date_range": "मिति दायरा चयन गर्नुहोस्",
+                "layout_utility": "लेआउट र उपयोगिता",
+                "bio_description": "बायो / विवरण",
+                "tell_us_about_yourself": "हामीलाई आफ्नो बारेमा बताउनुहोस्...",
+                "bio": "बायो",
+                "search_products": "उत्पादनहरू खोज्नुहोस्...",
+                "read_only_field": "पढ्ने मात्र क्षेत्र (Read Only Field)",
+                "this_cannot_be_edited": "यसलाई सम्पादन गर्न सकिँदैन",
+                "value": "मूल्य"
+              },
+
+              "dc_switch": {
+                "switch_showcase": "स्विच शोकेस",
+                "basic_variations": "आधारभूत विविधताहरू",
+                "standard_toggles_with_and_with": "लेबल भएका र नभएका मानक टगलहरू।",
+                "standalone_no_title": "स्ट्यान्डअलोन (शीर्षक छैन):",
+                "push_notifications": "पुश नोटिफिकेसनहरू",
+                "dark_mode_bold_style": "डार्क मोड (बोल्ड शैली)",
+                "descriptive_layouts": "वर्णनात्मक र लेआउटहरू",
+                "switches_with_helper_notes_and": "सहयोगी नोटहरू र लामो पाठ ह्यान्डलिंग सहितका स्विचहरू।",
+                "location_services": "स्थान सेवाहरू",
+                "allows_the_app_to_access_your_": "डेलिभरीको लागि एपलाई तपाईंको सही स्थान पहुँच गर्न अनुमति दिन्छ।",
+                "allow_automatic_downloads_for_": "Wi-Fi मा जडान हुँदा अपडेटहरूको लागि स्वचालित डाउनलोड अनुमति दिनुहोस्",
+                "this_might_consume_significant": "यसले धेरै ब्यान्डविथ खपत गर्न सक्छ।",
+                "controlled_state": "नियन्त्रित अवस्था",
+                "using_appswitchcontroller_to_t": "प्रोग्रामेटिक रूपमा स्थिति टगल गर्न AppSwitchController प्रयोग गर्दै।",
+                "biometric_login": "बायोमेट्रिक लगइन",
+                "toggle_via_button": "बटन मार्फत टगल गर्नुहोस्",
+                "set_true": "True सेट गर्नुहोस्",
+                "set_false": "False सेट गर्नुहोस्"
+              }
+            }
+          },
+          "screens": {
+            "splash_screen": {
+              "splashscreen": "स्ल्याश स्क्रिन"
+            }
+          }
+        }
+      }
+    },
+    "another": {
+      "presentation": {
+        "views": {
+          "screens": {
+            "another_screen": {
+              "anotherscreenroute": "अर्को स्क्रिन रुट",
+              "another": "अर्को"
+            }
+          }
+        }
+      }
+    }
+  }
+}
