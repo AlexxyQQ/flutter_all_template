@@ -35,7 +35,7 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-See [brick/README.md](brick/README.md) for full details on what each option includes.
+See [bricks/project_brick/README.md](bricks/project_brick/README.md) for full details on what each option includes.
 
 ---
 

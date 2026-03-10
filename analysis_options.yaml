@@ -17,7 +17,6 @@ analyzer:
     - lib/**/example_env.dart # Exclude example environment files.
     - lib/localization/** # Exclude all localization-related files.
     - bricks/** # Exclude Mason/brick templates.
-    - brick/** # Exclude Mason/brick templates.
 
 linter:
   # The lint rules applied to this project. These enforce code style,

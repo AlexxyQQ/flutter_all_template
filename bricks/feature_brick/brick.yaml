@@ -1,0 +1,22 @@
+name: flutter_feature
+description: Generates a clean-architecture feature module for flutter_all_template
+version: 0.1.0+1
+environment:
+  mason: ">=0.1.0-dev.52 <0.1.0"
+
+vars:
+  feature_name:
+    type: string
+    description: Feature name in snake_case (e.g. user_profile)
+    prompt: What is the feature name? (snake_case, e.g. user_profile)
+    default: my_feature
+  use_local_datasource:
+    type: boolean
+    description: Include a local (SecureStorage) data source alongside the remote one
+    prompt: Include a local data source (SecureStorage)?
+    default: false
+  use_params:
+    type: boolean
+    description: Generate a typed RequestParams class for create/update operations
+    prompt: Generate a typed RequestParams class?
+    default: true

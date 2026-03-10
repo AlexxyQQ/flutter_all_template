@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.0.3] — 2026-03-10
+
+### Added
+- **`bricks/feature_brick/`** — new Mason brick that generates a complete clean-architecture feature module; prompts for `feature_name`, `use_local_datasource`, and `use_params`. Generates:
+  - `data/models/` — Freezed + JSON model with `toEntity()` mapper
+  - `data/data_sources/` — abstract interface + remote data source (`ApiHandler`); optional local data source (`ISecureStorageDataSource`) behind `use_local_datasource`
+  - `data/repositories/` — `@lazySingleton` repository impl with `mapModelToEntity` helpers
+  - `domain/entities/` — Freezed entity; optional typed `RequestParams` class behind `use_params`
+  - `domain/repositories/` — abstract `I{{Feature}}Repository` interface
+  - `presentation/bloc/` — `@injectable` BLoC extending `BaseCrudBloc` with all CRUD + search + pagination mixins
+  - `hooks/post_gen.dart` — deletes `params/` if `use_params=false`; deletes `local/` if `use_local_datasource=false`; prints next-steps guide
+
+### Changed
+- **Brick directories consolidated** — `brick/` renamed to `bricks/project_brick/` and `feature_brick/` moved to `bricks/feature_brick/`; all bricks now live under a single top-level `bricks/` directory
+- **`analysis_options.yaml`** — updated analyzer `exclude` from `brick/**` to `bricks/**` to cover the new unified directory
+- **`README.md`** — updated `brick/README.md` link to `bricks/project_brick/README.md`
+
+---
+
 ## [1.0.2] — 2026-03-10
 
 ### Changed
@@ -25,7 +44,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `android/app/google-services.json`
   - `ios/Runner/GoogleService-Info.plist`
   - `lib/config/firebase/firebase_options.dart`
-  - `brick/__brick__/` copies of the above
+  - `bricks/project_brick/__brick__/` copies of the above
 - **Updated `.gitignore`** — added a documented section explaining how to prevent future accidental commits of real Firebase config files; real `.env` files are now explicitly ignored
 - **Added `TODO.md` security section (§0)** — step-by-step checklist to rotate the exposed keys, purge them from git history via `git filter-repo`, enable Firebase App Check, and restrict API keys by package name / bundle ID
 
