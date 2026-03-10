@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.0.2] — 2026-03-10
+
+### Changed
+- **`FOLDER_STRUCTURE.md`** — added a new **Example Feature Structure** section showing the real file tree of `lib/features/example/` as a reference implementation
+- **`FOLDER_STRUCTURE.md`** — `lib/features/` listing updated from placeholder `another/` to `example/`
+- **`FOLDER_STRUCTURE.md`** — Feature Anatomy diagram updated: `use_cases/` directory removed; `domain/entities/params/` sub-directory added to reflect actual layout
+
+### Removed
+- **`use_cases/` layer dropped** — the `domain/use_cases/` directory is no longer part of the standard feature anatomy. Business logic previously placed in use cases now lives directly in the BLoC / Cubit, keeping the call chain flat (`BLoC → Repository → DataSource`). A note in `FOLDER_STRUCTURE.md` explains the rationale and how to reintroduce the layer if needed.
+- `lib/features/example/domain/entities/params/example_entity_converters.dart` — removed stale converter file superseded by the Freezed param models
+
+---
+
 ## [1.0.1] — 2026-03-09
 
 ### Security

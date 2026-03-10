@@ -338,7 +338,7 @@ Each screen-group is its own self-contained module.
 ```
 lib/features/
 ├── splash/          # Splash screen + design component showcase
-└── another/         # Example second feature — copy this as a starting point
+└── example/         # Reference feature — copy this as a starting point
 ```
 
 ### Feature Anatomy
@@ -355,8 +355,8 @@ lib/features/<feature_name>/
 │   └── repositories/       # RepositoryImpl — implements the domain interface
 ├── domain/
 │   ├── entities/           # Pure Dart domain objects (no JSON annotations)
-│   ├── repositories/       # Abstract repository interface
-│   └── use_cases/          # One class per use case (optional, use if complex)
+│   │   └── params/         # Request param objects (Freezed + JSON-serialisable)
+│   └── repositories/       # Abstract repository interface
 └── presentation/
     ├── bloc/               # Feature BLoC / Cubit
     ├── routes/
@@ -366,6 +366,57 @@ lib/features/<feature_name>/
         ├── screens/        # Full-screen widgets decorated with @RoutePage
         ├── wrappers/       # BlocProvider + BlocListener wrappers around screens
         └── widgets/        # Feature-specific widgets (not reused elsewhere)
+```
+
+> **Use cases dropped:** This template does not use a `use_cases/` layer. Business logic that would have lived in a use case belongs directly in the BLoC / Cubit. This keeps the call chain flat (`BLoC → Repository → DataSource`) and avoids boilerplate for the typical CRUD operations this template targets. If your feature grows to need complex orchestration across multiple repositories, you may introduce use cases at your discretion — place them in `domain/use_cases/`.
+
+### Example Feature Structure
+
+The `lib/features/example/` directory is the reference implementation. Its actual layout:
+
+```
+lib/features/example/
+├── data/
+│   ├── data_sources/
+│   │   ├── example_data_source.dart          # Shared interface for local + remote
+│   │   ├── local/
+│   │   │   └── example_local_data_source.dart
+│   │   └── remote/
+│   │       └── example_remote_data_source.dart
+│   ├── models/
+│   │   ├── example_model.dart                # Root model (Freezed + JSON)
+│   │   ├── example_model.freezed.dart
+│   │   ├── example_model.g.dart
+│   │   ├── example_sub_model.dart
+│   │   ├── example_sub_model.freezed.dart
+│   │   ├── example_sub_model.g.dart
+│   │   ├── example_address_model.dart
+│   │   ├── example_address_model.freezed.dart
+│   │   ├── example_address_model.g.dart
+│   │   ├── example_profile_settings_model.dart
+│   │   ├── example_profile_settings_model.freezed.dart
+│   │   └── example_profile_settings_model.g.dart
+│   └── repositories/
+│       └── example_repository_impl.dart
+├── domain/
+│   ├── entities/
+│   │   ├── example_entity.dart
+│   │   ├── example_entity.freezed.dart
+│   │   ├── example_sub_entity.dart
+│   │   ├── example_sub_entity.freezed.dart
+│   │   ├── example_address_entity.dart
+│   │   ├── example_address_entity.freezed.dart
+│   │   ├── example_profile_settings_entity.dart
+│   │   ├── example_profile_settings_entity.freezed.dart
+│   │   └── params/
+│   │       ├── example_request_params.dart
+│   │       ├── example_request_params.freezed.dart
+│   │       └── example_request_params.g.dart
+│   └── repositories/
+│       └── example_repository.dart           # Abstract interface
+└── presentation/
+    └── bloc/
+        └── example_bloc.dart
 ```
 
 ### Adding a New Feature — Checklist

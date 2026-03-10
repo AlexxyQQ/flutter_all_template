@@ -41,13 +41,13 @@ abstract class ExampleModel with _$ExampleModel {
     @AccountStatusConverter() required AccountStatus status,
     @AccountStatusConverter()
     @Default(AccountStatus.pending)
-    AccountStatus defaultStatus,
+    AccountStatus? defaultStatus,
     required ExampleSubModel mainSubEntity,
     ExampleSubModel? optionalSubEntity,
     required ExampleAddressModel primaryAddress,
     ExampleAddressModel? secondaryAddress,
     required ExampleProfileSettingsModel settings,
-    @Default(const []) List<ExampleAddressModel> pastAddresses,
+    @Default(const []) List<ExampleAddressModel>? pastAddresses,
   }) = _ExampleModel;
 
   factory ExampleModel.fromJson(Map<String, dynamic> json) =>
@@ -85,7 +85,7 @@ extension ExampleModelMapper on ExampleModel {
       primaryAddress: primaryAddress.toEntity(),
       secondaryAddress: secondaryAddress?.toEntity(),
       settings: settings.toEntity(),
-      pastAddresses: pastAddresses.map((e) => e.toEntity()).toList(),
+      pastAddresses: pastAddresses?.map((e) => e.toEntity()).toList(),
     );
   }
 }
@@ -121,7 +121,7 @@ extension ExampleEntityMapper on ExampleEntity {
       primaryAddress: primaryAddress.toModel(),
       secondaryAddress: secondaryAddress?.toModel(),
       settings: settings.toModel(),
-      pastAddresses: pastAddresses.map((e) => e.toModel()).toList(),
+      pastAddresses: pastAddresses?.map((e) => e.toModel()).toList(),
     );
   }
 }

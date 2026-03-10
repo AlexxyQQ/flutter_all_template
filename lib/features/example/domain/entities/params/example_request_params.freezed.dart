@@ -15,9 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ExampleRequestParams {
 
-// --- required fields ---
- int get age; double get grade; List<String> get friends; Map<String, dynamic> get group; List<Map<String, dynamic>> get listedGroup;@AccountStatusConverter() AccountStatus get status;@ExampleSubEntityConverter() ExampleSubEntity get mainSubEntity;@ExampleAddressEntityConverter() ExampleAddressEntity get primaryAddress;@ExampleProfileSettingsEntityConverter() ExampleProfileSettingsEntity get settings;// --- optional fields ---
- String? get id; String? get emptyId; String? get defaultId; int? get emptyAge; int? get defaultAge; double? get emptyGrade; double? get defaultGrade; List<String>? get emptyFriends; List<String>? get defaultFriends; Map<String, dynamic>? get emptyGroup; Map<String, dynamic>? get defaultGroup; List<Map<String, dynamic>>? get emptyListedGroup; List<Map<String, dynamic>>? get defaultListedGroup;@AccountStatusConverter() AccountStatus get defaultStatus;@NullableExampleSubEntityConverter() ExampleSubEntity? get optionalSubEntity;@NullableExampleAddressEntityConverter() ExampleAddressEntity? get secondaryAddress;@ExampleAddressEntityConverter() List<ExampleAddressEntity> get pastAddresses;
+ String? get id; String? get emptyId; String? get defaultId; int get age; int? get emptyAge; int? get defaultAge; double get grade; double? get emptyGrade; double? get defaultGrade; List<String> get friends; List<String>? get emptyFriends; List<String>? get defaultFriends; Map<String, dynamic> get group; Map<String, dynamic>? get emptyGroup; Map<String, dynamic>? get defaultGroup; List<Map<String, dynamic>> get listedGroup; List<Map<String, dynamic>>? get emptyListedGroup; List<Map<String, dynamic>>? get defaultListedGroup;@AccountStatusConverter() AccountStatus get status;@AccountStatusConverter() AccountStatus? get defaultStatus; ExampleSubModel get mainSubEntity; ExampleSubModel? get optionalSubEntity; ExampleAddressModel get primaryAddress; ExampleAddressModel? get secondaryAddress; ExampleProfileSettingsModel get settings; List<ExampleAddressModel>? get pastAddresses;
 /// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +28,16 @@ $ExampleRequestParamsCopyWith<ExampleRequestParams> get copyWith => _$ExampleReq
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExampleRequestParams&&(identical(other.age, age) || other.age == age)&&(identical(other.grade, grade) || other.grade == grade)&&const DeepCollectionEquality().equals(other.friends, friends)&&const DeepCollectionEquality().equals(other.group, group)&&const DeepCollectionEquality().equals(other.listedGroup, listedGroup)&&(identical(other.status, status) || other.status == status)&&(identical(other.mainSubEntity, mainSubEntity) || other.mainSubEntity == mainSubEntity)&&(identical(other.primaryAddress, primaryAddress) || other.primaryAddress == primaryAddress)&&(identical(other.settings, settings) || other.settings == settings)&&(identical(other.id, id) || other.id == id)&&(identical(other.emptyId, emptyId) || other.emptyId == emptyId)&&(identical(other.defaultId, defaultId) || other.defaultId == defaultId)&&(identical(other.emptyAge, emptyAge) || other.emptyAge == emptyAge)&&(identical(other.defaultAge, defaultAge) || other.defaultAge == defaultAge)&&(identical(other.emptyGrade, emptyGrade) || other.emptyGrade == emptyGrade)&&(identical(other.defaultGrade, defaultGrade) || other.defaultGrade == defaultGrade)&&const DeepCollectionEquality().equals(other.emptyFriends, emptyFriends)&&const DeepCollectionEquality().equals(other.defaultFriends, defaultFriends)&&const DeepCollectionEquality().equals(other.emptyGroup, emptyGroup)&&const DeepCollectionEquality().equals(other.defaultGroup, defaultGroup)&&const DeepCollectionEquality().equals(other.emptyListedGroup, emptyListedGroup)&&const DeepCollectionEquality().equals(other.defaultListedGroup, defaultListedGroup)&&(identical(other.defaultStatus, defaultStatus) || other.defaultStatus == defaultStatus)&&(identical(other.optionalSubEntity, optionalSubEntity) || other.optionalSubEntity == optionalSubEntity)&&(identical(other.secondaryAddress, secondaryAddress) || other.secondaryAddress == secondaryAddress)&&const DeepCollectionEquality().equals(other.pastAddresses, pastAddresses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExampleRequestParams&&(identical(other.id, id) || other.id == id)&&(identical(other.emptyId, emptyId) || other.emptyId == emptyId)&&(identical(other.defaultId, defaultId) || other.defaultId == defaultId)&&(identical(other.age, age) || other.age == age)&&(identical(other.emptyAge, emptyAge) || other.emptyAge == emptyAge)&&(identical(other.defaultAge, defaultAge) || other.defaultAge == defaultAge)&&(identical(other.grade, grade) || other.grade == grade)&&(identical(other.emptyGrade, emptyGrade) || other.emptyGrade == emptyGrade)&&(identical(other.defaultGrade, defaultGrade) || other.defaultGrade == defaultGrade)&&const DeepCollectionEquality().equals(other.friends, friends)&&const DeepCollectionEquality().equals(other.emptyFriends, emptyFriends)&&const DeepCollectionEquality().equals(other.defaultFriends, defaultFriends)&&const DeepCollectionEquality().equals(other.group, group)&&const DeepCollectionEquality().equals(other.emptyGroup, emptyGroup)&&const DeepCollectionEquality().equals(other.defaultGroup, defaultGroup)&&const DeepCollectionEquality().equals(other.listedGroup, listedGroup)&&const DeepCollectionEquality().equals(other.emptyListedGroup, emptyListedGroup)&&const DeepCollectionEquality().equals(other.defaultListedGroup, defaultListedGroup)&&(identical(other.status, status) || other.status == status)&&(identical(other.defaultStatus, defaultStatus) || other.defaultStatus == defaultStatus)&&(identical(other.mainSubEntity, mainSubEntity) || other.mainSubEntity == mainSubEntity)&&(identical(other.optionalSubEntity, optionalSubEntity) || other.optionalSubEntity == optionalSubEntity)&&(identical(other.primaryAddress, primaryAddress) || other.primaryAddress == primaryAddress)&&(identical(other.secondaryAddress, secondaryAddress) || other.secondaryAddress == secondaryAddress)&&(identical(other.settings, settings) || other.settings == settings)&&const DeepCollectionEquality().equals(other.pastAddresses, pastAddresses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,age,grade,const DeepCollectionEquality().hash(friends),const DeepCollectionEquality().hash(group),const DeepCollectionEquality().hash(listedGroup),status,mainSubEntity,primaryAddress,settings,id,emptyId,defaultId,emptyAge,defaultAge,emptyGrade,defaultGrade,const DeepCollectionEquality().hash(emptyFriends),const DeepCollectionEquality().hash(defaultFriends),const DeepCollectionEquality().hash(emptyGroup),const DeepCollectionEquality().hash(defaultGroup),const DeepCollectionEquality().hash(emptyListedGroup),const DeepCollectionEquality().hash(defaultListedGroup),defaultStatus,optionalSubEntity,secondaryAddress,const DeepCollectionEquality().hash(pastAddresses)]);
+int get hashCode => Object.hashAll([runtimeType,id,emptyId,defaultId,age,emptyAge,defaultAge,grade,emptyGrade,defaultGrade,const DeepCollectionEquality().hash(friends),const DeepCollectionEquality().hash(emptyFriends),const DeepCollectionEquality().hash(defaultFriends),const DeepCollectionEquality().hash(group),const DeepCollectionEquality().hash(emptyGroup),const DeepCollectionEquality().hash(defaultGroup),const DeepCollectionEquality().hash(listedGroup),const DeepCollectionEquality().hash(emptyListedGroup),const DeepCollectionEquality().hash(defaultListedGroup),status,defaultStatus,mainSubEntity,optionalSubEntity,primaryAddress,secondaryAddress,settings,const DeepCollectionEquality().hash(pastAddresses)]);
 
 @override
 String toString() {
-  return 'ExampleRequestParams(age: $age, grade: $grade, friends: $friends, group: $group, listedGroup: $listedGroup, status: $status, mainSubEntity: $mainSubEntity, primaryAddress: $primaryAddress, settings: $settings, id: $id, emptyId: $emptyId, defaultId: $defaultId, emptyAge: $emptyAge, defaultAge: $defaultAge, emptyGrade: $emptyGrade, defaultGrade: $defaultGrade, emptyFriends: $emptyFriends, defaultFriends: $defaultFriends, emptyGroup: $emptyGroup, defaultGroup: $defaultGroup, emptyListedGroup: $emptyListedGroup, defaultListedGroup: $defaultListedGroup, defaultStatus: $defaultStatus, optionalSubEntity: $optionalSubEntity, secondaryAddress: $secondaryAddress, pastAddresses: $pastAddresses)';
+  return 'ExampleRequestParams(id: $id, emptyId: $emptyId, defaultId: $defaultId, age: $age, emptyAge: $emptyAge, defaultAge: $defaultAge, grade: $grade, emptyGrade: $emptyGrade, defaultGrade: $defaultGrade, friends: $friends, emptyFriends: $emptyFriends, defaultFriends: $defaultFriends, group: $group, emptyGroup: $emptyGroup, defaultGroup: $defaultGroup, listedGroup: $listedGroup, emptyListedGroup: $emptyListedGroup, defaultListedGroup: $defaultListedGroup, status: $status, defaultStatus: $defaultStatus, mainSubEntity: $mainSubEntity, optionalSubEntity: $optionalSubEntity, primaryAddress: $primaryAddress, secondaryAddress: $secondaryAddress, settings: $settings, pastAddresses: $pastAddresses)';
 }
 
 
@@ -50,11 +48,11 @@ abstract mixin class $ExampleRequestParamsCopyWith<$Res>  {
   factory $ExampleRequestParamsCopyWith(ExampleRequestParams value, $Res Function(ExampleRequestParams) _then) = _$ExampleRequestParamsCopyWithImpl;
 @useResult
 $Res call({
- int age, double grade, List<String> friends, Map<String, dynamic> group, List<Map<String, dynamic>> listedGroup,@AccountStatusConverter() AccountStatus status,@ExampleSubEntityConverter() ExampleSubEntity mainSubEntity,@ExampleAddressEntityConverter() ExampleAddressEntity primaryAddress,@ExampleProfileSettingsEntityConverter() ExampleProfileSettingsEntity settings, String? id, String? emptyId, String? defaultId, int? emptyAge, int? defaultAge, double? emptyGrade, double? defaultGrade, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus defaultStatus,@NullableExampleSubEntityConverter() ExampleSubEntity? optionalSubEntity,@NullableExampleAddressEntityConverter() ExampleAddressEntity? secondaryAddress,@ExampleAddressEntityConverter() List<ExampleAddressEntity> pastAddresses
+ String? id, String? emptyId, String? defaultId, int age, int? emptyAge, int? defaultAge, double grade, double? emptyGrade, double? defaultGrade, List<String> friends, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic> group, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>> listedGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus status,@AccountStatusConverter() AccountStatus? defaultStatus, ExampleSubModel mainSubEntity, ExampleSubModel? optionalSubEntity, ExampleAddressModel primaryAddress, ExampleAddressModel? secondaryAddress, ExampleProfileSettingsModel settings, List<ExampleAddressModel>? pastAddresses
 });
 
 
-$ExampleSubEntityCopyWith<$Res> get mainSubEntity;$ExampleAddressEntityCopyWith<$Res> get primaryAddress;$ExampleProfileSettingsEntityCopyWith<$Res> get settings;$ExampleSubEntityCopyWith<$Res>? get optionalSubEntity;$ExampleAddressEntityCopyWith<$Res>? get secondaryAddress;
+$ExampleSubModelCopyWith<$Res> get mainSubEntity;$ExampleSubModelCopyWith<$Res>? get optionalSubEntity;$ExampleAddressModelCopyWith<$Res> get primaryAddress;$ExampleAddressModelCopyWith<$Res>? get secondaryAddress;$ExampleProfileSettingsModelCopyWith<$Res> get settings;
 
 }
 /// @nodoc
@@ -67,87 +65,87 @@ class _$ExampleRequestParamsCopyWithImpl<$Res>
 
 /// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? age = null,Object? grade = null,Object? friends = null,Object? group = null,Object? listedGroup = null,Object? status = null,Object? mainSubEntity = null,Object? primaryAddress = null,Object? settings = null,Object? id = freezed,Object? emptyId = freezed,Object? defaultId = freezed,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? defaultStatus = null,Object? optionalSubEntity = freezed,Object? secondaryAddress = freezed,Object? pastAddresses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? emptyId = freezed,Object? defaultId = freezed,Object? age = null,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? grade = null,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? friends = null,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? group = null,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? listedGroup = null,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? status = null,Object? defaultStatus = freezed,Object? mainSubEntity = null,Object? optionalSubEntity = freezed,Object? primaryAddress = null,Object? secondaryAddress = freezed,Object? settings = null,Object? pastAddresses = freezed,}) {
   return _then(_self.copyWith(
-age: null == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
-as int,grade: null == grade ? _self.grade : grade // ignore: cast_nullable_to_non_nullable
-as double,friends: null == friends ? _self.friends : friends // ignore: cast_nullable_to_non_nullable
-as List<String>,group: null == group ? _self.group : group // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>,listedGroup: null == listedGroup ? _self.listedGroup : listedGroup // ignore: cast_nullable_to_non_nullable
-as List<Map<String, dynamic>>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as AccountStatus,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
-as ExampleSubEntity,primaryAddress: null == primaryAddress ? _self.primaryAddress : primaryAddress // ignore: cast_nullable_to_non_nullable
-as ExampleAddressEntity,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
-as ExampleProfileSettingsEntity,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,emptyId: freezed == emptyId ? _self.emptyId : emptyId // ignore: cast_nullable_to_non_nullable
 as String?,defaultId: freezed == defaultId ? _self.defaultId : defaultId // ignore: cast_nullable_to_non_nullable
-as String?,emptyAge: freezed == emptyAge ? _self.emptyAge : emptyAge // ignore: cast_nullable_to_non_nullable
+as String?,age: null == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
+as int,emptyAge: freezed == emptyAge ? _self.emptyAge : emptyAge // ignore: cast_nullable_to_non_nullable
 as int?,defaultAge: freezed == defaultAge ? _self.defaultAge : defaultAge // ignore: cast_nullable_to_non_nullable
-as int?,emptyGrade: freezed == emptyGrade ? _self.emptyGrade : emptyGrade // ignore: cast_nullable_to_non_nullable
+as int?,grade: null == grade ? _self.grade : grade // ignore: cast_nullable_to_non_nullable
+as double,emptyGrade: freezed == emptyGrade ? _self.emptyGrade : emptyGrade // ignore: cast_nullable_to_non_nullable
 as double?,defaultGrade: freezed == defaultGrade ? _self.defaultGrade : defaultGrade // ignore: cast_nullable_to_non_nullable
-as double?,emptyFriends: freezed == emptyFriends ? _self.emptyFriends : emptyFriends // ignore: cast_nullable_to_non_nullable
+as double?,friends: null == friends ? _self.friends : friends // ignore: cast_nullable_to_non_nullable
+as List<String>,emptyFriends: freezed == emptyFriends ? _self.emptyFriends : emptyFriends // ignore: cast_nullable_to_non_nullable
 as List<String>?,defaultFriends: freezed == defaultFriends ? _self.defaultFriends : defaultFriends // ignore: cast_nullable_to_non_nullable
-as List<String>?,emptyGroup: freezed == emptyGroup ? _self.emptyGroup : emptyGroup // ignore: cast_nullable_to_non_nullable
+as List<String>?,group: null == group ? _self.group : group // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,emptyGroup: freezed == emptyGroup ? _self.emptyGroup : emptyGroup // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,defaultGroup: freezed == defaultGroup ? _self.defaultGroup : defaultGroup // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,emptyListedGroup: freezed == emptyListedGroup ? _self.emptyListedGroup : emptyListedGroup // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,listedGroup: null == listedGroup ? _self.listedGroup : listedGroup // ignore: cast_nullable_to_non_nullable
+as List<Map<String, dynamic>>,emptyListedGroup: freezed == emptyListedGroup ? _self.emptyListedGroup : emptyListedGroup // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>?,defaultListedGroup: freezed == defaultListedGroup ? _self.defaultListedGroup : defaultListedGroup // ignore: cast_nullable_to_non_nullable
-as List<Map<String, dynamic>>?,defaultStatus: null == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
-as AccountStatus,optionalSubEntity: freezed == optionalSubEntity ? _self.optionalSubEntity : optionalSubEntity // ignore: cast_nullable_to_non_nullable
-as ExampleSubEntity?,secondaryAddress: freezed == secondaryAddress ? _self.secondaryAddress : secondaryAddress // ignore: cast_nullable_to_non_nullable
-as ExampleAddressEntity?,pastAddresses: null == pastAddresses ? _self.pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
-as List<ExampleAddressEntity>,
+as List<Map<String, dynamic>>?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as AccountStatus,defaultStatus: freezed == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
+as AccountStatus?,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
+as ExampleSubModel,optionalSubEntity: freezed == optionalSubEntity ? _self.optionalSubEntity : optionalSubEntity // ignore: cast_nullable_to_non_nullable
+as ExampleSubModel?,primaryAddress: null == primaryAddress ? _self.primaryAddress : primaryAddress // ignore: cast_nullable_to_non_nullable
+as ExampleAddressModel,secondaryAddress: freezed == secondaryAddress ? _self.secondaryAddress : secondaryAddress // ignore: cast_nullable_to_non_nullable
+as ExampleAddressModel?,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
+as ExampleProfileSettingsModel,pastAddresses: freezed == pastAddresses ? _self.pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
+as List<ExampleAddressModel>?,
   ));
 }
 /// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ExampleSubEntityCopyWith<$Res> get mainSubEntity {
+$ExampleSubModelCopyWith<$Res> get mainSubEntity {
   
-  return $ExampleSubEntityCopyWith<$Res>(_self.mainSubEntity, (value) {
+  return $ExampleSubModelCopyWith<$Res>(_self.mainSubEntity, (value) {
     return _then(_self.copyWith(mainSubEntity: value));
   });
 }/// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ExampleAddressEntityCopyWith<$Res> get primaryAddress {
-  
-  return $ExampleAddressEntityCopyWith<$Res>(_self.primaryAddress, (value) {
-    return _then(_self.copyWith(primaryAddress: value));
-  });
-}/// Create a copy of ExampleRequestParams
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ExampleProfileSettingsEntityCopyWith<$Res> get settings {
-  
-  return $ExampleProfileSettingsEntityCopyWith<$Res>(_self.settings, (value) {
-    return _then(_self.copyWith(settings: value));
-  });
-}/// Create a copy of ExampleRequestParams
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ExampleSubEntityCopyWith<$Res>? get optionalSubEntity {
+$ExampleSubModelCopyWith<$Res>? get optionalSubEntity {
     if (_self.optionalSubEntity == null) {
     return null;
   }
 
-  return $ExampleSubEntityCopyWith<$Res>(_self.optionalSubEntity!, (value) {
+  return $ExampleSubModelCopyWith<$Res>(_self.optionalSubEntity!, (value) {
     return _then(_self.copyWith(optionalSubEntity: value));
   });
 }/// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ExampleAddressEntityCopyWith<$Res>? get secondaryAddress {
+$ExampleAddressModelCopyWith<$Res> get primaryAddress {
+  
+  return $ExampleAddressModelCopyWith<$Res>(_self.primaryAddress, (value) {
+    return _then(_self.copyWith(primaryAddress: value));
+  });
+}/// Create a copy of ExampleRequestParams
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ExampleAddressModelCopyWith<$Res>? get secondaryAddress {
     if (_self.secondaryAddress == null) {
     return null;
   }
 
-  return $ExampleAddressEntityCopyWith<$Res>(_self.secondaryAddress!, (value) {
+  return $ExampleAddressModelCopyWith<$Res>(_self.secondaryAddress!, (value) {
     return _then(_self.copyWith(secondaryAddress: value));
+  });
+}/// Create a copy of ExampleRequestParams
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ExampleProfileSettingsModelCopyWith<$Res> get settings {
+  
+  return $ExampleProfileSettingsModelCopyWith<$Res>(_self.settings, (value) {
+    return _then(_self.copyWith(settings: value));
   });
 }
 }
@@ -231,10 +229,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int age,  double grade,  List<String> friends,  Map<String, dynamic> group,  List<Map<String, dynamic>> listedGroup, @AccountStatusConverter()  AccountStatus status, @ExampleSubEntityConverter()  ExampleSubEntity mainSubEntity, @ExampleAddressEntityConverter()  ExampleAddressEntity primaryAddress, @ExampleProfileSettingsEntityConverter()  ExampleProfileSettingsEntity settings,  String? id,  String? emptyId,  String? defaultId,  int? emptyAge,  int? defaultAge,  double? emptyGrade,  double? defaultGrade,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus defaultStatus, @NullableExampleSubEntityConverter()  ExampleSubEntity? optionalSubEntity, @NullableExampleAddressEntityConverter()  ExampleAddressEntity? secondaryAddress, @ExampleAddressEntityConverter()  List<ExampleAddressEntity> pastAddresses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus? defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel>? pastAddresses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ExampleRequestParams() when $default != null:
-return $default(_that.age,_that.grade,_that.friends,_that.group,_that.listedGroup,_that.status,_that.mainSubEntity,_that.primaryAddress,_that.settings,_that.id,_that.emptyId,_that.defaultId,_that.emptyAge,_that.defaultAge,_that.emptyGrade,_that.defaultGrade,_that.emptyFriends,_that.defaultFriends,_that.emptyGroup,_that.defaultGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.defaultStatus,_that.optionalSubEntity,_that.secondaryAddress,_that.pastAddresses);case _:
+return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,_that.defaultAge,_that.grade,_that.emptyGrade,_that.defaultGrade,_that.friends,_that.emptyFriends,_that.defaultFriends,_that.group,_that.emptyGroup,_that.defaultGroup,_that.listedGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.status,_that.defaultStatus,_that.mainSubEntity,_that.optionalSubEntity,_that.primaryAddress,_that.secondaryAddress,_that.settings,_that.pastAddresses);case _:
   return orElse();
 
 }
@@ -252,10 +250,10 @@ return $default(_that.age,_that.grade,_that.friends,_that.group,_that.listedGrou
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int age,  double grade,  List<String> friends,  Map<String, dynamic> group,  List<Map<String, dynamic>> listedGroup, @AccountStatusConverter()  AccountStatus status, @ExampleSubEntityConverter()  ExampleSubEntity mainSubEntity, @ExampleAddressEntityConverter()  ExampleAddressEntity primaryAddress, @ExampleProfileSettingsEntityConverter()  ExampleProfileSettingsEntity settings,  String? id,  String? emptyId,  String? defaultId,  int? emptyAge,  int? defaultAge,  double? emptyGrade,  double? defaultGrade,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus defaultStatus, @NullableExampleSubEntityConverter()  ExampleSubEntity? optionalSubEntity, @NullableExampleAddressEntityConverter()  ExampleAddressEntity? secondaryAddress, @ExampleAddressEntityConverter()  List<ExampleAddressEntity> pastAddresses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus? defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel>? pastAddresses)  $default,) {final _that = this;
 switch (_that) {
 case _ExampleRequestParams():
-return $default(_that.age,_that.grade,_that.friends,_that.group,_that.listedGroup,_that.status,_that.mainSubEntity,_that.primaryAddress,_that.settings,_that.id,_that.emptyId,_that.defaultId,_that.emptyAge,_that.defaultAge,_that.emptyGrade,_that.defaultGrade,_that.emptyFriends,_that.defaultFriends,_that.emptyGroup,_that.defaultGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.defaultStatus,_that.optionalSubEntity,_that.secondaryAddress,_that.pastAddresses);case _:
+return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,_that.defaultAge,_that.grade,_that.emptyGrade,_that.defaultGrade,_that.friends,_that.emptyFriends,_that.defaultFriends,_that.group,_that.emptyGroup,_that.defaultGroup,_that.listedGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.status,_that.defaultStatus,_that.mainSubEntity,_that.optionalSubEntity,_that.primaryAddress,_that.secondaryAddress,_that.settings,_that.pastAddresses);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -272,10 +270,10 @@ return $default(_that.age,_that.grade,_that.friends,_that.group,_that.listedGrou
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int age,  double grade,  List<String> friends,  Map<String, dynamic> group,  List<Map<String, dynamic>> listedGroup, @AccountStatusConverter()  AccountStatus status, @ExampleSubEntityConverter()  ExampleSubEntity mainSubEntity, @ExampleAddressEntityConverter()  ExampleAddressEntity primaryAddress, @ExampleProfileSettingsEntityConverter()  ExampleProfileSettingsEntity settings,  String? id,  String? emptyId,  String? defaultId,  int? emptyAge,  int? defaultAge,  double? emptyGrade,  double? defaultGrade,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus defaultStatus, @NullableExampleSubEntityConverter()  ExampleSubEntity? optionalSubEntity, @NullableExampleAddressEntityConverter()  ExampleAddressEntity? secondaryAddress, @ExampleAddressEntityConverter()  List<ExampleAddressEntity> pastAddresses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus? defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel>? pastAddresses)?  $default,) {final _that = this;
 switch (_that) {
 case _ExampleRequestParams() when $default != null:
-return $default(_that.age,_that.grade,_that.friends,_that.group,_that.listedGroup,_that.status,_that.mainSubEntity,_that.primaryAddress,_that.settings,_that.id,_that.emptyId,_that.defaultId,_that.emptyAge,_that.defaultAge,_that.emptyGrade,_that.defaultGrade,_that.emptyFriends,_that.defaultFriends,_that.emptyGroup,_that.defaultGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.defaultStatus,_that.optionalSubEntity,_that.secondaryAddress,_that.pastAddresses);case _:
+return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,_that.defaultAge,_that.grade,_that.emptyGrade,_that.defaultGrade,_that.friends,_that.emptyFriends,_that.defaultFriends,_that.group,_that.emptyGroup,_that.defaultGroup,_that.listedGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.status,_that.defaultStatus,_that.mainSubEntity,_that.optionalSubEntity,_that.primaryAddress,_that.secondaryAddress,_that.settings,_that.pastAddresses);case _:
   return null;
 
 }
@@ -287,12 +285,18 @@ return $default(_that.age,_that.grade,_that.friends,_that.group,_that.listedGrou
 
 @JsonSerializable(fieldRename: FieldRename.snake, explicitToJson: true)
 class _ExampleRequestParams extends ExampleRequestParams {
-  const _ExampleRequestParams({required this.age, required this.grade, required final  List<String> friends, required final  Map<String, dynamic> group, required final  List<Map<String, dynamic>> listedGroup, @AccountStatusConverter() required this.status, @ExampleSubEntityConverter() required this.mainSubEntity, @ExampleAddressEntityConverter() required this.primaryAddress, @ExampleProfileSettingsEntityConverter() required this.settings, this.id, this.emptyId, this.defaultId = 'id', this.emptyAge, this.defaultAge = 18, this.emptyGrade, this.defaultGrade = 99.6, final  List<String>? emptyFriends, final  List<String>? defaultFriends = const ['a', 'b', 'c'], final  Map<String, dynamic>? emptyGroup, final  Map<String, dynamic>? defaultGroup = const {'a' : 1, 'b' : 2, 'c' : 3}, final  List<Map<String, dynamic>>? emptyListedGroup, final  List<Map<String, dynamic>>? defaultListedGroup = const [{'a' : 1, 'b' : 2, 'c' : 3}, {'d' : 4, 'e' : 5, 'f' : 6}], @AccountStatusConverter() this.defaultStatus = AccountStatus.pending, @NullableExampleSubEntityConverter() this.optionalSubEntity, @NullableExampleAddressEntityConverter() this.secondaryAddress, @ExampleAddressEntityConverter() final  List<ExampleAddressEntity> pastAddresses = const []}): _friends = friends,_group = group,_listedGroup = listedGroup,_emptyFriends = emptyFriends,_defaultFriends = defaultFriends,_emptyGroup = emptyGroup,_defaultGroup = defaultGroup,_emptyListedGroup = emptyListedGroup,_defaultListedGroup = defaultListedGroup,_pastAddresses = pastAddresses,super._();
+  const _ExampleRequestParams({this.id, this.emptyId, this.defaultId = 'id', required this.age, this.emptyAge, this.defaultAge = 18, required this.grade, this.emptyGrade, this.defaultGrade = 99.6, required final  List<String> friends, final  List<String>? emptyFriends, final  List<String>? defaultFriends = const ['a', 'b', 'c'], required final  Map<String, dynamic> group, final  Map<String, dynamic>? emptyGroup, final  Map<String, dynamic>? defaultGroup = const {'a' : 1, 'b' : 2, 'c' : 3}, required final  List<Map<String, dynamic>> listedGroup, final  List<Map<String, dynamic>>? emptyListedGroup, final  List<Map<String, dynamic>>? defaultListedGroup = const [{'a' : 1, 'b' : 2, 'c' : 3}, {'d' : 4, 'e' : 5, 'f' : 6}], @AccountStatusConverter() required this.status, @AccountStatusConverter() this.defaultStatus = AccountStatus.pending, required this.mainSubEntity, this.optionalSubEntity, required this.primaryAddress, this.secondaryAddress, required this.settings, final  List<ExampleAddressModel>? pastAddresses = const []}): _friends = friends,_emptyFriends = emptyFriends,_defaultFriends = defaultFriends,_group = group,_emptyGroup = emptyGroup,_defaultGroup = defaultGroup,_listedGroup = listedGroup,_emptyListedGroup = emptyListedGroup,_defaultListedGroup = defaultListedGroup,_pastAddresses = pastAddresses,super._();
   factory _ExampleRequestParams.fromJson(Map<String, dynamic> json) => _$ExampleRequestParamsFromJson(json);
 
-// --- required fields ---
+@override final  String? id;
+@override final  String? emptyId;
+@override@JsonKey() final  String? defaultId;
 @override final  int age;
+@override final  int? emptyAge;
+@override@JsonKey() final  int? defaultAge;
 @override final  double grade;
+@override final  double? emptyGrade;
+@override@JsonKey() final  double? defaultGrade;
  final  List<String> _friends;
 @override List<String> get friends {
   if (_friends is EqualUnmodifiableListView) return _friends;
@@ -300,32 +304,6 @@ class _ExampleRequestParams extends ExampleRequestParams {
   return EqualUnmodifiableListView(_friends);
 }
 
- final  Map<String, dynamic> _group;
-@override Map<String, dynamic> get group {
-  if (_group is EqualUnmodifiableMapView) return _group;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_group);
-}
-
- final  List<Map<String, dynamic>> _listedGroup;
-@override List<Map<String, dynamic>> get listedGroup {
-  if (_listedGroup is EqualUnmodifiableListView) return _listedGroup;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_listedGroup);
-}
-
-@override@AccountStatusConverter() final  AccountStatus status;
-@override@ExampleSubEntityConverter() final  ExampleSubEntity mainSubEntity;
-@override@ExampleAddressEntityConverter() final  ExampleAddressEntity primaryAddress;
-@override@ExampleProfileSettingsEntityConverter() final  ExampleProfileSettingsEntity settings;
-// --- optional fields ---
-@override final  String? id;
-@override final  String? emptyId;
-@override@JsonKey() final  String? defaultId;
-@override final  int? emptyAge;
-@override@JsonKey() final  int? defaultAge;
-@override final  double? emptyGrade;
-@override@JsonKey() final  double? defaultGrade;
  final  List<String>? _emptyFriends;
 @override List<String>? get emptyFriends {
   final value = _emptyFriends;
@@ -342,6 +320,13 @@ class _ExampleRequestParams extends ExampleRequestParams {
   if (_defaultFriends is EqualUnmodifiableListView) return _defaultFriends;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
+}
+
+ final  Map<String, dynamic> _group;
+@override Map<String, dynamic> get group {
+  if (_group is EqualUnmodifiableMapView) return _group;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_group);
 }
 
  final  Map<String, dynamic>? _emptyGroup;
@@ -362,6 +347,13 @@ class _ExampleRequestParams extends ExampleRequestParams {
   return EqualUnmodifiableMapView(value);
 }
 
+ final  List<Map<String, dynamic>> _listedGroup;
+@override List<Map<String, dynamic>> get listedGroup {
+  if (_listedGroup is EqualUnmodifiableListView) return _listedGroup;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_listedGroup);
+}
+
  final  List<Map<String, dynamic>>? _emptyListedGroup;
 @override List<Map<String, dynamic>>? get emptyListedGroup {
   final value = _emptyListedGroup;
@@ -380,14 +372,20 @@ class _ExampleRequestParams extends ExampleRequestParams {
   return EqualUnmodifiableListView(value);
 }
 
-@override@JsonKey()@AccountStatusConverter() final  AccountStatus defaultStatus;
-@override@NullableExampleSubEntityConverter() final  ExampleSubEntity? optionalSubEntity;
-@override@NullableExampleAddressEntityConverter() final  ExampleAddressEntity? secondaryAddress;
- final  List<ExampleAddressEntity> _pastAddresses;
-@override@JsonKey()@ExampleAddressEntityConverter() List<ExampleAddressEntity> get pastAddresses {
+@override@AccountStatusConverter() final  AccountStatus status;
+@override@JsonKey()@AccountStatusConverter() final  AccountStatus? defaultStatus;
+@override final  ExampleSubModel mainSubEntity;
+@override final  ExampleSubModel? optionalSubEntity;
+@override final  ExampleAddressModel primaryAddress;
+@override final  ExampleAddressModel? secondaryAddress;
+@override final  ExampleProfileSettingsModel settings;
+ final  List<ExampleAddressModel>? _pastAddresses;
+@override@JsonKey() List<ExampleAddressModel>? get pastAddresses {
+  final value = _pastAddresses;
+  if (value == null) return null;
   if (_pastAddresses is EqualUnmodifiableListView) return _pastAddresses;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_pastAddresses);
+  return EqualUnmodifiableListView(value);
 }
 
 
@@ -404,16 +402,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExampleRequestParams&&(identical(other.age, age) || other.age == age)&&(identical(other.grade, grade) || other.grade == grade)&&const DeepCollectionEquality().equals(other._friends, _friends)&&const DeepCollectionEquality().equals(other._group, _group)&&const DeepCollectionEquality().equals(other._listedGroup, _listedGroup)&&(identical(other.status, status) || other.status == status)&&(identical(other.mainSubEntity, mainSubEntity) || other.mainSubEntity == mainSubEntity)&&(identical(other.primaryAddress, primaryAddress) || other.primaryAddress == primaryAddress)&&(identical(other.settings, settings) || other.settings == settings)&&(identical(other.id, id) || other.id == id)&&(identical(other.emptyId, emptyId) || other.emptyId == emptyId)&&(identical(other.defaultId, defaultId) || other.defaultId == defaultId)&&(identical(other.emptyAge, emptyAge) || other.emptyAge == emptyAge)&&(identical(other.defaultAge, defaultAge) || other.defaultAge == defaultAge)&&(identical(other.emptyGrade, emptyGrade) || other.emptyGrade == emptyGrade)&&(identical(other.defaultGrade, defaultGrade) || other.defaultGrade == defaultGrade)&&const DeepCollectionEquality().equals(other._emptyFriends, _emptyFriends)&&const DeepCollectionEquality().equals(other._defaultFriends, _defaultFriends)&&const DeepCollectionEquality().equals(other._emptyGroup, _emptyGroup)&&const DeepCollectionEquality().equals(other._defaultGroup, _defaultGroup)&&const DeepCollectionEquality().equals(other._emptyListedGroup, _emptyListedGroup)&&const DeepCollectionEquality().equals(other._defaultListedGroup, _defaultListedGroup)&&(identical(other.defaultStatus, defaultStatus) || other.defaultStatus == defaultStatus)&&(identical(other.optionalSubEntity, optionalSubEntity) || other.optionalSubEntity == optionalSubEntity)&&(identical(other.secondaryAddress, secondaryAddress) || other.secondaryAddress == secondaryAddress)&&const DeepCollectionEquality().equals(other._pastAddresses, _pastAddresses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExampleRequestParams&&(identical(other.id, id) || other.id == id)&&(identical(other.emptyId, emptyId) || other.emptyId == emptyId)&&(identical(other.defaultId, defaultId) || other.defaultId == defaultId)&&(identical(other.age, age) || other.age == age)&&(identical(other.emptyAge, emptyAge) || other.emptyAge == emptyAge)&&(identical(other.defaultAge, defaultAge) || other.defaultAge == defaultAge)&&(identical(other.grade, grade) || other.grade == grade)&&(identical(other.emptyGrade, emptyGrade) || other.emptyGrade == emptyGrade)&&(identical(other.defaultGrade, defaultGrade) || other.defaultGrade == defaultGrade)&&const DeepCollectionEquality().equals(other._friends, _friends)&&const DeepCollectionEquality().equals(other._emptyFriends, _emptyFriends)&&const DeepCollectionEquality().equals(other._defaultFriends, _defaultFriends)&&const DeepCollectionEquality().equals(other._group, _group)&&const DeepCollectionEquality().equals(other._emptyGroup, _emptyGroup)&&const DeepCollectionEquality().equals(other._defaultGroup, _defaultGroup)&&const DeepCollectionEquality().equals(other._listedGroup, _listedGroup)&&const DeepCollectionEquality().equals(other._emptyListedGroup, _emptyListedGroup)&&const DeepCollectionEquality().equals(other._defaultListedGroup, _defaultListedGroup)&&(identical(other.status, status) || other.status == status)&&(identical(other.defaultStatus, defaultStatus) || other.defaultStatus == defaultStatus)&&(identical(other.mainSubEntity, mainSubEntity) || other.mainSubEntity == mainSubEntity)&&(identical(other.optionalSubEntity, optionalSubEntity) || other.optionalSubEntity == optionalSubEntity)&&(identical(other.primaryAddress, primaryAddress) || other.primaryAddress == primaryAddress)&&(identical(other.secondaryAddress, secondaryAddress) || other.secondaryAddress == secondaryAddress)&&(identical(other.settings, settings) || other.settings == settings)&&const DeepCollectionEquality().equals(other._pastAddresses, _pastAddresses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,age,grade,const DeepCollectionEquality().hash(_friends),const DeepCollectionEquality().hash(_group),const DeepCollectionEquality().hash(_listedGroup),status,mainSubEntity,primaryAddress,settings,id,emptyId,defaultId,emptyAge,defaultAge,emptyGrade,defaultGrade,const DeepCollectionEquality().hash(_emptyFriends),const DeepCollectionEquality().hash(_defaultFriends),const DeepCollectionEquality().hash(_emptyGroup),const DeepCollectionEquality().hash(_defaultGroup),const DeepCollectionEquality().hash(_emptyListedGroup),const DeepCollectionEquality().hash(_defaultListedGroup),defaultStatus,optionalSubEntity,secondaryAddress,const DeepCollectionEquality().hash(_pastAddresses)]);
+int get hashCode => Object.hashAll([runtimeType,id,emptyId,defaultId,age,emptyAge,defaultAge,grade,emptyGrade,defaultGrade,const DeepCollectionEquality().hash(_friends),const DeepCollectionEquality().hash(_emptyFriends),const DeepCollectionEquality().hash(_defaultFriends),const DeepCollectionEquality().hash(_group),const DeepCollectionEquality().hash(_emptyGroup),const DeepCollectionEquality().hash(_defaultGroup),const DeepCollectionEquality().hash(_listedGroup),const DeepCollectionEquality().hash(_emptyListedGroup),const DeepCollectionEquality().hash(_defaultListedGroup),status,defaultStatus,mainSubEntity,optionalSubEntity,primaryAddress,secondaryAddress,settings,const DeepCollectionEquality().hash(_pastAddresses)]);
 
 @override
 String toString() {
-  return 'ExampleRequestParams(age: $age, grade: $grade, friends: $friends, group: $group, listedGroup: $listedGroup, status: $status, mainSubEntity: $mainSubEntity, primaryAddress: $primaryAddress, settings: $settings, id: $id, emptyId: $emptyId, defaultId: $defaultId, emptyAge: $emptyAge, defaultAge: $defaultAge, emptyGrade: $emptyGrade, defaultGrade: $defaultGrade, emptyFriends: $emptyFriends, defaultFriends: $defaultFriends, emptyGroup: $emptyGroup, defaultGroup: $defaultGroup, emptyListedGroup: $emptyListedGroup, defaultListedGroup: $defaultListedGroup, defaultStatus: $defaultStatus, optionalSubEntity: $optionalSubEntity, secondaryAddress: $secondaryAddress, pastAddresses: $pastAddresses)';
+  return 'ExampleRequestParams(id: $id, emptyId: $emptyId, defaultId: $defaultId, age: $age, emptyAge: $emptyAge, defaultAge: $defaultAge, grade: $grade, emptyGrade: $emptyGrade, defaultGrade: $defaultGrade, friends: $friends, emptyFriends: $emptyFriends, defaultFriends: $defaultFriends, group: $group, emptyGroup: $emptyGroup, defaultGroup: $defaultGroup, listedGroup: $listedGroup, emptyListedGroup: $emptyListedGroup, defaultListedGroup: $defaultListedGroup, status: $status, defaultStatus: $defaultStatus, mainSubEntity: $mainSubEntity, optionalSubEntity: $optionalSubEntity, primaryAddress: $primaryAddress, secondaryAddress: $secondaryAddress, settings: $settings, pastAddresses: $pastAddresses)';
 }
 
 
@@ -424,11 +422,11 @@ abstract mixin class _$ExampleRequestParamsCopyWith<$Res> implements $ExampleReq
   factory _$ExampleRequestParamsCopyWith(_ExampleRequestParams value, $Res Function(_ExampleRequestParams) _then) = __$ExampleRequestParamsCopyWithImpl;
 @override @useResult
 $Res call({
- int age, double grade, List<String> friends, Map<String, dynamic> group, List<Map<String, dynamic>> listedGroup,@AccountStatusConverter() AccountStatus status,@ExampleSubEntityConverter() ExampleSubEntity mainSubEntity,@ExampleAddressEntityConverter() ExampleAddressEntity primaryAddress,@ExampleProfileSettingsEntityConverter() ExampleProfileSettingsEntity settings, String? id, String? emptyId, String? defaultId, int? emptyAge, int? defaultAge, double? emptyGrade, double? defaultGrade, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus defaultStatus,@NullableExampleSubEntityConverter() ExampleSubEntity? optionalSubEntity,@NullableExampleAddressEntityConverter() ExampleAddressEntity? secondaryAddress,@ExampleAddressEntityConverter() List<ExampleAddressEntity> pastAddresses
+ String? id, String? emptyId, String? defaultId, int age, int? emptyAge, int? defaultAge, double grade, double? emptyGrade, double? defaultGrade, List<String> friends, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic> group, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>> listedGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus status,@AccountStatusConverter() AccountStatus? defaultStatus, ExampleSubModel mainSubEntity, ExampleSubModel? optionalSubEntity, ExampleAddressModel primaryAddress, ExampleAddressModel? secondaryAddress, ExampleProfileSettingsModel settings, List<ExampleAddressModel>? pastAddresses
 });
 
 
-@override $ExampleSubEntityCopyWith<$Res> get mainSubEntity;@override $ExampleAddressEntityCopyWith<$Res> get primaryAddress;@override $ExampleProfileSettingsEntityCopyWith<$Res> get settings;@override $ExampleSubEntityCopyWith<$Res>? get optionalSubEntity;@override $ExampleAddressEntityCopyWith<$Res>? get secondaryAddress;
+@override $ExampleSubModelCopyWith<$Res> get mainSubEntity;@override $ExampleSubModelCopyWith<$Res>? get optionalSubEntity;@override $ExampleAddressModelCopyWith<$Res> get primaryAddress;@override $ExampleAddressModelCopyWith<$Res>? get secondaryAddress;@override $ExampleProfileSettingsModelCopyWith<$Res> get settings;
 
 }
 /// @nodoc
@@ -441,35 +439,35 @@ class __$ExampleRequestParamsCopyWithImpl<$Res>
 
 /// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? age = null,Object? grade = null,Object? friends = null,Object? group = null,Object? listedGroup = null,Object? status = null,Object? mainSubEntity = null,Object? primaryAddress = null,Object? settings = null,Object? id = freezed,Object? emptyId = freezed,Object? defaultId = freezed,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? defaultStatus = null,Object? optionalSubEntity = freezed,Object? secondaryAddress = freezed,Object? pastAddresses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? emptyId = freezed,Object? defaultId = freezed,Object? age = null,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? grade = null,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? friends = null,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? group = null,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? listedGroup = null,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? status = null,Object? defaultStatus = freezed,Object? mainSubEntity = null,Object? optionalSubEntity = freezed,Object? primaryAddress = null,Object? secondaryAddress = freezed,Object? settings = null,Object? pastAddresses = freezed,}) {
   return _then(_ExampleRequestParams(
-age: null == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
-as int,grade: null == grade ? _self.grade : grade // ignore: cast_nullable_to_non_nullable
-as double,friends: null == friends ? _self._friends : friends // ignore: cast_nullable_to_non_nullable
-as List<String>,group: null == group ? _self._group : group // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>,listedGroup: null == listedGroup ? _self._listedGroup : listedGroup // ignore: cast_nullable_to_non_nullable
-as List<Map<String, dynamic>>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as AccountStatus,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
-as ExampleSubEntity,primaryAddress: null == primaryAddress ? _self.primaryAddress : primaryAddress // ignore: cast_nullable_to_non_nullable
-as ExampleAddressEntity,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
-as ExampleProfileSettingsEntity,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,emptyId: freezed == emptyId ? _self.emptyId : emptyId // ignore: cast_nullable_to_non_nullable
 as String?,defaultId: freezed == defaultId ? _self.defaultId : defaultId // ignore: cast_nullable_to_non_nullable
-as String?,emptyAge: freezed == emptyAge ? _self.emptyAge : emptyAge // ignore: cast_nullable_to_non_nullable
+as String?,age: null == age ? _self.age : age // ignore: cast_nullable_to_non_nullable
+as int,emptyAge: freezed == emptyAge ? _self.emptyAge : emptyAge // ignore: cast_nullable_to_non_nullable
 as int?,defaultAge: freezed == defaultAge ? _self.defaultAge : defaultAge // ignore: cast_nullable_to_non_nullable
-as int?,emptyGrade: freezed == emptyGrade ? _self.emptyGrade : emptyGrade // ignore: cast_nullable_to_non_nullable
+as int?,grade: null == grade ? _self.grade : grade // ignore: cast_nullable_to_non_nullable
+as double,emptyGrade: freezed == emptyGrade ? _self.emptyGrade : emptyGrade // ignore: cast_nullable_to_non_nullable
 as double?,defaultGrade: freezed == defaultGrade ? _self.defaultGrade : defaultGrade // ignore: cast_nullable_to_non_nullable
-as double?,emptyFriends: freezed == emptyFriends ? _self._emptyFriends : emptyFriends // ignore: cast_nullable_to_non_nullable
+as double?,friends: null == friends ? _self._friends : friends // ignore: cast_nullable_to_non_nullable
+as List<String>,emptyFriends: freezed == emptyFriends ? _self._emptyFriends : emptyFriends // ignore: cast_nullable_to_non_nullable
 as List<String>?,defaultFriends: freezed == defaultFriends ? _self._defaultFriends : defaultFriends // ignore: cast_nullable_to_non_nullable
-as List<String>?,emptyGroup: freezed == emptyGroup ? _self._emptyGroup : emptyGroup // ignore: cast_nullable_to_non_nullable
+as List<String>?,group: null == group ? _self._group : group // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,emptyGroup: freezed == emptyGroup ? _self._emptyGroup : emptyGroup // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,defaultGroup: freezed == defaultGroup ? _self._defaultGroup : defaultGroup // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,emptyListedGroup: freezed == emptyListedGroup ? _self._emptyListedGroup : emptyListedGroup // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,listedGroup: null == listedGroup ? _self._listedGroup : listedGroup // ignore: cast_nullable_to_non_nullable
+as List<Map<String, dynamic>>,emptyListedGroup: freezed == emptyListedGroup ? _self._emptyListedGroup : emptyListedGroup // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>?,defaultListedGroup: freezed == defaultListedGroup ? _self._defaultListedGroup : defaultListedGroup // ignore: cast_nullable_to_non_nullable
-as List<Map<String, dynamic>>?,defaultStatus: null == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
-as AccountStatus,optionalSubEntity: freezed == optionalSubEntity ? _self.optionalSubEntity : optionalSubEntity // ignore: cast_nullable_to_non_nullable
-as ExampleSubEntity?,secondaryAddress: freezed == secondaryAddress ? _self.secondaryAddress : secondaryAddress // ignore: cast_nullable_to_non_nullable
-as ExampleAddressEntity?,pastAddresses: null == pastAddresses ? _self._pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
-as List<ExampleAddressEntity>,
+as List<Map<String, dynamic>>?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as AccountStatus,defaultStatus: freezed == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
+as AccountStatus?,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
+as ExampleSubModel,optionalSubEntity: freezed == optionalSubEntity ? _self.optionalSubEntity : optionalSubEntity // ignore: cast_nullable_to_non_nullable
+as ExampleSubModel?,primaryAddress: null == primaryAddress ? _self.primaryAddress : primaryAddress // ignore: cast_nullable_to_non_nullable
+as ExampleAddressModel,secondaryAddress: freezed == secondaryAddress ? _self.secondaryAddress : secondaryAddress // ignore: cast_nullable_to_non_nullable
+as ExampleAddressModel?,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
+as ExampleProfileSettingsModel,pastAddresses: freezed == pastAddresses ? _self._pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
+as List<ExampleAddressModel>?,
   ));
 }
 
@@ -477,52 +475,52 @@ as List<ExampleAddressEntity>,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ExampleSubEntityCopyWith<$Res> get mainSubEntity {
+$ExampleSubModelCopyWith<$Res> get mainSubEntity {
   
-  return $ExampleSubEntityCopyWith<$Res>(_self.mainSubEntity, (value) {
+  return $ExampleSubModelCopyWith<$Res>(_self.mainSubEntity, (value) {
     return _then(_self.copyWith(mainSubEntity: value));
   });
 }/// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ExampleAddressEntityCopyWith<$Res> get primaryAddress {
-  
-  return $ExampleAddressEntityCopyWith<$Res>(_self.primaryAddress, (value) {
-    return _then(_self.copyWith(primaryAddress: value));
-  });
-}/// Create a copy of ExampleRequestParams
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ExampleProfileSettingsEntityCopyWith<$Res> get settings {
-  
-  return $ExampleProfileSettingsEntityCopyWith<$Res>(_self.settings, (value) {
-    return _then(_self.copyWith(settings: value));
-  });
-}/// Create a copy of ExampleRequestParams
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ExampleSubEntityCopyWith<$Res>? get optionalSubEntity {
+$ExampleSubModelCopyWith<$Res>? get optionalSubEntity {
     if (_self.optionalSubEntity == null) {
     return null;
   }
 
-  return $ExampleSubEntityCopyWith<$Res>(_self.optionalSubEntity!, (value) {
+  return $ExampleSubModelCopyWith<$Res>(_self.optionalSubEntity!, (value) {
     return _then(_self.copyWith(optionalSubEntity: value));
   });
 }/// Create a copy of ExampleRequestParams
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ExampleAddressEntityCopyWith<$Res>? get secondaryAddress {
+$ExampleAddressModelCopyWith<$Res> get primaryAddress {
+  
+  return $ExampleAddressModelCopyWith<$Res>(_self.primaryAddress, (value) {
+    return _then(_self.copyWith(primaryAddress: value));
+  });
+}/// Create a copy of ExampleRequestParams
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ExampleAddressModelCopyWith<$Res>? get secondaryAddress {
     if (_self.secondaryAddress == null) {
     return null;
   }
 
-  return $ExampleAddressEntityCopyWith<$Res>(_self.secondaryAddress!, (value) {
+  return $ExampleAddressModelCopyWith<$Res>(_self.secondaryAddress!, (value) {
     return _then(_self.copyWith(secondaryAddress: value));
+  });
+}/// Create a copy of ExampleRequestParams
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ExampleProfileSettingsModelCopyWith<$Res> get settings {
+  
+  return $ExampleProfileSettingsModelCopyWith<$Res>(_self.settings, (value) {
+    return _then(_self.copyWith(settings: value));
   });
 }
 }

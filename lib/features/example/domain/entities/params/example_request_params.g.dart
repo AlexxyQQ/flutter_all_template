@@ -9,30 +9,16 @@ part of 'example_request_params.dart';
 _ExampleRequestParams _$ExampleRequestParamsFromJson(
   Map<String, dynamic> json,
 ) => _ExampleRequestParams(
-  age: (json['age'] as num).toInt(),
-  grade: (json['grade'] as num).toDouble(),
-  friends: (json['friends'] as List<dynamic>).map((e) => e as String).toList(),
-  group: json['group'] as Map<String, dynamic>,
-  listedGroup: (json['listed_group'] as List<dynamic>)
-      .map((e) => e as Map<String, dynamic>)
-      .toList(),
-  status: $enumDecode(_$AccountStatusEnumMap, json['status']),
-  mainSubEntity: const ExampleSubEntityConverter().fromJson(
-    json['main_sub_entity'] as Map<String, dynamic>,
-  ),
-  primaryAddress: const ExampleAddressEntityConverter().fromJson(
-    json['primary_address'] as Map<String, dynamic>,
-  ),
-  settings: const ExampleProfileSettingsEntityConverter().fromJson(
-    json['settings'] as Map<String, dynamic>,
-  ),
   id: json['id'] as String?,
   emptyId: json['empty_id'] as String?,
   defaultId: json['default_id'] as String? ?? 'id',
+  age: (json['age'] as num).toInt(),
   emptyAge: (json['empty_age'] as num?)?.toInt(),
   defaultAge: (json['default_age'] as num?)?.toInt() ?? 18,
+  grade: (json['grade'] as num).toDouble(),
   emptyGrade: (json['empty_grade'] as num?)?.toDouble(),
   defaultGrade: (json['default_grade'] as num?)?.toDouble() ?? 99.6,
+  friends: (json['friends'] as List<dynamic>).map((e) => e as String).toList(),
   emptyFriends: (json['empty_friends'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -41,10 +27,14 @@ _ExampleRequestParams _$ExampleRequestParamsFromJson(
           ?.map((e) => e as String)
           .toList() ??
       const ['a', 'b', 'c'],
+  group: json['group'] as Map<String, dynamic>,
   emptyGroup: json['empty_group'] as Map<String, dynamic>?,
   defaultGroup:
       json['default_group'] as Map<String, dynamic>? ??
       const {'a': 1, 'b': 2, 'c': 3},
+  listedGroup: (json['listed_group'] as List<dynamic>)
+      .map((e) => e as Map<String, dynamic>)
+      .toList(),
   emptyListedGroup: (json['empty_listed_group'] as List<dynamic>?)
       ?.map((e) => e as Map<String, dynamic>)
       .toList(),
@@ -56,22 +46,34 @@ _ExampleRequestParams _$ExampleRequestParamsFromJson(
         {'a': 1, 'b': 2, 'c': 3},
         {'d': 4, 'e': 5, 'f': 6},
       ],
-  defaultStatus:
-      $enumDecodeNullable(_$AccountStatusEnumMap, json['default_status']) ??
-      AccountStatus.pending,
-  optionalSubEntity: const NullableExampleSubEntityConverter().fromJson(
-    json['optional_sub_entity'] as Map<String, dynamic>?,
+  status: $enumDecode(_$AccountStatusEnumMap, json['status']),
+  defaultStatus: json['default_status'] == null
+      ? AccountStatus.pending
+      : const AccountStatusConverter().fromJson(
+          json['default_status'] as String?,
+        ),
+  mainSubEntity: ExampleSubModel.fromJson(
+    json['main_sub_entity'] as Map<String, dynamic>,
   ),
-  secondaryAddress: const NullableExampleAddressEntityConverter().fromJson(
-    json['secondary_address'] as Map<String, dynamic>?,
+  optionalSubEntity: json['optional_sub_entity'] == null
+      ? null
+      : ExampleSubModel.fromJson(
+          json['optional_sub_entity'] as Map<String, dynamic>,
+        ),
+  primaryAddress: ExampleAddressModel.fromJson(
+    json['primary_address'] as Map<String, dynamic>,
+  ),
+  secondaryAddress: json['secondary_address'] == null
+      ? null
+      : ExampleAddressModel.fromJson(
+          json['secondary_address'] as Map<String, dynamic>,
+        ),
+  settings: ExampleProfileSettingsModel.fromJson(
+    json['settings'] as Map<String, dynamic>,
   ),
   pastAddresses:
       (json['past_addresses'] as List<dynamic>?)
-          ?.map(
-            (e) => const ExampleAddressEntityConverter().fromJson(
-              e as Map<String, dynamic>,
-            ),
-          )
+          ?.map((e) => ExampleAddressModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
 );
@@ -79,44 +81,34 @@ _ExampleRequestParams _$ExampleRequestParamsFromJson(
 Map<String, dynamic> _$ExampleRequestParamsToJson(
   _ExampleRequestParams instance,
 ) => <String, dynamic>{
-  'age': instance.age,
-  'grade': instance.grade,
-  'friends': instance.friends,
-  'group': instance.group,
-  'listed_group': instance.listedGroup,
-  'status': instance.status.toJson(),
-  'main_sub_entity': const ExampleSubEntityConverter().toJson(
-    instance.mainSubEntity,
-  ),
-  'primary_address': const ExampleAddressEntityConverter().toJson(
-    instance.primaryAddress,
-  ),
-  'settings': const ExampleProfileSettingsEntityConverter().toJson(
-    instance.settings,
-  ),
   'id': instance.id,
   'empty_id': instance.emptyId,
   'default_id': instance.defaultId,
+  'age': instance.age,
   'empty_age': instance.emptyAge,
   'default_age': instance.defaultAge,
+  'grade': instance.grade,
   'empty_grade': instance.emptyGrade,
   'default_grade': instance.defaultGrade,
+  'friends': instance.friends,
   'empty_friends': instance.emptyFriends,
   'default_friends': instance.defaultFriends,
+  'group': instance.group,
   'empty_group': instance.emptyGroup,
   'default_group': instance.defaultGroup,
+  'listed_group': instance.listedGroup,
   'empty_listed_group': instance.emptyListedGroup,
   'default_listed_group': instance.defaultListedGroup,
-  'default_status': instance.defaultStatus.toJson(),
-  'optional_sub_entity': const NullableExampleSubEntityConverter().toJson(
-    instance.optionalSubEntity,
+  'status': instance.status.toJson(),
+  'default_status': const AccountStatusConverter().toJson(
+    instance.defaultStatus,
   ),
-  'secondary_address': const NullableExampleAddressEntityConverter().toJson(
-    instance.secondaryAddress,
-  ),
-  'past_addresses': instance.pastAddresses
-      .map(const ExampleAddressEntityConverter().toJson)
-      .toList(),
+  'main_sub_entity': instance.mainSubEntity.toJson(),
+  'optional_sub_entity': instance.optionalSubEntity?.toJson(),
+  'primary_address': instance.primaryAddress.toJson(),
+  'secondary_address': instance.secondaryAddress?.toJson(),
+  'settings': instance.settings.toJson(),
+  'past_addresses': instance.pastAddresses?.map((e) => e.toJson()).toList(),
 };
 
 const _$AccountStatusEnumMap = {

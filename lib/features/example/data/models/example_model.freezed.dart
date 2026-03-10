@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ExampleModel {
 
-@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) String get id; String? get emptyId; String? get defaultId; int get age; int? get emptyAge; int? get defaultAge; double get grade; double? get emptyGrade; double? get defaultGrade; List<String> get friends; List<String>? get emptyFriends; List<String>? get defaultFriends; Map<String, dynamic> get group; Map<String, dynamic>? get emptyGroup; Map<String, dynamic>? get defaultGroup; List<Map<String, dynamic>> get listedGroup; List<Map<String, dynamic>>? get emptyListedGroup; List<Map<String, dynamic>>? get defaultListedGroup;@AccountStatusConverter() AccountStatus get status;@AccountStatusConverter() AccountStatus get defaultStatus; ExampleSubModel get mainSubEntity; ExampleSubModel? get optionalSubEntity; ExampleAddressModel get primaryAddress; ExampleAddressModel? get secondaryAddress; ExampleProfileSettingsModel get settings; List<ExampleAddressModel> get pastAddresses;
+@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) String get id; String? get emptyId; String? get defaultId; int get age; int? get emptyAge; int? get defaultAge; double get grade; double? get emptyGrade; double? get defaultGrade; List<String> get friends; List<String>? get emptyFriends; List<String>? get defaultFriends; Map<String, dynamic> get group; Map<String, dynamic>? get emptyGroup; Map<String, dynamic>? get defaultGroup; List<Map<String, dynamic>> get listedGroup; List<Map<String, dynamic>>? get emptyListedGroup; List<Map<String, dynamic>>? get defaultListedGroup;@AccountStatusConverter() AccountStatus get status;@AccountStatusConverter() AccountStatus? get defaultStatus; ExampleSubModel get mainSubEntity; ExampleSubModel? get optionalSubEntity; ExampleAddressModel get primaryAddress; ExampleAddressModel? get secondaryAddress; ExampleProfileSettingsModel get settings; List<ExampleAddressModel>? get pastAddresses;
 /// Create a copy of ExampleModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ExampleModelCopyWith<$Res>  {
   factory $ExampleModelCopyWith(ExampleModel value, $Res Function(ExampleModel) _then) = _$ExampleModelCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) String id, String? emptyId, String? defaultId, int age, int? emptyAge, int? defaultAge, double grade, double? emptyGrade, double? defaultGrade, List<String> friends, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic> group, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>> listedGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus status,@AccountStatusConverter() AccountStatus defaultStatus, ExampleSubModel mainSubEntity, ExampleSubModel? optionalSubEntity, ExampleAddressModel primaryAddress, ExampleAddressModel? secondaryAddress, ExampleProfileSettingsModel settings, List<ExampleAddressModel> pastAddresses
+@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) String id, String? emptyId, String? defaultId, int age, int? emptyAge, int? defaultAge, double grade, double? emptyGrade, double? defaultGrade, List<String> friends, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic> group, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>> listedGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus status,@AccountStatusConverter() AccountStatus? defaultStatus, ExampleSubModel mainSubEntity, ExampleSubModel? optionalSubEntity, ExampleAddressModel primaryAddress, ExampleAddressModel? secondaryAddress, ExampleProfileSettingsModel settings, List<ExampleAddressModel>? pastAddresses
 });
 
 
@@ -65,7 +65,7 @@ class _$ExampleModelCopyWithImpl<$Res>
 
 /// Create a copy of ExampleModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? emptyId = freezed,Object? defaultId = freezed,Object? age = null,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? grade = null,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? friends = null,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? group = null,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? listedGroup = null,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? status = null,Object? defaultStatus = null,Object? mainSubEntity = null,Object? optionalSubEntity = freezed,Object? primaryAddress = null,Object? secondaryAddress = freezed,Object? settings = null,Object? pastAddresses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? emptyId = freezed,Object? defaultId = freezed,Object? age = null,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? grade = null,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? friends = null,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? group = null,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? listedGroup = null,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? status = null,Object? defaultStatus = freezed,Object? mainSubEntity = null,Object? optionalSubEntity = freezed,Object? primaryAddress = null,Object? secondaryAddress = freezed,Object? settings = null,Object? pastAddresses = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,emptyId: freezed == emptyId ? _self.emptyId : emptyId // ignore: cast_nullable_to_non_nullable
@@ -86,14 +86,14 @@ as Map<String, dynamic>?,listedGroup: null == listedGroup ? _self.listedGroup : 
 as List<Map<String, dynamic>>,emptyListedGroup: freezed == emptyListedGroup ? _self.emptyListedGroup : emptyListedGroup // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>?,defaultListedGroup: freezed == defaultListedGroup ? _self.defaultListedGroup : defaultListedGroup // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as AccountStatus,defaultStatus: null == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
-as AccountStatus,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
+as AccountStatus,defaultStatus: freezed == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
+as AccountStatus?,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
 as ExampleSubModel,optionalSubEntity: freezed == optionalSubEntity ? _self.optionalSubEntity : optionalSubEntity // ignore: cast_nullable_to_non_nullable
 as ExampleSubModel?,primaryAddress: null == primaryAddress ? _self.primaryAddress : primaryAddress // ignore: cast_nullable_to_non_nullable
 as ExampleAddressModel,secondaryAddress: freezed == secondaryAddress ? _self.secondaryAddress : secondaryAddress // ignore: cast_nullable_to_non_nullable
 as ExampleAddressModel?,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
-as ExampleProfileSettingsModel,pastAddresses: null == pastAddresses ? _self.pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
-as List<ExampleAddressModel>,
+as ExampleProfileSettingsModel,pastAddresses: freezed == pastAddresses ? _self.pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
+as List<ExampleAddressModel>?,
   ));
 }
 /// Create a copy of ExampleModel
@@ -229,7 +229,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson)  String id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel> pastAddresses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson)  String id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus? defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel>? pastAddresses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ExampleModel() when $default != null:
 return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,_that.defaultAge,_that.grade,_that.emptyGrade,_that.defaultGrade,_that.friends,_that.emptyFriends,_that.defaultFriends,_that.group,_that.emptyGroup,_that.defaultGroup,_that.listedGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.status,_that.defaultStatus,_that.mainSubEntity,_that.optionalSubEntity,_that.primaryAddress,_that.secondaryAddress,_that.settings,_that.pastAddresses);case _:
@@ -250,7 +250,7 @@ return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson)  String id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel> pastAddresses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson)  String id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus? defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel>? pastAddresses)  $default,) {final _that = this;
 switch (_that) {
 case _ExampleModel():
 return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,_that.defaultAge,_that.grade,_that.emptyGrade,_that.defaultGrade,_that.friends,_that.emptyFriends,_that.defaultFriends,_that.group,_that.emptyGroup,_that.defaultGroup,_that.listedGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.status,_that.defaultStatus,_that.mainSubEntity,_that.optionalSubEntity,_that.primaryAddress,_that.secondaryAddress,_that.settings,_that.pastAddresses);case _:
@@ -270,7 +270,7 @@ return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson)  String id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel> pastAddresses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson)  String id,  String? emptyId,  String? defaultId,  int age,  int? emptyAge,  int? defaultAge,  double grade,  double? emptyGrade,  double? defaultGrade,  List<String> friends,  List<String>? emptyFriends,  List<String>? defaultFriends,  Map<String, dynamic> group,  Map<String, dynamic>? emptyGroup,  Map<String, dynamic>? defaultGroup,  List<Map<String, dynamic>> listedGroup,  List<Map<String, dynamic>>? emptyListedGroup,  List<Map<String, dynamic>>? defaultListedGroup, @AccountStatusConverter()  AccountStatus status, @AccountStatusConverter()  AccountStatus? defaultStatus,  ExampleSubModel mainSubEntity,  ExampleSubModel? optionalSubEntity,  ExampleAddressModel primaryAddress,  ExampleAddressModel? secondaryAddress,  ExampleProfileSettingsModel settings,  List<ExampleAddressModel>? pastAddresses)?  $default,) {final _that = this;
 switch (_that) {
 case _ExampleModel() when $default != null:
 return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,_that.defaultAge,_that.grade,_that.emptyGrade,_that.defaultGrade,_that.friends,_that.emptyFriends,_that.defaultFriends,_that.group,_that.emptyGroup,_that.defaultGroup,_that.listedGroup,_that.emptyListedGroup,_that.defaultListedGroup,_that.status,_that.defaultStatus,_that.mainSubEntity,_that.optionalSubEntity,_that.primaryAddress,_that.secondaryAddress,_that.settings,_that.pastAddresses);case _:
@@ -285,7 +285,7 @@ return $default(_that.id,_that.emptyId,_that.defaultId,_that.age,_that.emptyAge,
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class _ExampleModel extends ExampleModel {
-  const _ExampleModel({@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) required this.id, this.emptyId, this.defaultId = 'id', required this.age, this.emptyAge, this.defaultAge = 18, required this.grade, this.emptyGrade, this.defaultGrade = 99.6, required final  List<String> friends, final  List<String>? emptyFriends, final  List<String>? defaultFriends = const ['a', 'b', 'c'], required final  Map<String, dynamic> group, final  Map<String, dynamic>? emptyGroup, final  Map<String, dynamic>? defaultGroup = const {'a' : 1, 'b' : 2, 'c' : 3}, required final  List<Map<String, dynamic>> listedGroup, final  List<Map<String, dynamic>>? emptyListedGroup, final  List<Map<String, dynamic>>? defaultListedGroup = const [{'a' : 1, 'b' : 2, 'c' : 3}, {'d' : 4, 'e' : 5, 'f' : 6}], @AccountStatusConverter() required this.status, @AccountStatusConverter() this.defaultStatus = AccountStatus.pending, required this.mainSubEntity, this.optionalSubEntity, required this.primaryAddress, this.secondaryAddress, required this.settings, final  List<ExampleAddressModel> pastAddresses = const []}): _friends = friends,_emptyFriends = emptyFriends,_defaultFriends = defaultFriends,_group = group,_emptyGroup = emptyGroup,_defaultGroup = defaultGroup,_listedGroup = listedGroup,_emptyListedGroup = emptyListedGroup,_defaultListedGroup = defaultListedGroup,_pastAddresses = pastAddresses,super._();
+  const _ExampleModel({@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) required this.id, this.emptyId, this.defaultId = 'id', required this.age, this.emptyAge, this.defaultAge = 18, required this.grade, this.emptyGrade, this.defaultGrade = 99.6, required final  List<String> friends, final  List<String>? emptyFriends, final  List<String>? defaultFriends = const ['a', 'b', 'c'], required final  Map<String, dynamic> group, final  Map<String, dynamic>? emptyGroup, final  Map<String, dynamic>? defaultGroup = const {'a' : 1, 'b' : 2, 'c' : 3}, required final  List<Map<String, dynamic>> listedGroup, final  List<Map<String, dynamic>>? emptyListedGroup, final  List<Map<String, dynamic>>? defaultListedGroup = const [{'a' : 1, 'b' : 2, 'c' : 3}, {'d' : 4, 'e' : 5, 'f' : 6}], @AccountStatusConverter() required this.status, @AccountStatusConverter() this.defaultStatus = AccountStatus.pending, required this.mainSubEntity, this.optionalSubEntity, required this.primaryAddress, this.secondaryAddress, required this.settings, final  List<ExampleAddressModel>? pastAddresses = const []}): _friends = friends,_emptyFriends = emptyFriends,_defaultFriends = defaultFriends,_group = group,_emptyGroup = emptyGroup,_defaultGroup = defaultGroup,_listedGroup = listedGroup,_emptyListedGroup = emptyListedGroup,_defaultListedGroup = defaultListedGroup,_pastAddresses = pastAddresses,super._();
   factory _ExampleModel.fromJson(Map<String, dynamic> json) => _$ExampleModelFromJson(json);
 
 @override@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) final  String id;
@@ -373,17 +373,19 @@ class _ExampleModel extends ExampleModel {
 }
 
 @override@AccountStatusConverter() final  AccountStatus status;
-@override@JsonKey()@AccountStatusConverter() final  AccountStatus defaultStatus;
+@override@JsonKey()@AccountStatusConverter() final  AccountStatus? defaultStatus;
 @override final  ExampleSubModel mainSubEntity;
 @override final  ExampleSubModel? optionalSubEntity;
 @override final  ExampleAddressModel primaryAddress;
 @override final  ExampleAddressModel? secondaryAddress;
 @override final  ExampleProfileSettingsModel settings;
- final  List<ExampleAddressModel> _pastAddresses;
-@override@JsonKey() List<ExampleAddressModel> get pastAddresses {
+ final  List<ExampleAddressModel>? _pastAddresses;
+@override@JsonKey() List<ExampleAddressModel>? get pastAddresses {
+  final value = _pastAddresses;
+  if (value == null) return null;
   if (_pastAddresses is EqualUnmodifiableListView) return _pastAddresses;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_pastAddresses);
+  return EqualUnmodifiableListView(value);
 }
 
 
@@ -420,7 +422,7 @@ abstract mixin class _$ExampleModelCopyWith<$Res> implements $ExampleModelCopyWi
   factory _$ExampleModelCopyWith(_ExampleModel value, $Res Function(_ExampleModel) _then) = __$ExampleModelCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) String id, String? emptyId, String? defaultId, int age, int? emptyAge, int? defaultAge, double grade, double? emptyGrade, double? defaultGrade, List<String> friends, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic> group, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>> listedGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus status,@AccountStatusConverter() AccountStatus defaultStatus, ExampleSubModel mainSubEntity, ExampleSubModel? optionalSubEntity, ExampleAddressModel primaryAddress, ExampleAddressModel? secondaryAddress, ExampleProfileSettingsModel settings, List<ExampleAddressModel> pastAddresses
+@JsonKey(fromJson: ModelGeneratorHelper.generateUuidFromJson) String id, String? emptyId, String? defaultId, int age, int? emptyAge, int? defaultAge, double grade, double? emptyGrade, double? defaultGrade, List<String> friends, List<String>? emptyFriends, List<String>? defaultFriends, Map<String, dynamic> group, Map<String, dynamic>? emptyGroup, Map<String, dynamic>? defaultGroup, List<Map<String, dynamic>> listedGroup, List<Map<String, dynamic>>? emptyListedGroup, List<Map<String, dynamic>>? defaultListedGroup,@AccountStatusConverter() AccountStatus status,@AccountStatusConverter() AccountStatus? defaultStatus, ExampleSubModel mainSubEntity, ExampleSubModel? optionalSubEntity, ExampleAddressModel primaryAddress, ExampleAddressModel? secondaryAddress, ExampleProfileSettingsModel settings, List<ExampleAddressModel>? pastAddresses
 });
 
 
@@ -437,7 +439,7 @@ class __$ExampleModelCopyWithImpl<$Res>
 
 /// Create a copy of ExampleModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? emptyId = freezed,Object? defaultId = freezed,Object? age = null,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? grade = null,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? friends = null,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? group = null,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? listedGroup = null,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? status = null,Object? defaultStatus = null,Object? mainSubEntity = null,Object? optionalSubEntity = freezed,Object? primaryAddress = null,Object? secondaryAddress = freezed,Object? settings = null,Object? pastAddresses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? emptyId = freezed,Object? defaultId = freezed,Object? age = null,Object? emptyAge = freezed,Object? defaultAge = freezed,Object? grade = null,Object? emptyGrade = freezed,Object? defaultGrade = freezed,Object? friends = null,Object? emptyFriends = freezed,Object? defaultFriends = freezed,Object? group = null,Object? emptyGroup = freezed,Object? defaultGroup = freezed,Object? listedGroup = null,Object? emptyListedGroup = freezed,Object? defaultListedGroup = freezed,Object? status = null,Object? defaultStatus = freezed,Object? mainSubEntity = null,Object? optionalSubEntity = freezed,Object? primaryAddress = null,Object? secondaryAddress = freezed,Object? settings = null,Object? pastAddresses = freezed,}) {
   return _then(_ExampleModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,emptyId: freezed == emptyId ? _self.emptyId : emptyId // ignore: cast_nullable_to_non_nullable
@@ -458,14 +460,14 @@ as Map<String, dynamic>?,listedGroup: null == listedGroup ? _self._listedGroup :
 as List<Map<String, dynamic>>,emptyListedGroup: freezed == emptyListedGroup ? _self._emptyListedGroup : emptyListedGroup // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>?,defaultListedGroup: freezed == defaultListedGroup ? _self._defaultListedGroup : defaultListedGroup // ignore: cast_nullable_to_non_nullable
 as List<Map<String, dynamic>>?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as AccountStatus,defaultStatus: null == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
-as AccountStatus,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
+as AccountStatus,defaultStatus: freezed == defaultStatus ? _self.defaultStatus : defaultStatus // ignore: cast_nullable_to_non_nullable
+as AccountStatus?,mainSubEntity: null == mainSubEntity ? _self.mainSubEntity : mainSubEntity // ignore: cast_nullable_to_non_nullable
 as ExampleSubModel,optionalSubEntity: freezed == optionalSubEntity ? _self.optionalSubEntity : optionalSubEntity // ignore: cast_nullable_to_non_nullable
 as ExampleSubModel?,primaryAddress: null == primaryAddress ? _self.primaryAddress : primaryAddress // ignore: cast_nullable_to_non_nullable
 as ExampleAddressModel,secondaryAddress: freezed == secondaryAddress ? _self.secondaryAddress : secondaryAddress // ignore: cast_nullable_to_non_nullable
 as ExampleAddressModel?,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
-as ExampleProfileSettingsModel,pastAddresses: null == pastAddresses ? _self._pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
-as List<ExampleAddressModel>,
+as ExampleProfileSettingsModel,pastAddresses: freezed == pastAddresses ? _self._pastAddresses : pastAddresses // ignore: cast_nullable_to_non_nullable
+as List<ExampleAddressModel>?,
   ));
 }
 

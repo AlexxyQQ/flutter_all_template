@@ -35,12 +35,12 @@ abstract class ExampleEntity with _$ExampleEntity {
     ])
     List<Map<String, dynamic>>? defaultListedGroup,
     required AccountStatus status,
-    @Default(AccountStatus.pending) AccountStatus defaultStatus,
+    @Default(AccountStatus.pending) AccountStatus? defaultStatus,
     required ExampleSubEntity mainSubEntity,
     ExampleSubEntity? optionalSubEntity,
     required ExampleAddressEntity primaryAddress,
     ExampleAddressEntity? secondaryAddress,
     required ExampleProfileSettingsEntity settings,
-    @Default(const []) List<ExampleAddressEntity> pastAddresses,
+    @Default(const []) List<ExampleAddressEntity>? pastAddresses,
   }) = _ExampleEntity;
 }

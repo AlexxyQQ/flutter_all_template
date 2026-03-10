@@ -47,9 +47,11 @@ _ExampleModel _$ExampleModelFromJson(
         {'d': 4, 'e': 5, 'f': 6},
       ],
   status: $enumDecode(_$AccountStatusEnumMap, json['status']),
-  defaultStatus:
-      $enumDecodeNullable(_$AccountStatusEnumMap, json['default_status']) ??
-      AccountStatus.pending,
+  defaultStatus: json['default_status'] == null
+      ? AccountStatus.pending
+      : const AccountStatusConverter().fromJson(
+          json['default_status'] as String?,
+        ),
   mainSubEntity: ExampleSubModel.fromJson(
     json['main_sub_entity'] as Map<String, dynamic>,
   ),
@@ -97,13 +99,15 @@ Map<String, dynamic> _$ExampleModelToJson(_ExampleModel instance) =>
       'empty_listed_group': instance.emptyListedGroup,
       'default_listed_group': instance.defaultListedGroup,
       'status': instance.status.toJson(),
-      'default_status': instance.defaultStatus.toJson(),
+      'default_status': const AccountStatusConverter().toJson(
+        instance.defaultStatus,
+      ),
       'main_sub_entity': instance.mainSubEntity.toJson(),
       'optional_sub_entity': instance.optionalSubEntity?.toJson(),
       'primary_address': instance.primaryAddress.toJson(),
       'secondary_address': instance.secondaryAddress?.toJson(),
       'settings': instance.settings.toJson(),
-      'past_addresses': instance.pastAddresses.map((e) => e.toJson()).toList(),
+      'past_addresses': instance.pastAddresses?.map((e) => e.toJson()).toList(),
     };
 
 const _$AccountStatusEnumMap = {

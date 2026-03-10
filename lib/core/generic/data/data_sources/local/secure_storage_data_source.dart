@@ -449,13 +449,13 @@ abstract class ISecureStorageDataSource<T> {
 
   /// Deletes where condition is true.
   Future<Either<Failure, List<T>>> deleteWhere({
-    required bool Function(T) test,
+    required bool Function(T) where,
   }) async {
     AppLogger.debug('Request to DeleteWhere...', name: _logTag);
     return _editList<List<T>>(
       action: (list) async {
         final originalLen = list.length;
-        list.removeWhere(test);
+        list.removeWhere(where);
         final removedCount = originalLen - list.length;
         AppLogger.info(
           'DeleteWhere: Removed $removedCount items.',

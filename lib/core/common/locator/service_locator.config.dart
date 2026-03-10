@@ -53,6 +53,14 @@ import 'package:flutter_all_template/core/common/presentation/routes/app_router.
     as _i1069;
 import 'package:flutter_all_template/features/another/bloc/test_cubit.dart'
     as _i364;
+import 'package:flutter_all_template/features/example/data/data_sources/local/example_local_data_source.dart'
+    as _i507;
+import 'package:flutter_all_template/features/example/data/data_sources/remote/example_remote_data_source.dart'
+    as _i379;
+import 'package:flutter_all_template/features/example/domain/repositories/example_repository.dart'
+    as _i616;
+import 'package:flutter_all_template/features/example/presentation/bloc/example_bloc.dart'
+    as _i415;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
@@ -77,6 +85,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i204.AppSettingLocalDataSource(),
     );
     gh.lazySingleton<_i696.DateTimeHelper>(() => _i696.DateTimeHelper());
+    gh.lazySingleton<_i507.ExampleLocalDataSource>(
+      () => _i507.ExampleLocalDataSource(),
+    );
+    gh.lazySingleton<_i379.ExampleRemoteDataSource>(
+      () => _i379.ExampleRemoteDataSource(),
+    );
     gh.lazySingleton<_i765.IPermissionRepository>(
       () => _i454.PermissionRepositoryImpl(),
     );
@@ -88,6 +102,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i448.PermissionBloc>(
       () => _i448.PermissionBloc(repository: gh<_i765.IPermissionRepository>()),
+    );
+    gh.factory<_i415.ExampleBloc>(
+      () => _i415.ExampleBloc(repository: gh<_i616.IExampleRepository>()),
     );
     gh.factory<_i702.NavigationService>(
       () => _i702.NavigationService(gh<_i1069.AppRouter>()),

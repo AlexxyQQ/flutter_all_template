@@ -249,7 +249,7 @@ void main() {
       ]);
       when(mockStorage.read(key: testKey)).thenAnswer((_) async => startJson);
 
-      final result = await dataSource.deleteWhere(test: (u) => u.id.isOdd);
+      final result = await dataSource.deleteWhere(where: (u) => u.id.isOdd);
 
       expect(result.isRight(), true);
       result.fold((l) => null, (list) {
