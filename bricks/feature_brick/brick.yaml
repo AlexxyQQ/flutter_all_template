@@ -2,7 +2,7 @@ name: flutter_feature
 description: Generates a clean-architecture feature module for flutter_all_template
 version: 0.1.0+1
 environment:
-  mason: ">=0.1.0-dev.52 <0.1.0"
+  mason: ">=0.1.0-dev.52 <0.2.0"
 
 vars:
   feature_name:

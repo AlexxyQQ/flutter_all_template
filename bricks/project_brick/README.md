@@ -24,9 +24,8 @@ dart pub global activate flutterfire_cli
 
 ```bash
 git clone https://github.com/AlexxyQQ/flutter_all_template
-cd flutter_all_template/brick
-mason init
-mason add --path .
+cd flutter_all_template
+mason get
 mason make flutter_all_template
 ```
 

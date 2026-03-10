@@ -1,0 +1,5 @@
+bricks:
+  flutter_all_template:
+    path: bricks/project_brick
+  flutter_feature:
+    path: bricks/feature_brick

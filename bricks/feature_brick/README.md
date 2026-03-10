@@ -4,7 +4,13 @@ Generates a complete clean-architecture feature module for the `flutter_all_temp
 
 ## Usage
 
-Run from the **project root** (next to `lib/`):
+Run from the **project root** (next to `lib/`). If you haven't fetched the bricks yet:
+
+```bash
+mason get
+```
+
+Then generate the feature:
 
 ```bash
 mason make flutter_feature

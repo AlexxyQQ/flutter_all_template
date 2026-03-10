@@ -12,13 +12,12 @@ Generate a new project with only the features you want:
 # 1. Install Mason (once)
 dart pub global activate mason_cli
 
-# 2. Clone this repo and enter the brick directory
+# 2. Clone this repo
 git clone https://github.com/AlexxyQQ/flutter_all_template
-cd flutter_all_template/brick
+cd flutter_all_template
 
-# 3. Register the brick locally
-mason init
-mason add --path .
+# 3. Fetch the bricks
+mason get
 
 # 4. Generate your project — answer 5 questions
 mason make flutter_all_template
@@ -223,13 +222,25 @@ Text(LocaleKeys.common_errors_somethingWentWrong.tr())
 
 ---
 
-## Adding a New Feature
+## Adding a New Feature (Mason)
 
-1. Create `lib/features/<feature_name>/` with `data/`, `domain/`, `presentation/` layers.
-2. Create a `*_bloc.dart` extending `BaseCrudBloc` with the mixins you need.
-3. Register the BLoC with `@injectable`.
-4. Add routes with `@RoutePage()` and register in `AppRouter`.
-5. Run `build_runner`.
+Generate a complete clean-architecture feature module from the project root:
+
+```bash
+mason make flutter_feature
+# → What is the feature name? (snake_case) › user_profile
+# → Include a local data source (SecureStorage)? (y/N) › n
+# → Generate a typed RequestParams class? (Y/n) › y
+```
+
+This scaffolds `lib/features/<feature_name>/` with all layers pre-wired.
+See [bricks/feature_brick/README.md](bricks/feature_brick/README.md) for the full file tree.
+
+After generation:
+1. Add fields to `_entity.dart`, `_model.dart`, and (if present) `_request_params.dart`.
+2. Add an API path constant in `lib/config/constants/api/api_paths.dart`.
+3. Add routes with `@RoutePage()` and register in `AppRouter`.
+4. Run `rps build`.
 
 ---
 

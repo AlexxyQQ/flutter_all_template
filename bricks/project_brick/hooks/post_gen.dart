@@ -103,21 +103,21 @@ void _replaceInFile(String path, String from, String to) {
   }
 }
 
-/// Updates Android `build.gradle` with the correct applicationId / namespace.
+/// Updates Android `build.gradle.kts` with the correct applicationId / namespace.
 void _updateAndroidConfig(String appOrg, String appName) {
   final packageId = '$appOrg.$appName';
 
-  // app/build.gradle
+  // app/build.gradle.kts
   _replaceInFile(
-    'android/app/build.gradle',
-    'com.example.flutter_all_template',
+    'android/app/build.gradle.kts',
+    'com.alexxy.flutter_all_template',
     packageId,
   );
 
   // Also update AndroidManifest.xml package attribute if present
   _replaceInFile(
     'android/app/src/main/AndroidManifest.xml',
-    'com.example.flutter_all_template',
+    'com.alexxy.flutter_all_template',
     packageId,
   );
 
