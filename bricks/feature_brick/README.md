@@ -1,69 +1,89 @@
 # flutter_feature brick
 
-Generates a complete clean-architecture feature module for the `flutter_all_template` project.
+Generates a clean-architecture feature slice for `flutter_all_template`: a paged,
+searchable list with create/read/update/delete, built on the shared generic pieces in
+`lib/core/generic/` (`PagedListBloc`, `PageRequest`/`PageResult`, `JsonCollectionStore`).
+The reference implementation it mirrors is `lib/features/example/` (a `Todo` slice).
 
 ## Usage
 
-Run from the **project root** (next to `lib/`). If you haven't fetched the bricks yet:
+Run from the **project root** (next to `lib/`):
 
 ```bash
 mason get
-```
-
-Then generate the feature:
-
-```bash
 mason make flutter_feature
 ```
 
-Answer the three prompts:
+| Prompt | Meaning | Default |
+|--------|---------|---------|
+| `feature_name` | Singular feature name, any case (`note`, `user_profile`, `UserProfile`) | `note` |
+| `use_local_datasource` | Add an offline cache: reads are cached and served from the cache when offline | `false` |
+| `use_params` | Typed `Create…Params` / `Update…Params` / `…Query` classes. Off: `create…({required String title})`, `update…(entity)` and a `String` search query | `true` |
 
-| Prompt | Description | Default |
-|--------|-------------|---------|
-| `feature_name` | Feature name in `snake_case` | `my_feature` |
-| `use_local_datasource` | Add a `SecureStorage`-backed local data source alongside the remote | `false` |
-| `use_params` | Generate a typed `RequestParams` class for create/update operations | `true` |
+Non-interactive: `mason make flutter_feature -c config.json` with
+`{"feature_name": "note", "use_local_datasource": true, "use_params": true}`.
 
-## What gets generated
+## What gets generated (`feature_name: note`)
 
 ```
-lib/features/<feature_name>/
+lib/features/note/
+├── domain/                                   # pure Dart
+│   ├── entities/note.dart                    # Freezed entity (id, title, updatedAt)
+│   ├── params/note_params.dart               # use_params: CreateNoteParams, UpdateNoteParams, NoteQuery
+│   └── repositories/note_repository.dart     # INoteRepository (returns ResultFuture)
 ├── data/
+│   ├── models/note_model.dart                # Freezed + JSON, toEntity()/fromEntity()
 │   ├── data_sources/
-│   │   ├── <feature_name>_data_source.dart         # abstract interface
-│   │   ├── remote/
-│   │   │   └── <feature_name>_remote_data_source.dart
-│   │   └── local/                                  # only if use_local_datasource
-│   │       └── <feature_name>_local_data_source.dart
-│   ├── models/
-│   │   └── <feature_name>_model.dart               # Freezed + JSON, with toEntity()
-│   └── repositories/
-│       └── <feature_name>_repository_impl.dart
-├── domain/
-│   ├── entities/
-│   │   ├── <feature_name>_entity.dart              # pure Freezed entity
-│   │   └── params/                                 # only if use_params
-│   │       └── <feature_name>_request_params.dart
-│   └── repositories/
-│       └── <feature_name>_repository.dart          # abstract interface
-└── presentation/
-    └── bloc/
-        └── <feature_name>_bloc.dart
+│   │   ├── remote/note_remote_data_source.dart  # ApiClient: GET/POST/PATCH/DELETE, throws AppException
+│   │   └── local/note_local_data_source.dart    # use_local_datasource: JsonCollectionStore cache
+│   └── repositories/note_repository_impl.dart   # @LazySingleton(as: INoteRepository), guard()
+└── presentation/bloc/
+    ├── note_list_bloc.dart                   # @injectable, extends PagedListBloc<Note, NoteQuery>
+    └── note_list_event.dart                  # NoteCreated, NoteDeleted
 ```
+
+The post-generation hook also:
+
+- adds `static const String notes = '/notes';` to `ApiPaths`
+  (`lib/config/constants/api/api_paths.dart`), or tells you to if the file has changed shape;
+- removes `domain/params/` and `data/data_sources/local/` when those options are off;
+- runs `dart format` on the new feature.
 
 ## After generation
 
-1. **Add fields** to `_entity.dart`, `_model.dart`, and (if present) `_request_params.dart`. Run `rps build` to regenerate Freezed/JSON code.
-2. **Add an API path** constant in `lib/config/constants/api/api_paths.dart`:
+1. Add your fields to the entity, the model and (if present) the params/query.
+2. `dart run build_runner build --delete-conflicting-outputs` — generates Freezed/JSON
+   code and registers the data sources, repository and bloc with injectable.
+3. Adjust the API contract documented at the top of the remote data source.
+4. Build the page:
    ```dart
-   static const String myFeature = '/my-feature';
+   BlocProvider(
+     create: (_) => sl<NoteListBloc>(),
+     child: Builder(
+       builder: (context) => PaginationListView<Note>(
+         bloc: context.read<NoteListBloc>(),
+         itemBuilder: (context, note, _) => ListTile(title: Text(note.title)),
+       ),
+     ),
+   );
    ```
-3. **Register the repository** with `@lazySingleton` — it is already annotated; run `rps build` to update `service_locator.config.dart`.
-4. **Register routes** in `lib/core/common/presentation/routes/app_router.dart` when you add screens.
-5. Run `rps build` once more to pick up all generated code.
+   Search: `bloc.add(PagedListQueryChanged(NoteQuery(search: text)))` (debounced).
+   Show `state.failure?.message.tr()` in a snackbar when items are already visible.
+5. Add the route and translations for any new strings.
 
-## Notes
+## Conventions baked in
 
-- `use_params = false`: create/update operations accept `Map<String, dynamic>` instead of a typed params class. Use this for simple features or when you don't need a dedicated request model.
-- `use_local_datasource = true`: the repository impl gets both `_localDataSource` and `_remoteDataSource` injected. Wire the read/write split in `_repository_impl.dart` as needed.
-- The generated entity and model contain only an `id` field as a scaffold. Add your domain fields before running `rps build`.
+- Data sources **throw** `AppException`s; repositories convert them once with `guard()`.
+- No `Map<String, dynamic>` crosses the domain boundary; ids are `String`.
+- Blocs never translate: they expose `Failure.message` (a localization key).
+- Pagination supports page numbers **and** cursors (`PageRequest.cursor` ←
+  `PageResult.nextCursor`).
+
+## Verifying the brick
+
+```bash
+mason make flutter_feature -c config.json -o .   # from a checkout of the template
+dart run build_runner build --delete-conflicting-outputs
+flutter analyze lib/features/note                # expect: No issues found
+rm -rf lib/features/note && git checkout lib/config/constants/api/api_paths.dart
+```
