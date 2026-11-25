@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../config/themes/components_theme/app_text_form_field_theme.dart';
-import '../../../domain/controllers/text_form_filed/text_field_controller.dart';
+import '../../../domain/controllers/text_form_field/text_field_controller.dart';
 
 /// Handles user interactions with the text field.
 ///
@@ -24,12 +24,7 @@ class FieldInteractionHandler {
 
   /// Handles tap outside the field (unfocus)
   void handleTapOutside(PointerDownEvent details) {
-    final focusNode = _controllerManager.getFocusNode(
-      // We need the theme here, but it's not available
-      // This is a limitation - consider passing it in constructor if needed
-      FormFieldTheme(),
-    );
-    focusNode.unfocus();
+    _controllerManager.getFocusNode(FormFieldTheme()).unfocus();
     FocusManager.instance.primaryFocus?.unfocus();
   }
 

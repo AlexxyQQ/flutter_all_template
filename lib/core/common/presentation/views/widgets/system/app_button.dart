@@ -1,214 +1,28 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../config/constants/text/material/app_material_text_primitives.dart';
 import '../../../../../../config/themes/components_theme/app_button_theme.dart';
 import '../../../../../../config/themes/components_theme/app_picture_theme.dart';
 import '../../../extensions/size/size_extension.dart';
 import '../../../extensions/theme/theme_extension.dart';
-import '../../../themes/colors/app_material_colors.dart';
 import '../../../themes/styles/button_style.dart';
-import '../../components/app_color.dart';
 import 'images/app_svg_picture_widget.dart';
 import 'loaders/app_circular_loader.dart';
 import 'text/app_text_widget.dart';
 
+export '../../../themes/styles/button_style.dart' show ButtonVariant;
+
+/// The app's button.
+///
+/// Use a named constructor for a variant (`AppButton.primary(...)`), or the
+/// default constructor with [variant]. All variants share one implementation;
+/// colours come from the ambient [ColorScheme] via [ButtonStyles].
 class AppButton extends StatefulWidget {
-  factory AppButton.primary({
-    required void Function()? onPressed,
-    required String label,
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    Widget? prefix,
-    Widget? suffix,
-    String? icon,
-    double? height,
-    double? width,
-    bool? isExpanded,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      label: label,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      prefix: prefix,
-      suffix: suffix,
-      icon: icon,
-      theme: ButtonStyles.primaryTheme.copyWith(expanded: isExpanded),
-      height: height,
-      width: width,
-      translate: translate,
-    );
-  }
-
-  factory AppButton.secondary({
-    required void Function()? onPressed,
-    required String label,
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    Widget? prefix,
-    Widget? suffix,
-    String? icon,
-    double? height,
-    double? width,
-    bool? isExpanded,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      label: label,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      prefix: prefix,
-      suffix: suffix,
-      icon: icon,
-      theme: ButtonStyles.secondaryTheme.copyWith(expanded: isExpanded),
-      height: height,
-      width: width,
-      translate: translate,
-    );
-  }
-
-  factory AppButton.tertiary({
-    required void Function()? onPressed,
-    required String label,
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    Widget? prefix,
-    Widget? suffix,
-    String? icon,
-    double? height,
-    double? width,
-    bool? isExpanded,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      label: label,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      prefix: prefix,
-      suffix: suffix,
-      icon: icon,
-      theme: ButtonStyles.tertiaryTheme.copyWith(expanded: isExpanded),
-      height: height,
-      width: width,
-      translate: translate,
-    );
-  }
-
-  factory AppButton.stroke({
-    required void Function()? onPressed,
-    required String label,
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    Widget? prefix,
-    Widget? suffix,
-    String? icon,
-    CustomButtonTheme? theme,
-    double? height,
-    double? width,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      label: label,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      prefix: prefix,
-      suffix: suffix,
-      icon: icon,
-      theme: ButtonStyles.strokeTheme,
-      height: height,
-      width: width,
-      translate: translate,
-    );
-  }
-
-  factory AppButton.ghost({
-    required void Function()? onPressed,
-    required String label,
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    Widget? prefix,
-    Widget? suffix,
-    String? icon,
-    CustomButtonTheme? theme,
-    double? height,
-    double? width,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      label: label,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      prefix: prefix,
-      suffix: suffix,
-      icon: icon,
-      theme: ButtonStyles.ghostTheme,
-      height: height,
-      width: width,
-      translate: translate,
-    );
-  }
-
-  factory AppButton.icon({
-    required void Function()? onPressed,
-    required String icon,
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    CustomButtonTheme? theme,
-    double? height,
-    double? width,
-    double? iconSize,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      icon: icon,
-      theme: theme ?? ButtonStyles.ghostTheme,
-      height: height,
-      width: width,
-      translate: translate,
-
-      iconSize: iconSize,
-    );
-  }
-
-  factory AppButton.custom({
-    required void Function()? onPressed,
-    required String label,
-    CustomButtonTheme theme = const CustomButtonTheme(),
-    bool isLoading = false,
-    bool translate = true,
-    bool isDisabled = false,
-    Widget? prefix,
-    Widget? suffix,
-    String? icon,
-    double? height,
-    double? width,
-  }) {
-    return AppButton._(
-      onPressed: onPressed,
-      label: label,
-      isLoading: isLoading,
-      isDisabled: isDisabled,
-      prefix: prefix,
-      suffix: suffix,
-      icon: icon,
-      theme: theme,
-      height: height,
-      width: width,
-      translate: translate,
-    );
-  }
-  const AppButton._({
+  const AppButton({
     required this.onPressed,
-    required this.theme,
+    super.key,
+    this.variant = ButtonVariant.primary,
     this.label,
     this.isLoading = false,
     this.translate = true,
@@ -219,20 +33,194 @@ class AppButton extends StatefulWidget {
     this.height,
     this.width,
     this.iconSize,
+    this.isExpanded,
+    this.theme,
+    this.semanticLabel,
+    this.tooltip,
   });
 
-  final void Function()? onPressed;
+  const AppButton.primary({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.primary,
+       theme = null,
+       iconSize = null,
+       tooltip = null;
+
+  const AppButton.secondary({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.secondary,
+       theme = null,
+       iconSize = null,
+       tooltip = null;
+
+  const AppButton.tertiary({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.tertiary,
+       theme = null,
+       iconSize = null,
+       tooltip = null;
+
+  /// Outlined button. A non-null [theme] replaces the default stroke theme.
+  const AppButton.stroke({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.theme,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.stroke,
+       iconSize = null,
+       tooltip = null;
+
+  /// Text-only button. A non-null [theme] replaces the default ghost theme.
+  const AppButton.ghost({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.theme,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.ghost,
+       iconSize = null,
+       tooltip = null;
+
+  /// Error-coloured button for destructive actions.
+  const AppButton.destructive({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.destructive,
+       theme = null,
+       iconSize = null,
+       tooltip = null;
+
+  /// Icon-only button (SVG asset). Provide [semanticLabel] (or [tooltip]) so
+  /// screen readers can announce it.
+  const AppButton.icon({
+    required this.onPressed,
+    required String this.icon,
+    super.key,
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.theme,
+    this.height,
+    this.width,
+    this.iconSize,
+    this.semanticLabel,
+    this.tooltip,
+  }) : variant = ButtonVariant.ghost,
+       label = null,
+       prefix = null,
+       suffix = null,
+       isExpanded = null;
+
+  /// Fully custom colours via [theme] (no variant defaults are applied).
+  const AppButton.custom({
+    required this.onPressed,
+    required String this.label,
+    super.key,
+    CustomButtonTheme this.theme = const CustomButtonTheme(),
+    this.isLoading = false,
+    this.translate = true,
+    this.isDisabled = false,
+    this.prefix,
+    this.suffix,
+    this.icon,
+    this.height,
+    this.width,
+    this.isExpanded,
+    this.semanticLabel,
+  }) : variant = ButtonVariant.primary,
+       iconSize = null,
+       tooltip = null;
+
+  final VoidCallback? onPressed;
+  final ButtonVariant variant;
   final String? label;
   final bool isLoading;
   final bool isDisabled;
   final Widget? prefix;
   final Widget? suffix;
+
+  /// SVG asset path rendered before the label.
   final String? icon;
   final double? height;
   final double? width;
+
+  /// Overrides the variant's theme entirely when non-null.
   final CustomButtonTheme? theme;
   final double? iconSize;
+  final bool? isExpanded;
   final bool translate;
+
+  /// Accessibility label; defaults to the (translated) [label].
+  final String? semanticLabel;
+
+  /// Optional tooltip (useful for icon-only buttons).
+  final String? tooltip;
 
   @override
   State<AppButton> createState() => _AppButtonState();
@@ -240,26 +228,15 @@ class AppButton extends StatefulWidget {
 
 class _AppButtonState extends State<AppButton> {
   double _scale = 1.0;
-  static const double _pressedScale = 0.86;
+  static const double _pressedScale = 0.96;
   static const Duration _duration = Duration(milliseconds: 120);
 
-  bool get _isInteractive => !widget.isDisabled && !widget.isLoading;
+  bool get _isInteractive =>
+      !widget.isDisabled && !widget.isLoading && widget.onPressed != null;
 
-  void _onTapDown(TapDownDetails details) {
+  void _setPressed(bool pressed) {
     if (_isInteractive) {
-      setState(() => _scale = _pressedScale);
-    }
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    if (_isInteractive) {
-      setState(() => _scale = 1.0);
-    }
-  }
-
-  void _onTapCancel() {
-    if (_isInteractive) {
-      setState(() => _scale = 1.0);
+      setState(() => _scale = pressed ? _pressedScale : 1.0);
     }
   }
 
@@ -271,111 +248,122 @@ class _AppButtonState extends State<AppButton> {
 
   @override
   Widget build(BuildContext context) {
-    final buttonTheme = widget.theme!.copyWith(translate: widget.translate);
+    final cs = context.colors;
+    final base = widget.theme ?? ButtonStyles.of(widget.variant, cs);
+    final expanded = widget.isExpanded ?? base.expanded ?? false;
+    final disabled = widget.isDisabled;
 
-    final KAppColor? backgroundColor = widget.isDisabled
-        ? (buttonTheme.backgroundDisabledColor)
-        : (buttonTheme.backgroundColor);
+    final Color? background = disabled
+        ? base.backgroundDisabledColor
+        : base.backgroundColor;
+    final Color? foreground = disabled
+        ? base.foregroundDisabledColor
+        : base.foregroundColor;
 
-    final KAppColor? foregroundColor = widget.isDisabled
-        ? (buttonTheme.foregroundDisabledColor)
-        : (buttonTheme.foregroundColor);
-
-    final BoxBorder? border = (buttonTheme.showBorder ?? false)
+    final BoxBorder? border = (base.showBorder ?? false)
         ? Border.fromBorderSide(
-            buttonTheme.border ??
-                BorderSide(
-                  color: widget.isDisabled
-                      ? AppMaterialColors.inverseSurface
-                      : AppMaterialColors.primary,
-                ),
+            base.border ??
+                BorderSide(color: disabled ? cs.outline : cs.primary),
           )
         : null;
 
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      onTap: _onTap,
-      behavior: HitTestBehavior.translucent,
-      child: AnimatedScale(
-        scale: _scale,
-        duration: _duration,
-        curve: Curves.easeOut,
-        child: Container(
-          height: (buttonTheme.fixSize ?? true)
-              ? (widget.height ?? 90.h)
-              : null,
+    final translate = widget.translate && (base.translate ?? true);
+    final label = widget.label;
+    final semanticLabel =
+        widget.semanticLabel ??
+        widget.tooltip ??
+        (label == null ? null : (translate ? label.tr() : label));
 
-          width:
-              widget.width ??
-              ((buttonTheme.expanded == true) ? double.infinity : null),
-          padding:
-              buttonTheme.padding ??
-              (16.horizontalPadding + 12.verticalPadding),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: buttonTheme.radius ?? 12.borderCircular,
-            border: border,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: buttonTheme.expanded == true
-                ? MainAxisSize.max
-                : MainAxisSize.min,
-            children: [
-              if (widget.isLoading)
-                AppCircularLoader(
-                  color: buttonTheme.loaderColor ?? foregroundColor,
-                )
-              else ...[
-                if (widget.icon != null) ...[
-                  AppSvgPicture.fromAsset(
-                    widget.icon!,
-                    width: widget.iconSize ?? 16,
-                    height: widget.iconSize ?? 16,
-                    theme: PictureTheme(color: foregroundColor),
-                  ),
-
-                  if (widget.label != null || widget.suffix != null)
-                    8.horizontalGap,
-                ],
-
-                if (widget.prefix != null) ...[
-                  widget.prefix!,
-
-                  if (widget.label != null) 8.horizontalGap,
-                ],
-
-                if (widget.label != null)
-                  Flexible(
-                    child: AppText(
-                      widget.label!,
-                      textAlign: TextAlign.center,
-                      style: buttonTheme.labelColor != null
-                          ? context.textStyles.titleSmall.copyWith(
-                              color: buttonTheme.labelColor,
-                              fontWeight: AppMaterialTextPrimitives.semibold,
-                              wordSpacing: 0.8,
-                            )
-                          : context.textStyles.titleSmall.copyWith(
-                              color: foregroundColor,
-                              fontWeight: AppMaterialTextPrimitives.semibold,
-                              wordSpacing: 0.8,
-                            ),
-                      translate: buttonTheme.translate ?? true,
-                    ),
-                  ),
-
-                if (widget.suffix != null) ...[
-                  if (widget.label != null) 8.horizontalGap,
-                  widget.suffix!,
-                ],
-              ],
-            ],
-          ),
+    Widget content = AnimatedScale(
+      scale: _scale,
+      duration: _duration,
+      curve: Curves.easeOut,
+      child: Container(
+        height: widget.height,
+        width: widget.width ?? (expanded ? double.infinity : null),
+        constraints: const BoxConstraints(minHeight: 40),
+        padding: base.padding ?? (16.horizontalPadding + 12.verticalPadding),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: base.radius ?? 12.borderCircular,
+          border: border,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+          children: widget.isLoading
+              ? [AppCircularLoader(color: base.loaderColor ?? foreground)]
+              : _children(context, base, foreground, translate),
         ),
       ),
     );
+
+    content = Semantics(
+      button: true,
+      enabled: _isInteractive,
+      label: semanticLabel,
+      excludeSemantics: semanticLabel != null,
+      onTap: _isInteractive ? _onTap : null,
+      child: GestureDetector(
+        excludeFromSemantics: true,
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        onTap: _onTap,
+        behavior: HitTestBehavior.opaque,
+        child: content,
+      ),
+    );
+
+    final tooltip = widget.tooltip;
+    if (tooltip != null) {
+      content = Tooltip(
+        message: translate ? tooltip.tr() : tooltip,
+        excludeFromSemantics: true,
+        child: content,
+      );
+    }
+    return content;
+  }
+
+  List<Widget> _children(
+    BuildContext context,
+    CustomButtonTheme base,
+    Color? foreground,
+    bool translate,
+  ) {
+    final label = widget.label;
+    return [
+      if (widget.icon != null) ...[
+        AppSvgPicture.fromAsset(
+          widget.icon!,
+          width: widget.iconSize ?? 16,
+          height: widget.iconSize ?? 16,
+          theme: PictureTheme(color: foreground),
+        ),
+        if (label != null || widget.suffix != null) 8.horizontalGap,
+      ],
+      if (widget.prefix != null) ...[
+        widget.prefix!,
+        if (label != null) 8.horizontalGap,
+      ],
+      if (label != null)
+        Flexible(
+          child: AppText(
+            label,
+            textAlign: TextAlign.center,
+            translate: translate,
+            style: context.textStyles.titleSmall.copyWith(
+              color: base.labelColor ?? foreground,
+              fontWeight: AppMaterialTextPrimitives.semibold,
+              wordSpacing: 0.8,
+            ),
+          ),
+        ),
+      if (widget.suffix != null) ...[
+        if (label != null) 8.horizontalGap,
+        widget.suffix!,
+      ],
+    ];
   }
 }

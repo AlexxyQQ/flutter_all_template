@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../../core/common/presentation/views/components/app_color.dart';
 part 'app_chip_theme.freezed.dart';
 
 @freezed
 abstract class CustomAppChipTheme with _$CustomAppChipTheme {
   const factory CustomAppChipTheme({
-    required KAppColor disabledColor,
-    required KAppColor selectedColor,
-    required KAppColor selectedLabelColor,
-    required KAppColor disabledLabelColor,
+    required Color disabledColor,
+    required Color selectedColor,
+    required Color selectedLabelColor,
+    required Color disabledLabelColor,
     TextStyle? labelStyle,
     BorderRadius? borderRadius,
     EdgeInsets? padding,

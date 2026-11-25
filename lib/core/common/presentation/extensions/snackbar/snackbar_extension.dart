@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Needed for styling the action button
 import '../../helpers/snackbar_helper.dart';
+import '../theme/theme_extension.dart';
 
+/// Snackbar shortcuts. `message`/`title` are localization keys unless
+/// `translate: false` is passed (e.g. for already-translated server text).
 extension SnackBarExtension on BuildContext {
   /// Displays a floating GREEN snackbar for success messages.
   void showSuccessSnackBar({
@@ -10,12 +13,14 @@ extension SnackBarExtension on BuildContext {
     VoidCallback? onTap,
     Widget? prefix,
     Widget? suffix,
+    bool translate = true,
   }) {
     SnackbarHelper.showTop(
       context: this,
       message: message,
       duration: duration,
-      // onTap: onTap,
+      onTap: onTap,
+      translate: translate,
       prefixIcon: prefix,
       suffixIcon: suffix,
     );
@@ -28,6 +33,7 @@ extension SnackBarExtension on BuildContext {
     VoidCallback? onTap,
     Widget? prefix,
     Widget? suffix,
+    bool translate = true,
   }) {
     if (message != null && message.isNotEmpty) {
       SnackbarHelper.showTop(
@@ -35,7 +41,8 @@ extension SnackBarExtension on BuildContext {
         message: message,
         isError: true,
         duration: duration,
-        // onTap: onTap,
+        onTap: onTap,
+        translate: translate,
         prefixIcon: prefix,
         suffixIcon: suffix,
       );
@@ -52,8 +59,10 @@ extension SnackBarExtension on BuildContext {
     Widget? prefix,
     Widget? suffix,
     Alignment alignment = Alignment.center,
+    bool translate = true,
   }) {
     SnackbarHelper.showTop(
+      translate: translate,
       context: this,
       message: title,
       details: message,
@@ -72,7 +81,9 @@ extension SnackBarExtension on BuildContext {
     SnackBarAction? action,
     Duration duration = const Duration(seconds: 3),
     bool isError = false,
+    bool translate = true,
   }) {
+    final actionColor = isError ? colors.onError : tokens.success.onColor;
     // Helper to convert SnackBarAction into a widget for the overlay
     Widget? actionWidget;
 
@@ -87,7 +98,7 @@ extension SnackBarExtension on BuildContext {
         child: Text(
           action.label.toUpperCase(),
           style: TextStyle(
-            color: Colors.white, // Or use context.readColors.white
+            color: actionColor,
             fontWeight: FontWeight.bold,
             fontSize: 14.sp,
           ),
@@ -100,7 +111,8 @@ extension SnackBarExtension on BuildContext {
       message: message,
       isError: isError,
       duration: duration,
-      suffixIcon: actionWidget, // Pass the converted action here
+      suffixIcon: actionWidget,
+      translate: translate,
     );
   }
 }

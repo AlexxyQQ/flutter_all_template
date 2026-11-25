@@ -1,15 +1,22 @@
 import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../config/constants/text/material/app_material_text_primitives.dart';
 import '../extensions/size/size_extension.dart';
 import '../extensions/theme/theme_extension.dart';
-import '../themes/colors/app_material_colors.dart';
 import '../views/widgets/system/icon/app_icon_widget.dart';
 import '../views/widgets/system/text/app_text_widget.dart';
 
-class SnackbarHelper {
+/// Overlay-based snackbars.
+///
+/// `message`/`details` are localization keys by default; pass
+/// `translate: false` when the text is already translated (e.g. a server
+/// message) so it is not translated twice.
+abstract final class SnackbarHelper {
   // --- STATE MANAGEMENT ---
   static OverlayEntry? _activeOverlayEntry;
   static Timer? _activeTimer;
@@ -34,6 +41,7 @@ class SnackbarHelper {
     Widget? prefixIcon,
     Widget? suffixIcon,
     VoidCallback? onTap,
+    bool translate = true,
   }) {
     final colors = _getThemeColors(context, isError);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -57,9 +65,11 @@ class SnackbarHelper {
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
           isError: isError,
+          translate: translate,
         ),
       ),
       onTap: onTap,
+      announcement: _announcement(message, null, translate),
     );
   }
 
@@ -72,6 +82,7 @@ class SnackbarHelper {
     Widget? prefixIcon,
     Widget? suffixIcon,
     VoidCallback? onTap,
+    bool translate = true,
   }) {
     final colors = _getThemeColors(context, isError);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -91,7 +102,7 @@ class SnackbarHelper {
           borderRadius: BorderRadius.circular(12.r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -104,9 +115,11 @@ class SnackbarHelper {
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
           isError: isError,
+          translate: translate,
         ),
       ),
       onTap: onTap,
+      announcement: _announcement(message, null, translate),
     );
   }
 
@@ -120,6 +133,8 @@ class SnackbarHelper {
     Widget? prefixIcon,
     Widget? suffixIcon,
     Alignment alignment = Alignment.center,
+    VoidCallback? onTap,
+    bool translate = true,
   }) {
     final colors = _getThemeColors(context, isError);
     final topPadding = MediaQuery.of(context).padding.top;
@@ -148,9 +163,12 @@ class SnackbarHelper {
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
           isError: isError,
+          translate: translate,
           alignment: alignment,
         ),
       ),
+      onTap: onTap,
+      announcement: _announcement(message, details, translate),
     );
   }
 
@@ -169,6 +187,7 @@ class SnackbarHelper {
     double? top,
     double? bottom,
     VoidCallback? onTap,
+    String announcement = '',
   }) {
     _closeCurrentOverlay();
 
@@ -183,6 +202,7 @@ class SnackbarHelper {
           child: _SlideAnimation(
             direction: direction,
             child: GestureDetector(
+              excludeFromSemantics: onTap == null,
               onTap: () {
                 onTap?.call();
                 _closeCurrentOverlay();
@@ -195,6 +215,15 @@ class SnackbarHelper {
     );
 
     _activeOverlayEntry = overlayEntry;
+    if (announcement.isNotEmpty) {
+      unawaited(
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          announcement,
+          Directionality.of(context),
+        ),
+      );
+    }
     Overlay.of(context).insert(overlayEntry);
     _activeTimer = Timer(duration, _closeCurrentOverlay);
   }
@@ -205,6 +234,7 @@ class SnackbarHelper {
     required String message,
     required Color textColor,
     required bool isError,
+    required bool translate,
     String? subMessage,
     Widget? prefixIcon,
     Widget? suffixIcon,
@@ -239,7 +269,8 @@ class SnackbarHelper {
               children: [
                 AppText(
                   message,
-                  style: context.readTextStyles.labelLarge.copyWith(
+                  translate: translate,
+                  style: context.textStyles.labelLarge.copyWith(
                     color: textColor,
                     fontWeight: subMessage != null
                         ? AppMaterialTextPrimitives.bold
@@ -250,7 +281,8 @@ class SnackbarHelper {
                   4.verticalGap,
                   AppText(
                     subMessage,
-                    style: context.readTextStyles.bodySmall.copyWith(
+                    translate: translate,
+                    style: context.textStyles.bodySmall.copyWith(
                       color: textColor,
                     ),
                     maxLines: 2,
@@ -270,18 +302,21 @@ class SnackbarHelper {
     );
   }
 
+  static String _announcement(String message, String? details, bool translate) {
+    String t(String v) => translate ? v.tr() : v;
+    return details == null ? t(message) : '${t(message)}. ${t(details)}';
+  }
+
   /// Helper to extract colors
   static ({Color background, Color foreground}) _getThemeColors(
     BuildContext context,
     bool isError,
   ) {
     return (
-      background: isError
-          ? AppMaterialColors.error
-          : AppMaterialColors.success.color,
+      background: isError ? context.colors.error : context.tokens.success.color,
       foreground: isError
-          ? AppMaterialColors.onError
-          : AppMaterialColors.success.onColor,
+          ? context.colors.onError
+          : context.tokens.success.onColor,
     );
   }
 }
@@ -330,7 +365,7 @@ class _SlideAnimationState extends State<_SlideAnimation>
           ),
         );
 
-    _controller.forward();
+    unawaited(_controller.forward());
   }
 
   @override

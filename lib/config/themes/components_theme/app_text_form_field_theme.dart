@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../../core/common/presentation/views/components/app_color.dart';
 import '../../constants/colors/material/material_primitive_colors.dart';
-import '../../constants/enums/text_form_filed_enum.dart';
-import '../../constants/text/material/app_material_text_style.dart';
+import '../../constants/enums/text_form_field_enum.dart';
 
 part 'app_text_form_field_theme.freezed.dart';
 
@@ -24,8 +22,8 @@ abstract class FormFieldTheme with _$FormFieldTheme {
     TextEditingController?
     controller, // Ideally passed to the widget, but often kept here in config objects
     // --- Styling ---
-    KAppColor? fillColor,
-    KAppColor? disabledTextColor,
+    Color? fillColor,
+    Color? disabledTextColor,
     TextStyle? contentStyle,
     TextStyle? hintTextStyle,
     TextStyle? labelTextStyle,
@@ -34,11 +32,11 @@ abstract class FormFieldTheme with _$FormFieldTheme {
 
     // --- Borders ---
     BorderRadius? borderRadius,
-    KAppColor? enabledBorderColor,
-    KAppColor? focusedBorderColor,
-    KAppColor? errorBorderColor,
-    KAppColor? disabledBorderColor,
-    KAppColor? fillDisabledColor,
+    Color? enabledBorderColor,
+    Color? focusedBorderColor,
+    Color? errorBorderColor,
+    Color? disabledBorderColor,
+    Color? fillDisabledColor,
     double? borderWidth,
     bool? noBorder,
     bool? isCustomBorder,
@@ -46,7 +44,7 @@ abstract class FormFieldTheme with _$FormFieldTheme {
     // --- Layout & Icons ---
     EdgeInsetsGeometry? contentPadding,
     bool? isDense,
-    KAppColor? iconColor,
+    Color? iconColor,
     Widget? prefixIcon,
     Widget? suffixIcon,
     BoxConstraints? prefixIconConstraints,
@@ -71,7 +69,7 @@ abstract class FormFieldTheme with _$FormFieldTheme {
 
     // --- Validation/Requirements ---
     @Default('*') String requiredCharacter,
-    @Default(AppMaterialPrimitives.error50) KAppColor? requiredColor,
+    Color? requiredColor,
 
     // --- Date/Time Specifics ---
     DateTime? minDate,
@@ -82,7 +80,9 @@ abstract class FormFieldTheme with _$FormFieldTheme {
 
   /// Determines the effective Keyboard Type based on the Enum
   TextInputType get effectiveKeyboardType {
-    if (keyboardType != null) return keyboardType!;
+    if (keyboardType != null) {
+      return keyboardType!;
+    }
 
     return switch (inputType) {
       AppInputTypeEnum.text ||
@@ -108,17 +108,13 @@ abstract class FormFieldTheme with _$FormFieldTheme {
           inputType == AppInputTypeEnum.dateRangePicker ||
           inputType == AppInputTypeEnum.timePicker);
 
-  TextStyle get effectiveContentStyle =>
-      contentStyle?.copyWith(color: isReadOnly ? disabledTextColor : null) ??
-      AppMaterialTextStyles.bodyLarge.copyWith(
-        color: isReadOnly ? disabledTextColor : null,
-      );
+  TextStyle get effectiveContentStyle => (contentStyle ?? const TextStyle())
+      .copyWith(color: isReadOnly ? disabledTextColor : null);
 
-  KAppColor get effectiveEnabledBorderColor => isReadOnly
+  Color get effectiveEnabledBorderColor => isReadOnly
       ? (disabledBorderColor ?? AppMaterialPrimitives.transparent)
       : (enabledBorderColor ?? AppMaterialPrimitives.transparent);
 
   TextStyle get requiredTextStyle =>
-      titleStyle?.copyWith(color: requiredColor) ??
-      AppMaterialTextStyles.bodyLarge.copyWith(color: requiredColor);
+      (titleStyle ?? const TextStyle()).copyWith(color: requiredColor);
 }

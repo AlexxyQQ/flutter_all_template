@@ -129,7 +129,12 @@
         "selectDate": "Select Date",
         "selectDateRange": "Select Date Range",
         "selectTime": "Select Time",
-        "gender": "Select Gender"
+        "gender": "Select Gender",
+        "otp": "OTP",
+        "hours": "Hours",
+        "minutes": "Minutes",
+        "amount": "Amount",
+        "socialMediaHandle": "Social media handle"
       },
       "hints": {
         "email": "Enter your email",
@@ -620,6 +625,23 @@
               "label": "label",
               "tets": "Tets",
               "testLocationPermission": "Test Location Permission"
+            }
+          }
+        }
+      }
+    },
+    "home": {
+      "presentation": {
+        "views": {
+          "screens": {
+            "home_screen": {
+              "title": "Home",
+              "welcome": "Welcome",
+              "subtitle": "Your app starts here. Replace this screen with your first feature.",
+              "openGallery": "Open component gallery",
+              "galleryTitle": "Component gallery",
+              "splashLoading": "Loading…",
+              "logoLabel": "App logo"
             }
           }
         }

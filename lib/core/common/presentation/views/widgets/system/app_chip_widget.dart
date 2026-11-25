@@ -5,7 +5,6 @@ import '../../../../../../config/themes/components_theme/app_picture_theme.dart'
 import '../../../extensions/size/size_extension.dart';
 import '../../../extensions/theme/theme_extension.dart';
 import '../../../themes/styles/app_chip_style.dart';
-import '../../components/app_color.dart';
 import 'icon/app_icon_widget.dart';
 import 'images/app_svg_picture_widget.dart';
 import 'text/app_text_widget.dart';
@@ -34,7 +33,7 @@ class AppChipWidget extends StatelessWidget {
 
   factory AppChipWidget.svg({
     required bool isSelected,
-    required KAppColor color,
+    required Color color,
     required String selectedSvgAsset,
     required String unselectedSvgAsset,
     required VoidCallback onTap,
@@ -98,9 +97,9 @@ class AppChipWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final CustomAppChipTheme effectiveTheme =
-        theme ?? AppChipStyle.primaryTheme;
+        theme ?? AppChipStyle.primary(context);
 
-    final KAppColor effectiveTextColor = isSelected
+    final Color effectiveTextColor = isSelected
         ? (effectiveTheme.selectedLabelColor)
         : (effectiveTheme.disabledLabelColor);
 

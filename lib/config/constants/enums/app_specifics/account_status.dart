@@ -26,7 +26,9 @@ class AccountStatusConverter implements JsonConverter<AccountStatus?, String?> {
 
   @override
   AccountStatus? fromJson(String? json) {
-    if (json == null) return null;
+    if (json == null) {
+      return null;
+    }
     return AccountStatus.values
         .where((e) => e.name.toLowerCase() == json.toLowerCase())
         .firstOrNull;

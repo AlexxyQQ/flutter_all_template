@@ -7,6 +7,7 @@ import '../../../../../../../config/constants/text/material/app_material_text_pr
 import '../../../../../../../config/themes/components_theme/app_picture_theme.dart';
 import '../../../../extensions/size/size_extension.dart';
 import '../../../../extensions/theme/theme_extension.dart';
+import '../../../../helpers/semantic_tap.dart';
 import '../text/app_text_widget.dart';
 
 class AppSvgPicture extends StatelessWidget {
@@ -104,6 +105,7 @@ class AppSvgPicture extends StatelessWidget {
                     alignment: theme?.alignment ?? Alignment.center,
                     colorFilter: _colorFilter,
                     semanticsLabel: theme?.semanticsLabel,
+                    excludeFromSemantics: theme?.semanticsLabel == null,
                     matchTextDirection: theme?.matchTextDirection ?? false,
                     errorBuilder: (context, error, stackTrace) =>
                         ImageNoDataWidget(
@@ -126,6 +128,7 @@ class AppSvgPicture extends StatelessWidget {
                     alignment: theme?.alignment ?? Alignment.center,
                     colorFilter: _colorFilter,
                     semanticsLabel: theme?.semanticsLabel,
+                    excludeFromSemantics: theme?.semanticsLabel == null,
                     matchTextDirection: theme?.matchTextDirection ?? false,
                     errorBuilder: (context, error, stackTrace) =>
                         ImageNoDataWidget(
@@ -150,6 +153,7 @@ class AppSvgPicture extends StatelessWidget {
             alignment: theme?.alignment ?? Alignment.center,
             colorFilter: _colorFilter,
             semanticsLabel: theme?.semanticsLabel,
+            excludeFromSemantics: theme?.semanticsLabel == null,
             matchTextDirection: theme?.matchTextDirection ?? false,
             errorBuilder: (context, error, stackTrace) => ImageNoDataWidget(
               title: alt,
@@ -171,6 +175,7 @@ class AppSvgPicture extends StatelessWidget {
             alignment: theme?.alignment ?? Alignment.center,
             colorFilter: _colorFilter,
             semanticsLabel: theme?.semanticsLabel,
+            excludeFromSemantics: theme?.semanticsLabel == null,
             matchTextDirection: theme?.matchTextDirection ?? false,
             errorBuilder: (context, error, stackTrace) => ImageNoDataWidget(
               title: alt,
@@ -185,7 +190,11 @@ class AppSvgPicture extends StatelessWidget {
             ),
           );
 
-    return onTap != null ? GestureDetector(onTap: onTap, child: child) : child;
+    return wrapSemanticTap(
+      child: child,
+      onTap: onTap,
+      label: theme?.semanticsLabel,
+    );
   }
 }
 
@@ -216,7 +225,9 @@ class ImagePlaceholderWidget extends StatelessWidget {
       width: width,
       height: height,
       child: Center(
-        child: CircularProgressIndicator(color: theme?.color ?? Colors.blue),
+        child: CircularProgressIndicator(
+          color: theme?.color ?? context.colors.primary,
+        ),
       ),
     );
   }

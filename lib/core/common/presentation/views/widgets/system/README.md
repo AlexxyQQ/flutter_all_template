@@ -6,11 +6,11 @@ A library of pre-built, theme-aware widgets that wrap Flutter primitives and enf
 
 ```
 system/
-├── app_button.dart           # Primary / secondary / text buttons
+├── app_button.dart           # AppButton (variants: primary, secondary, tertiary, stroke, ghost, destructive, icon, custom)
 ├── app_chip_widget.dart      # Filter / selection chips
 ├── app_divider.dart          # Styled horizontal divider
 ├── app_selection_box.dart    # Checkbox / radio-style selection box
-├── app_swtich.dart           # Toggle switch
+├── app_switch.dart           # Toggle switch
 ├── default_app_bar.dart      # Pre-styled AppBar
 ├── icon/
 │   └── app_icon_widget.dart  # Icon + theme size/colour resolver
@@ -25,7 +25,7 @@ system/
 │   └── app_text_widget.dart           # Text with named styles from theme
 └── text_fields/
     ├── app_dropdown.dart              # Dropdown selector
-    ├── app_text_filed.dart            # Standard text input
+    ├── app_text_field.dart            # Standard text input
     └── base/
         └── custom_text_form_field_widget.dart  # Low-level base field
 ```
@@ -34,7 +34,10 @@ system/
 
 ## `AppButton`
 
-Themed button that maps to your `AppButtonTheme`:
+One implementation, several variants (`ButtonVariant`). Colours are resolved
+from the ambient `ColorScheme` by `ButtonStyles.of(variant, scheme)`. Labels are
+localization keys unless `translate: false`. Icon-only buttons should pass a
+`tooltip`/`semanticLabel` for screen readers.
 
 ```dart
 AppButton.primary(
@@ -48,10 +51,16 @@ AppButton.secondary(
   onPressed: () => context.router.pop(),
 )
 
-AppButton.text(
-  label: 'Skip',
-  onPressed: _skip,
+AppButton.destructive(label: LocaleKeys.common_words_delete, onPressed: _delete)
+
+AppButton.icon(
+  icon: Assets.icons.arrowCross,
+  tooltip: LocaleKeys.common_words_close,
+  onPressed: _close,
 )
+
+// Or pick the variant dynamically:
+AppButton(variant: ButtonVariant.ghost, label: 'Skip', onPressed: _skip)
 ```
 
 ---
@@ -81,7 +90,7 @@ AppTextField(
   hint: 'you@example.com',
   controller: _emailController,
   keyboardType: TextInputType.emailAddress,
-  validator: context.emailValidator(),
+  validator: (v) => v.validateEmail().errorText, // form_validator_extension.dart
   prefixIcon: const Icon(Icons.email),
 )
 ```

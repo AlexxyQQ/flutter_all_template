@@ -6,18 +6,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../../config/constants/text/material/app_material_text_primitives.dart';
-import '../../../../domain/services/navigation/navigation_service.dart';
-import '../../../../locator/service_locator.dart';
+import '../../../extensions/dialog/dialog_extension.dart';
 import '../../../extensions/size/size_extension.dart';
 import '../../../extensions/theme/theme_extension.dart';
-import '../../../routes/app_router.gr.dart';
-import '../../widgets/system/icon/app_icon_widget.dart'; // Ensure this maps to your AppIcon
-import '../../widgets/system/text/app_text_widget.dart'; // Ensure this maps to your AppText
+import '../../widgets/system/icon/app_icon_widget.dart';
+import '../../widgets/system/text/app_text_widget.dart';
 
 enum DialogType { info, success, warning, error, confirmation, custom }
 
 @RoutePage(name: 'AppDialogRoute')
-class AppDialogPage extends StatelessWidget {
+class AppDialogPage extends StatefulWidget {
   const AppDialogPage({
     required this.type,
     super.key,
@@ -44,31 +42,48 @@ class AppDialogPage extends StatelessWidget {
   final bool? isDismissible;
 
   @override
-  Widget build(BuildContext context) {
-    final nav = sl<NavigationService>();
+  State<AppDialogPage> createState() => _AppDialogPageState();
+}
 
-    // 1. Auto-close logic
-    if (autoCloseDuration != null) {
-      Future.delayed(autoCloseDuration!, () {
-        // Safe check to ensure we only pop if this specific route is active could go here
-        nav.closeSpecificRoute(name: AppDialogRoute.name);
+class _AppDialogPageState extends State<AppDialogPage> {
+  Timer? _autoClose;
+
+  DialogType get type => widget.type;
+
+  @override
+  void initState() {
+    super.initState();
+    final duration = widget.autoCloseDuration;
+    if (duration != null) {
+      _autoClose = Timer(duration, () {
+        if (mounted) {
+          context.closeDialog;
+        }
       });
     }
+  }
 
-    // 2. Resolve Colors & Icons based on Semantic System
-    // We map generic types to your specific AppSemanticColors
-    Color primaryColor;
-    IconData icon;
+  @override
+  void dispose() {
+    _autoClose?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.title;
+    final Color primaryColor;
+    final IconData icon;
 
     switch (type) {
       case DialogType.info:
-        primaryColor = context.colors.tertiary; // Blue family
+        primaryColor = context.tokens.info.color;
         icon = Icons.info_outline;
       case DialogType.success:
-        primaryColor = context.colors.success.color;
+        primaryColor = context.tokens.success.color;
         icon = Icons.check_circle_outline;
       case DialogType.warning:
-        primaryColor = context.colors.warning.color;
+        primaryColor = context.tokens.warning.color;
         icon = Icons.warning_amber_rounded;
       case DialogType.error:
         primaryColor = context.colors.error;
@@ -82,7 +97,7 @@ class AppDialogPage extends StatelessWidget {
     }
 
     return PopScope(
-      canPop: isDismissible ?? false,
+      canPop: widget.isDismissible ?? false,
       child: AlertDialog(
         backgroundColor: context.colors.surface,
         surfaceTintColor: context.colors.surface, // Remove Material 3 tint
@@ -124,25 +139,20 @@ class AppDialogPage extends StatelessWidget {
                 ],
               ),
         content:
-            customContent ??
+            widget.customContent ??
             AppText(
-              message ?? '',
+              widget.message ?? '',
               style: context.textStyles.bodyLarge.copyWith(
-                color: context.colors.onSurface.withOpacity(0.8),
+                color: context.colors.onSurfaceVariant,
               ),
             ),
-        actions: _buildActions(context, nav, primaryColor),
+        actions: _buildActions(context, primaryColor),
       ),
     );
   }
 
-  List<Widget> _buildActions(
-    BuildContext context,
-    NavigationService nav,
-    Color primaryColor,
-  ) {
-    FutureOr<bool> closeDialog() =>
-        nav.closeSpecificRoute(name: AppDialogRoute.name);
+  List<Widget> _buildActions(BuildContext context, Color primaryColor) {
+    void closeDialog() => context.closeDialog;
 
     // Helper for Buttons using your TextStyles
     Widget buildBtn({
@@ -157,7 +167,7 @@ class AppDialogPage extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.r),
           ),
-          foregroundColor: color.withOpacity(0.1), // Splash color
+          foregroundColor: color,
         ),
         child: AppText(
           text,
@@ -172,10 +182,10 @@ class AppDialogPage extends StatelessWidget {
         type == DialogType.success) {
       return [
         buildBtn(
-          text: confirmText ?? LocaleKeys.common_words_close,
+          text: widget.confirmText ?? LocaleKeys.common_words_close,
           color: primaryColor,
           onPressed: () {
-            onConfirm?.call();
+            widget.onConfirm?.call();
             closeDialog();
           },
         ),
@@ -186,20 +196,18 @@ class AppDialogPage extends StatelessWidget {
     if (type == DialogType.warning || type == DialogType.confirmation) {
       return [
         buildBtn(
-          text: cancelText ?? LocaleKeys.common_words_cancel,
-          color: context.colors.outlineVariant.withOpacity(
-            0.8,
-          ), // Muted color for cancel
+          text: widget.cancelText ?? LocaleKeys.common_words_cancel,
+          color: context.colors.onSurfaceVariant,
           onPressed: () {
-            onCancel?.call();
+            widget.onCancel?.call();
             closeDialog();
           },
         ),
         buildBtn(
-          text: confirmText ?? LocaleKeys.common_words_confirm,
+          text: widget.confirmText ?? LocaleKeys.common_words_confirm,
           color: primaryColor,
           onPressed: () {
-            onConfirm?.call();
+            widget.onConfirm?.call();
             closeDialog();
           },
         ),
@@ -208,10 +216,10 @@ class AppDialogPage extends StatelessWidget {
 
     // 3. Custom: Fallback close button if no actions provided in content
     return [
-      if (onCancel != null || onConfirm != null)
+      if (widget.onCancel != null || widget.onConfirm != null)
         buildBtn(
           text: LocaleKeys.common_words_close,
-          color: context.colors.outlineVariant,
+          color: context.colors.onSurfaceVariant,
           onPressed: closeDialog,
         ),
     ];

@@ -1,23 +1,38 @@
+import 'dart:async';
+
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../domain/services/navigation/navigation_service.dart';
-import '../../../locator/service_locator.dart';
 import '../../routes/app_router.dart';
 import '../../views/pages/dialogs/app_dialog.dart';
 
+/// Dialog helpers built on the app's root [StackRouter].
+///
+/// `title`/`message`/button texts are localization keys.
 extension DialogExtension on BuildContext {
-  // Close Dialog Loader
-  void get closeLoader => sl<NavigationService>().closeSpecificRoute(
-    name: AppDialogLoaderRoute.name,
-  );
-  // Close Dialog
-  void get closeDialog =>
-      sl<NavigationService>().closeSpecificRoute(name: AppDialogRoute.name);
+  StackRouter get _rootRouter => router.root;
 
-  // Show Dialog Loader
+  /// Pops the route named [name] if it is on top, otherwise removes it from
+  /// the stack.
+  void _closeRoute(String name) {
+    final root = _rootRouter;
+    if (root.current.name == name) {
+      unawaited(root.maybePop());
+    } else {
+      root.removeWhere((route) => route.name == name);
+    }
+  }
+
+  /// Closes the dialog loader.
+  void get closeLoader => _closeRoute(AppDialogLoaderRoute.name);
+
+  /// Closes the app dialog.
+  void get closeDialog => _closeRoute(AppDialogRoute.name);
+
+  /// Shows the blocking dialog loader.
   void showDialogLoader({Duration? duration}) {
-    sl<NavigationService>().push(AppDialogLoaderRoute(duration: duration));
+    unawaited(_rootRouter.push(AppDialogLoaderRoute(duration: duration)));
   }
 
   /// Helper to push the route
@@ -32,17 +47,19 @@ extension DialogExtension on BuildContext {
     String? cancelText,
     bool isDismissible = false,
   }) {
-    sl<NavigationService>().push(
-      AppDialogRoute(
-        type: type,
-        title: title,
-        message: message,
-        customContent: customContent,
-        onConfirm: onConfirm,
-        onCancel: onCancel,
-        confirmText: confirmText,
-        cancelText: cancelText,
-        isDismissible: isDismissible,
+    unawaited(
+      _rootRouter.push(
+        AppDialogRoute(
+          type: type,
+          title: title,
+          message: message,
+          customContent: customContent,
+          onConfirm: onConfirm,
+          onCancel: onCancel,
+          confirmText: confirmText,
+          cancelText: cancelText,
+          isDismissible: isDismissible,
+        ),
       ),
     );
   }

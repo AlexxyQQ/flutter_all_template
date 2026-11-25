@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../../core/common/presentation/views/components/app_color.dart';
-
 part 'app_radio_button_theme.freezed.dart';
 
 @freezed
@@ -16,11 +14,11 @@ abstract class CustomRadioButtonTheme with _$CustomRadioButtonTheme {
     @Default(BoxShape.circle) BoxShape indicatorShape,
     double? indicatorBorder,
     EdgeInsets? contentPadding,
-    KAppColor? selectedColor,
-    KAppColor? unselectedColor,
-    KAppColor? indicatorColor,
-    KAppColor? fillColor,
-    KAppColor? borderColor,
+    Color? selectedColor,
+    Color? unselectedColor,
+    Color? indicatorColor,
+    Color? fillColor,
+    Color? borderColor,
     TextStyle? labelStyle,
   }) = _CustomRadioButtonTheme;
 }
