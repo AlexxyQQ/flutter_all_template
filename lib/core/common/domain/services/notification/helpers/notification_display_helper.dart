@@ -1,63 +1,58 @@
-import 'dart:io';
-
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
-import '../../logger/logger_service.dart';
 import 'notification_channels.dart';
 
-class NotificationDisplayHelper {
-  NotificationDisplayHelper(this._awesomeNotifications, this._logger);
-  final AwesomeNotifications _awesomeNotifications;
-  final ILoggerService _logger;
+/// Reports a display error. The foreground service forwards it to the
+/// logger; the background isolate (no DI) uses `dart:developer`.
+typedef NotificationErrorReporter =
+    void Function(String message, Object error, StackTrace stackTrace);
 
-  Future<void> showNotification(
-    RemoteMessage message, {
-    required Future<void> Function() onRequestPermission,
-    bool isAppInForeground = false,
-  }) async {
+/// Renders local notifications with `awesome_notifications`.
+///
+/// Has no DI dependencies so it can be used from the FCM background isolate.
+class NotificationDisplayHelper {
+  const NotificationDisplayHelper(this._awesomeNotifications, this._onError);
+
+  final AwesomeNotifications _awesomeNotifications;
+  final NotificationErrorReporter _onError;
+
+  /// Shows [message] using its `notification` block, falling back to
+  /// `data.title` / `data.body` for data-only messages.
+  Future<void> showRemoteMessage(RemoteMessage message) async {
+    if (kIsWeb) {
+      return;
+    }
     final notification = message.notification;
-    if (notification == null || kIsWeb) return;
+    final title = notification?.title ?? _string(message.data['title']);
+    final body = notification?.body ?? _string(message.data['body']);
+    if (title == null && body == null) {
+      return;
+    }
+    final imageUrl = defaultTargetPlatform == TargetPlatform.iOS
+        ? notification?.apple?.imageUrl
+        : notification?.android?.imageUrl;
 
     try {
-      _logger.d('Showing notification: ${notification.title}');
-
-      // [FIX 3] iOS Image Rendering Failure
-      String? imageUrl;
-      if (Platform.isIOS) {
-        imageUrl = notification.apple?.imageUrl;
-      } else {
-        imageUrl = notification.android?.imageUrl;
-      }
-
       await _awesomeNotifications.createNotification(
         content: NotificationContent(
-          id: notification.hashCode,
+          id: notificationIdFor(message),
           channelKey: NotificationChannelConfig.highImportanceKey,
-          title: notification.title,
-          body: notification.body,
+          title: title,
+          body: body,
           bigPicture: imageUrl,
           largeIcon: imageUrl,
           notificationLayout: imageUrl != null
               ? NotificationLayout.BigPicture
               : NotificationLayout.Default,
           payload: message.data.map(
-            (key, value) => MapEntry(key, value.toString()),
+            (key, Object? value) => MapEntry(key, value?.toString()),
           ),
         ),
       );
     } catch (e, s) {
-      _logger.e('Error showing notification', error: e, stackTrace: s);
-
-      // [FIX 1] Background UI Crash protection
-      if (isAppInForeground) {
-        if ((e is PlatformException) &&
-            (e.code == 'INSUFFICIENT_PERMISSIONS')) {
-          _showPermissionDialog(onRequestPermission);
-        }
-      }
+      _onError('Error showing push notification', e, s);
     }
   }
 
@@ -75,12 +70,12 @@ class NotificationDisplayHelper {
           title: title,
           body: body,
           notificationLayout: NotificationLayout.ProgressBar,
-          progress: double.tryParse('${progress}'),
+          progress: progress.toDouble(),
           locked: true,
         ),
       );
-    } catch (e) {
-      _logger.e('Error showing progress notification', error: e);
+    } catch (e, s) {
+      _onError('Error showing progress notification', e, s);
     }
   }
 
@@ -100,38 +95,22 @@ class NotificationDisplayHelper {
           payload: payload,
         ),
       );
-    } catch (e) {
-      _logger.e('Error showing simple notification', error: e);
+    } catch (e, s) {
+      _onError('Error showing simple notification', e, s);
     }
   }
 
-  Future<void> cancelNotification(int id) async {
-    await _awesomeNotifications.cancel(id);
+  Future<void> cancel(int id) => _awesomeNotifications.cancel(id);
+
+  Future<void> cancelAll() => _awesomeNotifications.cancelAll();
+
+  /// Stable, positive 31-bit id derived from the FCM message id.
+  @visibleForTesting
+  static int notificationIdFor(RemoteMessage message) {
+    final source =
+        message.messageId ?? '${DateTime.now().microsecondsSinceEpoch}';
+    return source.hashCode & 0x7fffffff;
   }
 
-  void _showPermissionDialog(Future<void> Function() onConfirmAction) {
-    // TODO: only if you don't have dedicated permission page Else don't use this
-    return;
-    // [FIX 4] Navigation Service Race Condition check
-    // if (sl.isRegistered<NavigationService>()) {
-    //   final navService = sl<NavigationService>();
-    //   if (!navService.checkIfAlreadyOpened(name: AppDialogRoute.name)) {
-    //     navService.closeSpecificRoute(name: AppDialogRoute.name);
-    //     navService.push(
-    //       AppDialogRoute(
-    //         type: DialogType.info,
-    //         isDismissible: true,
-    //         title: LocaleKeys.common_sentences_notification_permission_requir
-    //             .tr(),
-    //         message: LocaleKeys.common_sentences_the_app_does_not_have_notifica
-    //             .tr(),
-    //         confirmText: 'Ask Permission',
-    //         onConfirm: () async {
-    //           await onConfirmAction();
-    //         },
-    //       ),
-    //     );
-    //   }
-    // }
-  }
+  static String? _string(Object? value) => value is String ? value : null;
 }

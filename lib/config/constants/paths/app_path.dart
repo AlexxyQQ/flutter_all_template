@@ -9,16 +9,16 @@ class AppPaths {
   // Permission
   // ─────────────────────────────────────────────
   static const String permission = '/permission';
-  static const String notificationPermission = 'notification-permission';
-  static const String locationPermission = 'location-permission';
-  static const String storagePermission = 'storage-permission';
-  static const String cameraPermission = 'camera-permission';
-  static const String microphonePermission = 'microphone-permission';
-  static const String contactsPermission = 'contacts-permission';
-  static const String calendarPermission = 'calendar-permission';
-  static const String bluetoothPermission = 'bluetooth-permission';
-  static const String phonePermission = 'phone-permission';
-  static const String activityRecognitionPermission = 'activity-recognition-permission';
+
+  /// Name of the path parameter holding `AppPermission.name`.
+  static const String permissionParam = 'permission';
+
+  /// Route pattern: `/permission/:permission`.
+  static const String permissionPattern = '$permission/:$permissionParam';
+
+  /// Concrete path for one permission, e.g. `/permission/camera`.
+  static String permissionPath(String permissionName) =>
+      '$permission/$permissionName';
 
   // ─────────────────────────────────────────────
   // Features

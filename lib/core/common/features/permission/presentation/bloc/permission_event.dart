@@ -1,62 +1,48 @@
 part of 'permission_bloc.dart';
 
-abstract class IPermissionEvent {}
+sealed class PermissionEvent extends Equatable {
+  const PermissionEvent();
 
-class PermissionEventCheckNotificationPermission extends IPermissionEvent {}
+  @override
+  List<Object?> get props => [];
+}
 
-class PermissionEventCheckLocationPermission extends IPermissionEvent {}
+/// Reads the current OS status (and the persisted "skipped" flag).
+final class PermissionChecked extends PermissionEvent {
+  const PermissionChecked(this.permission);
 
-class PermissionEventCheckCameraPermission extends IPermissionEvent {}
+  final AppPermission permission;
 
-class PermissionEventCheckMicrophonePermission extends IPermissionEvent {}
+  @override
+  List<Object?> get props => [permission];
+}
 
-class PermissionEventCheckStoragePermission extends IPermissionEvent {}
+/// Shows the OS prompt (or delegates to the notification module).
+final class PermissionRequested extends PermissionEvent {
+  const PermissionRequested(this.permission);
 
-class PermissionEventRequestNotificationPermission extends IPermissionEvent {}
+  final AppPermission permission;
 
-class PermissionEventRequestLocationPermission extends IPermissionEvent {}
+  @override
+  List<Object?> get props => [permission];
+}
 
-class PermissionEventRequestCameraPermission extends IPermissionEvent {}
+/// User chose "maybe later". Persisted; does NOT mark it granted.
+final class PermissionSkipped extends PermissionEvent {
+  const PermissionSkipped(this.permission);
 
-class PermissionEventRequestMicrophonePermission extends IPermissionEvent {}
+  final AppPermission permission;
 
-class PermissionEventRequestStoragePermission extends IPermissionEvent {}
+  @override
+  List<Object?> get props => [permission];
+}
 
-class PermissionEventSkipNotificationPermission extends IPermissionEvent {}
+/// Checks every [AppPermission].
+final class AllPermissionsChecked extends PermissionEvent {
+  const AllPermissionsChecked();
+}
 
-class PermissionEventSkipLocationPermission extends IPermissionEvent {}
-
-class PermissionEventSkipCameraPermission extends IPermissionEvent {}
-
-class PermissionEventSkipMicrophonePermission extends IPermissionEvent {}
-
-class PermissionEventSkipStoragePermission extends IPermissionEvent {}
-
-// ── Contacts ──
-class PermissionEventCheckContactsPermission extends IPermissionEvent {}
-class PermissionEventRequestContactsPermission extends IPermissionEvent {}
-class PermissionEventSkipContactsPermission extends IPermissionEvent {}
-
-// ── Calendar ──
-class PermissionEventCheckCalendarPermission extends IPermissionEvent {}
-class PermissionEventRequestCalendarPermission extends IPermissionEvent {}
-class PermissionEventSkipCalendarPermission extends IPermissionEvent {}
-
-// ── Bluetooth ──
-class PermissionEventCheckBluetoothPermission extends IPermissionEvent {}
-class PermissionEventRequestBluetoothPermission extends IPermissionEvent {}
-class PermissionEventSkipBluetoothPermission extends IPermissionEvent {}
-
-// ── Phone ──
-class PermissionEventCheckPhonePermission extends IPermissionEvent {}
-class PermissionEventRequestPhonePermission extends IPermissionEvent {}
-class PermissionEventSkipPhonePermission extends IPermissionEvent {}
-
-// ── Activity Recognition ──
-class PermissionEventCheckActivityRecognitionPermission extends IPermissionEvent {}
-class PermissionEventRequestActivityRecognitionPermission extends IPermissionEvent {}
-class PermissionEventSkipActivityRecognitionPermission extends IPermissionEvent {}
-
-class PermissionEventCheckAllPermissions extends IPermissionEvent {}
-
-class SetFcmToken extends IPermissionEvent {}
+/// Opens the system settings page for the app (permanently denied flow).
+final class PermissionSettingsOpened extends PermissionEvent {
+  const PermissionSettingsOpened();
+}

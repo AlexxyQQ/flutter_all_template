@@ -1,149 +1,181 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:injectable/injectable.dart';
 
-import '../../../locator/service_locator.dart';
+import '../../../../session/session.dart';
+import '../../../../storage/key_value_stores.dart';
 import '../logger/logger_service.dart';
+import '../navigation/navigation_service.dart';
+import 'domain/push_token_repository.dart';
 import 'helpers/fcm_background_handler.dart';
 import 'helpers/notification_channels.dart';
 import 'helpers/notification_display_helper.dart';
-import 'helpers/notification_logic_helper.dart';
-import 'helpers/safe_logger.dart';
+import 'helpers/notification_prefs.dart';
+import 'helpers/notification_thread.dart';
+import 'notification_permission_api.dart';
+import 'notification_route_allowlist.dart';
+import 'push/push_messaging_client.dart';
 
-class NotificationService {
-  // ---------------------------------------------------------------------------
-  // CONSTRUCTORS & DEPENDENCIES
-  // ---------------------------------------------------------------------------
+/// Push (FCM) + local (awesome_notifications) notifications.
+///
+/// Lifecycle: bootstrap calls [initialize] exactly once, after
+/// `Firebase.initializeApp`. The FCM token is registered with the backend
+/// (through [PushTokenRepository]) while a session is authenticated, and is
+/// unregistered + deleted by a logout hook.
+@lazySingleton
+class NotificationService implements NotificationPermissionApi {
+  NotificationService(
+    this._push,
+    this._awesome,
+    this._prefs,
+    this._tokens,
+    this._session,
+    this._navigation,
+    this._routes,
+    this._logger,
+  ) : _display = NotificationDisplayHelper(
+        _awesome,
+        (message, error, stackTrace) =>
+            _logger.e(message, error: error, stackTrace: stackTrace),
+      );
 
-  NotificationService._internal({
-    FirebaseMessaging? firebaseMessaging,
-    AwesomeNotifications? awesomeNotifications,
-    ILoggerService? logger,
-  }) {
-    final fbMessaging = firebaseMessaging ?? FirebaseMessaging.instance;
-    final awNotifications = awesomeNotifications ?? AwesomeNotifications();
-    final logService =
-        logger ??
-        (sl.isRegistered<ILoggerService>()
-            ? sl<ILoggerService>()
-            : SafeLogger());
+  final PushMessagingClient _push;
+  final AwesomeNotifications _awesome;
+  final PreferencesStore _prefs;
+  final PushTokenRepository _tokens;
+  final SessionManager _session;
+  final NavigationService _navigation;
+  final NotificationRouteAllowlist _routes;
+  final ILoggerService _logger;
+  final NotificationDisplayHelper _display;
 
-    _logger = logService;
-    _logicHelper = NotificationLogicHelper(
-      fbMessaging,
-      awNotifications,
-      logService,
-    );
-    _displayHelper = NotificationDisplayHelper(awNotifications, logService);
-    _awesomeNotifications = awNotifications;
-    _firebaseMessaging = fbMessaging;
-  }
+  /// awesome_notifications only accepts static/top-level action callbacks,
+  /// so taps are forwarded through this static stream to the instance.
+  static final StreamController<ReceivedAction> _actions =
+      StreamController<ReceivedAction>.broadcast();
 
-  late final NotificationLogicHelper _logicHelper;
-  late final NotificationDisplayHelper _displayHelper;
-  late final ILoggerService _logger;
-  late final AwesomeNotifications _awesomeNotifications;
-  late final FirebaseMessaging _firebaseMessaging;
-
-  // ---------------------------------------------------------------------------
-  // STATE
-  // ---------------------------------------------------------------------------
-
-  static final NotificationService instance = NotificationService._internal();
-
-  final StreamController<Map<String, dynamic>> _notificationController =
+  final StreamController<Map<String, dynamic>> _events =
       StreamController<Map<String, dynamic>>.broadcast();
 
+  final List<StreamSubscription<Object?>> _subscriptions = [];
+
   bool _initialized = false;
-  String? _fcmToken;
+  String? _currentThreadId;
 
-  Stream<Map<String, dynamic>> get notificationStream =>
-      _notificationController.stream;
+  /// Last token successfully registered with the backend (never logged).
+  String? _registeredToken;
 
-  String? get fcmToken => _fcmToken;
-
-  // ---------------------------------------------------------------------------
-  // PUBLIC API - TOGGLE
-  // ---------------------------------------------------------------------------
-
-  /// Checks if notifications are currently enabled by the user.
-  bool get areNotificationsEnabled => _logicHelper.areAppNotificationsEnabled;
-
-  /// Toggles notifications on or off.
-  /// If [isEnabled] is false, it will also cancel all active notifications.
-  Future<void> toggleNotifications(bool isEnabled) async {
-    await _logicHelper.setAppNotificationsEnabled(isEnabled);
-
-    if (!isEnabled) {
-      _logger.i(
-        'Notifications disabled by user. Cancelling active notifications.',
-      );
-      await _displayHelper.cancelNotification(
-        -1,
-      ); // -1 often cancels all, or loop
-      await _awesomeNotifications.cancelAll();
-    }
-  }
+  /// `received` / `clicked` events with the (untrusted) payload data.
+  Stream<Map<String, dynamic>> get notificationStream => _events.stream;
 
   // ---------------------------------------------------------------------------
-  // INITIALIZATION
+  // Initialization
   // ---------------------------------------------------------------------------
 
   Future<void> initialize() async {
-    if (_initialized) return;
-    _logger.i('Initializing NotificationService...');
+    if (_initialized) {
+      return;
+    }
+    _initialized = true;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _logicHelper.setPrefs(prefs);
+      await _awesome.initialize(
+        null,
+        NotificationChannelConfig.channels,
+        debug: kDebugMode,
+      );
+      await _awesome.setListeners(onActionReceivedMethod: _onActionReceived);
+      _subscriptions
+        ..add(_actions.stream.listen(_handleAction))
+        ..add(_push.onMessage.listen(_onForegroundMessage))
+        ..add(_push.onTokenRefresh.listen(_onTokenRefresh))
+        ..add(_session.statusStream.listen(_onSessionStatus));
+      _push.registerBackgroundHandler(firebaseMessagingBackgroundHandler);
+      _session.registerLogoutHook(_onLogout);
 
-      await _configureAwesomeNotifications();
-      await _configureFCMHandlers();
-
-      _fcmToken = await _logicHelper.getFcmToken();
-      _initialized = true;
-      _logger.i('NotificationService initialized successfully.');
+      final initialAction = await _awesome.getInitialNotificationAction();
+      if (initialAction != null) {
+        _handleAction(initialAction);
+      }
+      if (_session.status == SessionStatus.authenticated) {
+        await _syncToken();
+      }
+      _logger.i('NotificationService initialized.');
     } catch (e, s) {
       _logger.e(
-        'Error initializing NotificationService',
+        'NotificationService initialization failed',
         error: e,
         stackTrace: s,
       );
     }
   }
 
-  @pragma('vm:entry-point')
-  Future<void> initBackground() async {
-    if (_initialized) return;
-    final prefs = await SharedPreferences.getInstance();
-    _logicHelper.setPrefs(prefs);
-    await _configureAwesomeNotifications();
-    _initialized = true;
+  @disposeMethod
+  Future<void> dispose() async {
+    for (final subscription in _subscriptions) {
+      await subscription.cancel();
+    }
+    _subscriptions.clear();
+    await _events.close();
   }
 
   // ---------------------------------------------------------------------------
-  // PUBLIC API - DELEGATED METHODS
+  // Permission (NotificationPermissionApi)
   // ---------------------------------------------------------------------------
 
-  Future<void> showNotification(
-    RemoteMessage message, {
-    bool isAppInForeground = false,
-    bool force = false, // Added force param if you want to bypass the toggle
-  }) async {
-    // Check toggle before showing
-    if (!force && !_logicHelper.areAppNotificationsEnabled) {
-      _logger.d('Notification suppressed: App notifications disabled.');
+  @override
+  Future<bool> isPermissionGranted() => _awesome.isNotificationAllowed();
+
+  @override
+  Future<bool> requestPermission() async {
+    var allowed = await _awesome.isNotificationAllowed();
+    if (!allowed) {
+      allowed = await _awesome.requestPermissionToSendNotifications();
+    }
+    // iOS needs the FCM authorization as well.
+    await _push.requestPermission();
+    if (allowed && _session.status == SessionStatus.authenticated) {
+      await _syncToken();
+    }
+    return allowed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // User toggle
+  // ---------------------------------------------------------------------------
+
+  bool get areNotificationsEnabled =>
+      _prefs.getBool(NotificationPrefs.enabledKey) ?? true;
+
+  /// Turns push notifications on/off for this device.
+  ///
+  /// Off: unregisters + deletes the FCM token (FCM stops delivering) and
+  /// clears every displayed notification.
+  Future<void> toggleNotifications({required bool isEnabled}) async {
+    await _prefs.setBool(NotificationPrefs.enabledKey, value: isEnabled);
+    if (isEnabled) {
+      if (_session.status == SessionStatus.authenticated) {
+        await _syncToken();
+      }
       return;
     }
+    await _unregisterAndDeleteToken();
+    await _display.cancelAll();
+  }
 
-    await _displayHelper.showNotification(
-      message,
-      isAppInForeground: isAppInForeground,
-      onRequestPermission: requestPermission,
-    );
+  // ---------------------------------------------------------------------------
+  // Display
+  // ---------------------------------------------------------------------------
+
+  Future<void> showNotification(RemoteMessage message, {bool force = false}) {
+    if (!force && !areNotificationsEnabled) {
+      return Future.value();
+    }
+    return _display.showRemoteMessage(message);
   }
 
   Future<void> showSimpleNotification({
@@ -152,9 +184,10 @@ class NotificationService {
     required String body,
     Map<String, String?>? payload,
   }) async {
-    if (!_logicHelper.areAppNotificationsEnabled) return;
-
-    await _displayHelper.showSimpleNotification(
+    if (!areNotificationsEnabled) {
+      return;
+    }
+    await _display.showSimpleNotification(
       id: id,
       title: title,
       body: body,
@@ -162,102 +195,167 @@ class NotificationService {
     );
   }
 
+  /// Progress notifications (e.g. uploads) are shown even when push
+  /// notifications are toggled off: they are user-initiated.
   Future<void> showProgressNotification({
     required int id,
     required String title,
     required String body,
     required int progress,
-  }) async {
-    // Usually progress notifications (like downloads) should show
-    // even if general notifications are off. If you want to suppress them too,
-    // uncomment the line below.
-    // if (!_logicHelper.areAppNotificationsEnabled) return;
+  }) => _display.showProgressNotification(
+    id: id,
+    title: title,
+    body: body,
+    progress: progress,
+  );
 
-    await _displayHelper.showProgressNotification(
-      id: id,
-      title: title,
-      body: body,
-      progress: progress,
-    );
+  Future<void> cancelNotification(int id) => _display.cancel(id);
+
+  Future<void> cancelAllNotifications() => _display.cancelAll();
+
+  // ---------------------------------------------------------------------------
+  // Thread suppression
+  // ---------------------------------------------------------------------------
+
+  /// Suppresses foreground pushes for [threadId] (the conversation on screen).
+  void suppressNotificationsForThread(String threadId) {
+    _currentThreadId = normalizeThreadId(threadId);
   }
 
-  Future<void> cancelNotification(int id) =>
-      _displayHelper.cancelNotification(id);
-
-  Future<void> suppressNotificationsForContext(String threadId) =>
-      _logicHelper.suppressNotificationsForContext(threadId);
-
-  Future<void> clearContextSuppression() =>
-      _logicHelper.clearContextSuppression();
-
-  Future<void> deleteToken() async {
-    await _logicHelper.deleteToken();
-    _fcmToken = null;
+  void clearThreadSuppression() {
+    _currentThreadId = null;
   }
 
-  Future<bool> requestPermission() => _logicHelper.requestPermission();
-
-  void dispose() {
-    _notificationController.close();
-    _awesomeNotifications.cancelAll();
-  }
-
-  StreamSubscription<Map<String, dynamic>> addListener(
-    void Function(Map<String, dynamic>) onData,
-  ) {
-    return notificationStream.listen(onData);
+  @visibleForTesting
+  bool shouldSuppress(RemoteMessage message) {
+    if (!areNotificationsEnabled) {
+      return true;
+    }
+    final current = _currentThreadId;
+    final incoming = message.data[threadIdPayloadKey];
+    return current != null &&
+        incoming is String &&
+        normalizeThreadId(incoming) == current;
   }
 
   // ---------------------------------------------------------------------------
-  // PRIVATE HANDLERS
+  // Navigation from a tapped notification
   // ---------------------------------------------------------------------------
 
-  Future<void> _configureAwesomeNotifications() async {
-    await _awesomeNotifications.initialize(
-      null,
-      NotificationChannelConfig.channels,
-      debug: kDebugMode,
-    );
-    _awesomeNotifications.setListeners(
-      onActionReceivedMethod: _onActionReceived,
-    );
-  }
-
-  Future<void> _configureFCMHandlers() async {
-    final initialAction = await _awesomeNotifications
-        .getInitialNotificationAction();
-    if (initialAction != null) {
-      _handleNotificationAction(initialAction);
+  /// Navigates only to allowlisted destinations (see
+  /// [NotificationRouteAllowlist]). Unknown values are ignored and logged
+  /// (without the value itself).
+  @visibleForTesting
+  Future<void> navigateFromPayload(Map<String, dynamic> payload) async {
+    final path = _routes.resolve(payload);
+    if (path != null) {
+      await _navigation.pushNamed(path);
+      return;
     }
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    FirebaseMessaging.onMessage.listen(_onMessageReceived);
-  }
-
-  Future<void> _onMessageReceived(RemoteMessage message) async {
-    _notificationController.add({...message.data, 'action': 'received'});
-
-    // logicHelper.shouldSuppress now checks both context AND global toggle
-    if (_logicHelper.shouldSuppress(message)) {
-      _logger.i('Notification suppressed (Context or Disabled).');
-    } else {
-      await showNotification(message, isAppInForeground: true);
+    if (_routes.hasRoutingKey(payload)) {
+      _logger.i('Ignored notification with a non-allowlisted route.');
     }
   }
 
-  void _handleNotificationAction(ReceivedAction receivedAction) {
-    final parsedPayload = _logicHelper.parseActionPayload(
-      receivedAction.payload,
-    );
-    _logicHelper.navigateFromPayload(parsedPayload);
-    _notificationController.add({
-      ...parsedPayload,
-      'action': 'clicked',
-      'response': receivedAction.buttonKeyPressed,
-    });
-  }
+  // ---------------------------------------------------------------------------
+  // Private
+  // ---------------------------------------------------------------------------
 
   @pragma('vm:entry-point')
-  static Future<void> _onActionReceived(ReceivedAction receivedAction) async {
-    NotificationService.instance._handleNotificationAction(receivedAction);
+  static Future<void> _onActionReceived(ReceivedAction action) async {
+    if (!_actions.isClosed) {
+      _actions.add(action);
+    }
+  }
+
+  void _handleAction(ReceivedAction action) {
+    final payload = parsePayload(action.payload);
+    _events.add({
+      ...payload,
+      'action': 'clicked',
+      'response': action.buttonKeyPressed,
+    });
+    unawaited(navigateFromPayload(payload));
+  }
+
+  Future<void> _onForegroundMessage(RemoteMessage message) async {
+    _events.add({...message.data, 'action': 'received'});
+    if (shouldSuppress(message)) {
+      _logger.d('Foreground notification suppressed.');
+      return;
+    }
+    await showNotification(message);
+  }
+
+  Future<void> _onTokenRefresh(String token) async {
+    if (_session.status == SessionStatus.authenticated &&
+        areNotificationsEnabled) {
+      await _register(token);
+    }
+  }
+
+  Future<void> _onSessionStatus(SessionStatus status) async {
+    if (status == SessionStatus.authenticated) {
+      await _syncToken();
+    }
+  }
+
+  /// Logout hook: the device must stop receiving the previous user's pushes.
+  Future<void> _onLogout() => _unregisterAndDeleteToken();
+
+  Future<void> _syncToken() async {
+    if (!areNotificationsEnabled) {
+      return;
+    }
+    try {
+      final token = await _push.getToken();
+      if (token != null && token != _registeredToken) {
+        await _register(token);
+      }
+    } catch (e, s) {
+      _logger.e('Failed to obtain push token', error: e, stackTrace: s);
+    }
+  }
+
+  Future<void> _register(String token) async {
+    final result = await _tokens.register(token);
+    result.fold(
+      (failure) => _logger.e('Push token registration failed: ${failure.type}'),
+      (_) => _registeredToken = token,
+    );
+  }
+
+  Future<void> _unregisterAndDeleteToken() async {
+    try {
+      final token = _registeredToken ?? await _push.getToken();
+      if (token != null) {
+        final result = await _tokens.unregister(token);
+        result.fold(
+          (failure) =>
+              _logger.e('Push token unregistration failed: ${failure.type}'),
+          (_) {},
+        );
+      }
+      await _push.deleteToken();
+    } catch (e, s) {
+      _logger.e('Failed to delete push token', error: e, stackTrace: s);
+    } finally {
+      _registeredToken = null;
+    }
+  }
+
+  /// Decodes JSON-looking values of an awesome_notifications payload.
+  @visibleForTesting
+  static Map<String, dynamic> parsePayload(Map<String, String?>? payload) {
+    return (payload ?? const <String, String?>{}).map((key, value) {
+      if (value != null && (value.startsWith('{') || value.startsWith('['))) {
+        try {
+          return MapEntry(key, jsonDecode(value));
+        } on FormatException {
+          return MapEntry(key, value);
+        }
+      }
+      return MapEntry(key, value);
+    });
   }
 }
