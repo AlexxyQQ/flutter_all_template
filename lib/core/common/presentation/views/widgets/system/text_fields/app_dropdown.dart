@@ -29,7 +29,7 @@ class AppDropdown<T> extends StatefulWidget {
   final String? titleText;
   final bool? isRequired;
   final bool? disabled;
-  final Function(T?)? onChanged;
+  final void Function(T?)? onChanged;
   final Widget Function(T item)? itemBuilder;
   final String Function(T item)? displayStringForItem;
   final FormFieldTheme? theme;
@@ -54,7 +54,7 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
 
   Future<void> _showDropdown() async {
     // Get latest theme data
-    final effectiveTheme = FormStyles.getTheme(widget.theme);
+    final effectiveTheme = FormStyles.getTheme(context, widget.theme);
 
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final position = renderBox.localToGlobal(Offset.zero);
@@ -114,7 +114,7 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
   @override
   Widget build(BuildContext context) {
     // 1. Resolve effective colors and styles
-    final effectiveTheme = FormStyles.getTheme(widget.theme);
+    final effectiveTheme = FormStyles.getTheme(context, widget.theme);
 
     final effectiveFillColor =
         effectiveTheme.fillColor ?? context.colors.surface;

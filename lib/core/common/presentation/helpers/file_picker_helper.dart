@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../domain/services/logger/logger_service.dart';
+
 /// An abstract interface for a file and media selection service.
 ///
 /// This interface defines methods for selecting files, images, and directories
@@ -60,12 +62,30 @@ class FileSelectorHelperImpl implements IFileSelectorHelper {
   /// or dependency management. By default, it uses:
   /// - [FilePicker.platform]
   /// - [ImagePicker()]
-  FileSelectorHelperImpl({FilePicker? filePicker, ImagePicker? imagePicker})
-    : _filePicker = filePicker ?? FilePicker.platform,
-      _imagePicker = imagePicker ?? ImagePicker();
+  ///
+  /// Pass a [logger] to have picker failures logged before they are rethrown.
+  FileSelectorHelperImpl({
+    FilePicker? filePicker,
+    ImagePicker? imagePicker,
+    ILoggerService? logger,
+  }) : _filePicker = filePicker ?? FilePicker.platform,
+       _imagePicker = imagePicker ?? ImagePicker(),
+       _logger = logger;
 
   final FilePicker _filePicker;
   final ImagePicker _imagePicker;
+  final ILoggerService? _logger;
+
+  /// Logs [error] and rethrows it with its original stack trace.
+  Never _fail(String operation, Object error, StackTrace stackTrace) {
+    _logger?.e(
+      'File selection failed: $operation',
+      error: error,
+      stackTrace: stackTrace,
+      name: 'FileSelectorHelper',
+    );
+    Error.throwWithStackTrace(error, stackTrace);
+  }
 
   /// {@macro IFileSelectorHelper.selectSingleFile}
   @override
@@ -79,9 +99,8 @@ class FileSelectorHelperImpl implements IFileSelectorHelper {
       if (result != null && result.files.single.path != null) {
         return File(result.files.single.path!);
       }
-    } catch (e) {
-      print('Error picking single file: $e');
-      throw Exception('Error picking single file: $e');
+    } catch (e, st) {
+      _fail('picking single file', e, st);
     }
     return null;
   }
@@ -104,9 +123,8 @@ class FileSelectorHelperImpl implements IFileSelectorHelper {
             .map((path) => File(path))
             .toList();
       }
-    } catch (e) {
-      print('Error picking multiple files: $e');
-      throw Exception('Error picking multiple files: $e');
+    } catch (e, st) {
+      _fail('picking multiple files', e, st);
     }
     return null;
   }
@@ -121,9 +139,8 @@ class FileSelectorHelperImpl implements IFileSelectorHelper {
       if (pickedFile != null) {
         return File(pickedFile.path);
       }
-    } catch (e) {
-      print('Error picking single image: $e');
-      throw Exception('Error picking single image: $e');
+    } catch (e, st) {
+      _fail('picking single image', e, st);
     }
     return null;
   }
@@ -134,9 +151,8 @@ class FileSelectorHelperImpl implements IFileSelectorHelper {
     try {
       final pickedFiles = await _imagePicker.pickMultiImage();
       return pickedFiles.map((xfile) => File(xfile.path)).toList();
-    } catch (e) {
-      print('Error picking multiple images: $e');
-      throw Exception('Error picking multiple images: $e');
+    } catch (e, st) {
+      _fail('picking multiple images', e, st);
     }
   }
 
@@ -145,9 +161,8 @@ class FileSelectorHelperImpl implements IFileSelectorHelper {
   Future<String?> selectDirectory() async {
     try {
       return await _filePicker.getDirectoryPath();
-    } catch (e) {
-      print('Error selecting directory: $e');
-      throw Exception('Error selecting directory: $e');
+    } catch (e, st) {
+      _fail('selecting directory', e, st);
     }
   }
 }

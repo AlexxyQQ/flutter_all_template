@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
@@ -8,8 +10,6 @@ import '../../../../../../config/constants/date_time/date_time_formatter_string_
 import '../../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../../config/constants/text/material/app_material_text_primitives.dart';
 import '../../../../../../config/themes/components_theme/app_chip_theme.dart';
-import '../../../../domain/services/navigation/navigation_service.dart';
-import '../../../../locator/service_locator.dart';
 import '../../../extensions/date_time/date_time_extension.dart';
 import '../../../extensions/size/size_extension.dart';
 import '../../../extensions/theme/theme_extension.dart';
@@ -50,11 +50,11 @@ class _StyledDatePickerSheetState extends State<StyledDatePickerSheet> {
 
   void _apply() {
     if (!_hasSelection) {
-      sl<NavigationService>().maybePop();
+      unawaited(Navigator.of(context).maybePop());
       return;
     }
 
-    sl<NavigationService>().maybePop(DateUtils.dateOnly(_value!));
+    unawaited(Navigator.of(context).maybePop(DateUtils.dateOnly(_value!)));
   }
 
   void _reset() => setState(() => _value = null);
@@ -173,7 +173,8 @@ class _StyledDatePickerSheetState extends State<StyledDatePickerSheet> {
                     children: [
                       Expanded(
                         child: AppButton.stroke(
-                          onPressed: () => sl<NavigationService>().maybePop(),
+                          onPressed: () =>
+                              unawaited(Navigator.of(context).maybePop()),
                           label: LocaleKeys.common_words_cancel,
                         ),
                       ),
@@ -237,7 +238,7 @@ class StyledDateRangeSheetState extends State<StyledDateRangeSheet> {
 
   void _apply() {
     if (!_hasFullSelection) {
-      sl<NavigationService>().maybePop();
+      unawaited(Navigator.of(context).maybePop());
       return;
     }
     DateTime start = DateUtils.dateOnly(_values[0]!);
@@ -247,7 +248,9 @@ class StyledDateRangeSheetState extends State<StyledDateRangeSheet> {
       start = end;
       end = tmp;
     }
-    sl<NavigationService>().maybePop(DateTimeRange(start: start, end: end));
+    unawaited(
+      Navigator.of(context).maybePop(DateTimeRange(start: start, end: end)),
+    );
   }
 
   void _reset() => setState(() => _values = []);
@@ -265,13 +268,13 @@ class StyledDateRangeSheetState extends State<StyledDateRangeSheet> {
 
     if (widget.minDate != null &&
         s.isBefore(DateUtils.dateOnly(widget.minDate!))) {
-      return AppChipStyle.disabledTheme;
+      return AppChipStyle.disabled(context);
     }
     if (widget.maxDate != null &&
         e.isAfter(DateUtils.dateOnly(widget.maxDate!))) {
-      return AppChipStyle.disabledTheme;
+      return AppChipStyle.disabled(context);
     }
-    return AppChipStyle.primaryTheme;
+    return AppChipStyle.primary(context);
   }
 
   // 1. New helper to check if a range is allowed
@@ -425,7 +428,8 @@ class StyledDateRangeSheetState extends State<StyledDateRangeSheet> {
                       Expanded(
                         child: AppButton.stroke(
                           label: LocaleKeys.common_words_cancel,
-                          onPressed: () => sl<NavigationService>().maybePop(),
+                          onPressed: () =>
+                              unawaited(Navigator.of(context).maybePop()),
                         ),
                       ),
                       12.horizontalGap,

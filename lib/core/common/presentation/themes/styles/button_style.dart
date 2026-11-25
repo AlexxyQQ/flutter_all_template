@@ -1,98 +1,115 @@
-import '../../../../../config/constants/colors/material/material_primitive_colors.dart';
-import '../../../../../config/constants/text/material/app_material_text_style.dart';
+import 'package:flutter/material.dart';
+
 import '../../../../../config/themes/components_theme/app_button_theme.dart';
 import '../../../../../config/themes/components_theme/app_radio_button_theme.dart';
 import '../../extensions/size/size_extension.dart';
-import '../colors/app_material_colors.dart';
 
-class ButtonStyles {
-  /// Primary button theme
-  static CustomButtonTheme get primaryTheme => CustomButtonTheme(
-    backgroundColor: AppMaterialColors.primary,
-    foregroundColor: AppMaterialColors.onPrimary,
-    backgroundDisabledColor: AppMaterialColors.primaryFixedDim,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 16.horizontalPadding + 12.verticalPadding,
-    loaderColor: AppMaterialColors.onPrimary,
+/// Visual variants supported by `AppButton`.
+enum ButtonVariant { primary, secondary, tertiary, stroke, ghost, destructive }
+
+/// Resolves [CustomButtonTheme]s from the active [ColorScheme].
+///
+/// Everything is a pure function of the scheme, so light/dark switches and
+/// local `Theme` overrides are picked up automatically.
+abstract final class ButtonStyles {
+  static CustomButtonTheme of(ButtonVariant variant, ColorScheme cs) {
+    final radius = 12.borderCircular;
+    final padding = 16.horizontalPadding + 12.verticalPadding;
+    return switch (variant) {
+      ButtonVariant.primary => _filled(
+        cs.primary,
+        cs.onPrimary,
+        cs.primaryFixedDim,
+        cs,
+        radius,
+        padding,
+      ),
+      ButtonVariant.secondary => _filled(
+        cs.secondary,
+        cs.onSecondary,
+        cs.secondaryFixedDim,
+        cs,
+        radius,
+        padding,
+      ),
+      ButtonVariant.tertiary => _filled(
+        cs.tertiary,
+        cs.onTertiary,
+        cs.tertiaryFixedDim,
+        cs,
+        radius,
+        padding,
+      ),
+      ButtonVariant.destructive => _filled(
+        cs.error,
+        cs.onError,
+        cs.errorContainer,
+        cs,
+        radius,
+        padding,
+      ),
+      ButtonVariant.stroke => CustomButtonTheme(
+        backgroundColor: Colors.transparent,
+        foregroundColor: cs.primary,
+        backgroundDisabledColor: Colors.transparent,
+        foregroundDisabledColor: cs.outline,
+        radius: radius,
+        padding: padding,
+        showBorder: true,
+        loaderColor: cs.primary,
+      ),
+      ButtonVariant.ghost => CustomButtonTheme(
+        backgroundColor: Colors.transparent,
+        foregroundColor: cs.primary,
+        backgroundDisabledColor: Colors.transparent,
+        foregroundDisabledColor: cs.outline,
+        radius: radius,
+        padding: padding,
+        loaderColor: cs.primary,
+      ),
+    };
+  }
+
+  static CustomButtonTheme _filled(
+    Color background,
+    Color foreground,
+    Color disabledBackground,
+    ColorScheme cs,
+    BorderRadius radius,
+    EdgeInsets padding,
+  ) => CustomButtonTheme(
+    backgroundColor: background,
+    foregroundColor: foreground,
+    backgroundDisabledColor: disabledBackground,
+    foregroundDisabledColor: cs.outline,
+    radius: radius,
+    padding: padding,
+    loaderColor: foreground,
   );
 
-  /// Secondary button theme
-  static CustomButtonTheme get secondaryTheme => CustomButtonTheme(
-    backgroundColor: AppMaterialColors.secondary,
-    foregroundColor: AppMaterialColors.onSecondary,
-    backgroundDisabledColor: AppMaterialColors.secondaryFixedDim,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 8.verticalPadding + 16.horizontalPadding,
-    loaderColor: AppMaterialColors.onSecondary,
-  );
+  static CustomButtonTheme primary(ColorScheme cs) =>
+      of(ButtonVariant.primary, cs);
+  static CustomButtonTheme secondary(ColorScheme cs) =>
+      of(ButtonVariant.secondary, cs);
+  static CustomButtonTheme tertiary(ColorScheme cs) =>
+      of(ButtonVariant.tertiary, cs);
+  static CustomButtonTheme stroke(ColorScheme cs) =>
+      of(ButtonVariant.stroke, cs);
+  static CustomButtonTheme ghost(ColorScheme cs) => of(ButtonVariant.ghost, cs);
+  static CustomButtonTheme destructive(ColorScheme cs) =>
+      of(ButtonVariant.destructive, cs);
 
-  /// Tertiary button theme
-  static CustomButtonTheme get tertiaryTheme => CustomButtonTheme(
-    backgroundColor: AppMaterialColors.tertiary,
-    foregroundColor: AppMaterialColors.onTertiary,
-    backgroundDisabledColor: AppMaterialColors.tertiaryFixedDim,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 8.verticalPadding + 16.horizontalPadding,
-    loaderColor: AppMaterialColors.onTertiary,
-  );
-
-  /// Stroke button theme
-  static CustomButtonTheme get strokeTheme => CustomButtonTheme(
-    backgroundColor: AppMaterialPrimitives.transparent,
-    foregroundColor: AppMaterialColors.primary,
-    backgroundDisabledColor: AppMaterialPrimitives.transparent,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 16.horizontalPadding + 12.verticalPadding,
-    showBorder: true,
-    loaderColor: AppMaterialColors.primary,
-  );
-
-  /// Ghost button theme
-  static CustomButtonTheme get ghostTheme => CustomButtonTheme(
-    backgroundColor: AppMaterialPrimitives.transparent,
-    foregroundColor: AppMaterialColors.primary,
-    backgroundDisabledColor: AppMaterialPrimitives.transparent,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 16.horizontalPadding + 12.verticalPadding,
-    loaderColor: AppMaterialColors.primary,
-  );
-
-  // Destructive button theme
-  static CustomButtonTheme get destructiveTheme => CustomButtonTheme(
-    backgroundColor: AppMaterialColors.error,
-    foregroundColor: AppMaterialColors.onError,
-    backgroundDisabledColor: AppMaterialColors.errorContainer,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 16.horizontalPadding + 12.verticalPadding,
-    loaderColor: AppMaterialColors.onError,
-  );
-
-  static CustomRadioButtonTheme get radioButton => CustomRadioButtonTheme(
-    indicatorColor: AppMaterialColors.primary,
-    selectedColor: AppMaterialColors.primaryFixedDim,
-    unselectedColor: AppMaterialColors.primaryFixed,
-    borderColor: AppMaterialColors.scrim,
-    fillColor: AppMaterialColors.surface,
+  static CustomRadioButtonTheme radioButton(
+    ColorScheme cs, {
+    TextStyle? labelStyle,
+  }) => CustomRadioButtonTheme(
+    indicatorColor: cs.primary,
+    selectedColor: cs.primaryFixedDim,
+    unselectedColor: cs.primaryFixed,
+    borderColor: cs.scrim,
+    fillColor: cs.surface,
     contentPadding: 10.verticalPadding + 10.horizontalPadding,
     selectedIndicatorPadding: 1,
-    labelStyle: AppMaterialTextStyles.labelSmall,
-  );
-
-  /// Primary button theme
-  static CustomButtonTheme get icon => CustomButtonTheme(
-    backgroundColor: AppMaterialColors.primary,
-    foregroundColor: AppMaterialColors.onSurface,
-    backgroundDisabledColor: AppMaterialColors.primaryFixedDim,
-    foregroundDisabledColor: AppMaterialColors.outline,
-    radius: 12.borderCircular,
-    padding: 16.horizontalPadding + 12.verticalPadding,
-    expanded: true,
-    loaderColor: AppMaterialColors.onSurface,
+    labelStyle: labelStyle,
   );
 }

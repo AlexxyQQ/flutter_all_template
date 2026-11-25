@@ -26,7 +26,9 @@ class RoleConverter implements JsonConverter<Role, String?> {
 
   @override
   Role fromJson(String? json) {
-    if (json == null) return Role.values.first;
+    if (json == null) {
+      return Role.values.first;
+    }
     return Role.values.firstWhere(
       (e) => e.name.toLowerCase() == json.toLowerCase(),
       orElse: () => Role.values.first,

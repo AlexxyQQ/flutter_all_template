@@ -7,6 +7,7 @@ import '../../../../../../../config/constants/colors/material/material_primitive
 import '../../../../../../../config/constants/enums/app_image_type_enum.dart';
 import '../../../../../../../config/themes/components_theme/app_picture_theme.dart';
 import '../../../../extensions/size/size_extension.dart';
+import '../../../../helpers/semantic_tap.dart';
 import 'app_svg_picture_widget.dart';
 
 class AppImage extends StatelessWidget {
@@ -116,6 +117,7 @@ class AppImage extends StatelessWidget {
       alignment: theme?.alignment ?? Alignment.center,
       color: theme?.color,
       semanticLabel: theme?.semanticsLabel,
+      excludeFromSemantics: theme?.semanticsLabel == null,
       errorBuilder: (context, error, stackTrace) =>
           ImageNoDataWidget(theme: theme, width: width, height: height),
     );
@@ -137,6 +139,10 @@ class AppImage extends StatelessWidget {
           )
         : imageWidget;
 
-    return onTap != null ? GestureDetector(onTap: onTap, child: child) : child;
+    return wrapSemanticTap(
+      child: child,
+      onTap: onTap,
+      label: theme?.semanticsLabel,
+    );
   }
 }

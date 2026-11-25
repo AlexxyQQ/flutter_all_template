@@ -4,7 +4,9 @@ extension CaseConverter on String {
   /// It handles various separators like spaces, underscores, hyphens,
   /// and transitions from lowercase to uppercase letters (camelCase).
   List<String> _getWords() {
-    if (trim().isEmpty) return [];
+    if (trim().isEmpty) {
+      return [];
+    }
 
     // This regex sequence first adds a space before any uppercase letter
     // that follows a lowercase letter or a number, effectively splitting camelCase.
@@ -40,7 +42,9 @@ extension CaseConverter on String {
   /// Example: `'convert this string'` -> `'convertThisString'`
   String get toCamelCase {
     final words = _getWords();
-    if (words.isEmpty) return '';
+    if (words.isEmpty) {
+      return '';
+    }
     final firstWord = words.first;
     final otherWords = words.sublist(1).map((word) => word._capitalize());
     return [firstWord, ...otherWords].join();
@@ -86,7 +90,9 @@ extension CaseConverter on String {
   /// Example: `'convert_this_string'` -> `'Convert this string'`
   String get toSentenceCase {
     final words = _getWords();
-    if (words.isEmpty) return '';
+    if (words.isEmpty) {
+      return '';
+    }
     return '${words.first._capitalize()} ${words.sublist(1).join(' ')}'.trim();
   }
 
@@ -98,7 +104,9 @@ extension CaseConverter on String {
   }
 
   String get removeHtmlTags {
-    if (isEmpty) return '';
+    if (isEmpty) {
+      return '';
+    }
 
     // 1. Remove HTML tags using Regex (matches <...>)
     final RegExp exp = RegExp(r'<[^>]*>', multiLine: true);
@@ -115,9 +123,9 @@ extension CaseConverter on String {
       '&gt;': '>',
     };
 
-    entityMap.forEach((key, value) {
-      text = text.replaceAll(key, value);
-    });
+    for (final entry in entityMap.entries) {
+      text = text.replaceAll(entry.key, entry.value);
+    }
 
     // 3. Trim extra whitespace that might result from tag removal
     return text.trim();

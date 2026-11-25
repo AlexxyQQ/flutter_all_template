@@ -6,7 +6,7 @@ import '../../../routes/app_route_model_builder.dart';
 import '../../../routes/app_router.gr.dart';
 
 class DialogRoutes {
-  static final appDialogLoader = CustomRoute(
+  static final appDialogLoader = CustomRoute<void>(
     customRouteBuilder: createDialogBuilder(
       barrierDismissible: false,
       dialogBackgroundColor: AppMaterialPrimitives.transparent,
@@ -17,7 +17,7 @@ class DialogRoutes {
     transitionsBuilder: TransitionsBuilders.slideBottom,
     page: AppDialogLoaderRoute.page,
   );
-  static final appDialogRoute = CustomRoute(
+  static final appDialogRoute = CustomRoute<void>(
     customRouteBuilder: createDialogBuilder(
       dialogBackgroundColor: AppMaterialPrimitives.transparent,
     ),
@@ -29,27 +29,3 @@ class DialogRoutes {
 
   static final List<AutoRoute> all = [appDialogLoader, appDialogRoute];
 }
-
-// static final dateRange = CustomRoute(
-//   customRouteBuilder: createModalSheetBuilder(sheetPadding: EdgeInsets.zero),
-//   opaque: false,
-//   transitionsBuilder: TransitionsBuilders.slideBottom,
-//   page: DateRangeSelectorBottomSheet.page,
-// );
-// static final date = CustomRoute(
-//   customRouteBuilder: createModalSheetBuilder(sheetPadding: EdgeInsets.zero),
-//   opaque: false,
-//   transitionsBuilder: TransitionsBuilders.slideBottom,
-//   page: DateSelectorBottomSheet.page,
-// );
-// static final dialog = CustomRoute(
-//   customRouteBuilder: createDialogBuilder(
-//     barrierDismissible: false,
-//     dialogBackgroundColor: Colors.white,
-//     insetPadding: 24.horizontalPadding,
-//     dialogPadding: 0.allPadding,
-//   ),
-//   opaque: false,
-//   transitionsBuilder: TransitionsBuilders.slideBottom,
-//   page: AppDialogBoxPage.page,
-// );

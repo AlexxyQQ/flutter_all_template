@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../../../../config/themes/components_theme/app_picture_theme.dart';
 
-class PictureStyles {
-  /// Creates a KTextFormFieldTheme based on the current context's theme
+abstract final class PictureStyles {
+  /// Merges [theme] over the picture defaults. Pictures without a
+  /// `semanticsLabel` are treated as decorative (excluded from semantics).
   static PictureTheme getTheme(PictureTheme? theme) {
     const defaultTheme = PictureTheme(
       fit: BoxFit.cover,
       alignment: Alignment.center,
-      semanticsLabel: 'Picture',
       matchTextDirection: false,
     );
     final customTheme = defaultTheme.copyWith(

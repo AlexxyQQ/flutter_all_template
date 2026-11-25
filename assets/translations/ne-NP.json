@@ -5,6 +5,15 @@
     "spanish": "स्पेनिश"
   },
   "common": {
+    "form_field": {
+      "titles": {
+        "otp": "ओटीपी",
+        "hours": "घण्टा",
+        "minutes": "मिनेट",
+        "amount": "रकम",
+        "socialMediaHandle": "सामाजिक सञ्जाल ह्यान्डल"
+      }
+    },
     "errors": {
       "somethingWentWrong": "केही गलत भयो",
       "noInternetConnection": "इन्टरनेट जडान छैन",
@@ -339,6 +348,23 @@
             "another_screen": {
               "anotherscreenroute": "अर्को स्क्रिन रुट",
               "another": "अर्को"
+            }
+          }
+        }
+      }
+    },
+    "home": {
+      "presentation": {
+        "views": {
+          "screens": {
+            "home_screen": {
+              "title": "गृहपृष्ठ",
+              "welcome": "स्वागत छ",
+              "subtitle": "तपाईंको एप यहाँबाट सुरु हुन्छ। यो स्क्रिनलाई आफ्नो पहिलो फिचरले बदल्नुहोस्।",
+              "openGallery": "कम्पोनेन्ट ग्यालरी खोल्नुहोस्",
+              "galleryTitle": "कम्पोनेन्ट ग्यालरी",
+              "splashLoading": "लोड हुँदैछ…",
+              "logoLabel": "एपको लोगो"
             }
           }
         }

@@ -7,7 +7,6 @@ import '../../../../../../config/themes/components_theme/components_theme_export
 import '../../../../domain/entities/failure.dart';
 import '../../../extensions/size/size_extension.dart';
 import '../../../extensions/theme/theme_extension.dart';
-import '../../components/app_color.dart';
 import '../system/app_button.dart';
 import '../system/icon/app_icon_widget.dart';
 import '../system/images/app_image_widget.dart';
@@ -43,7 +42,7 @@ class AppErrorWidget extends StatelessWidget {
   final IconData? icon;
   final String? image;
   final String? svg;
-  final KAppColor? color;
+  final Color? color;
   final String? subtitle;
 
   @override

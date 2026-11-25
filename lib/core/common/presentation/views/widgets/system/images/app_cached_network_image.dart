@@ -178,7 +178,9 @@ class AppCachedNetworkImage extends StatelessWidget {
               )
             : null);
 
-    if (errorWidget != null) return errorWidget!;
+    if (errorWidget != null) {
+      return errorWidget!;
+    }
 
     return Container(
       width: targetWidth,

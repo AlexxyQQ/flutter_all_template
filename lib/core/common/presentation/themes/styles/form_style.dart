@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../config/constants/colors/material/material_primitive_colors.dart';
-import '../../../../../config/constants/text/material/app_material_text_style.dart';
 import '../../../../../config/themes/components_theme/app_text_form_field_theme.dart';
 import '../../extensions/size/size_extension.dart';
-import '../colors/app_material_colors.dart';
+import '../../extensions/theme/theme_extension.dart';
 
-class FormStyles {
-  /// Creates a KTextFormFieldTheme based on the current context's theme
-  static FormFieldTheme getTheme(FormFieldTheme? theme) {
+abstract final class FormStyles {
+  /// Resolves the effective [FormFieldTheme] for [context], applying any
+  /// non-null values from [theme] on top of the defaults.
+  static FormFieldTheme getTheme(BuildContext context, FormFieldTheme? theme) {
+    final cs = context.colors;
+    final text = context.textStyles;
     // 1. Define the base default theme
     final defaultTheme = FormFieldTheme(
       // --- Styling Defaults ---
-      fillColor: AppMaterialColors.surface,
-      contentStyle: AppMaterialTextStyles.bodyLarge.copyWith(
-        color: AppMaterialPrimitives.neutral20,
-      ),
-      hintTextStyle: AppMaterialTextStyles.bodyLarge,
-      titleStyle: AppMaterialTextStyles.bodyMedium,
-      errorTextStyle: AppMaterialTextStyles.labelMedium,
-      fillDisabledColor: AppMaterialColors.surfaceContainerLowest,
-      disabledTextColor: AppMaterialColors.primaryFixedDim,
-      iconColor: AppMaterialColors.onSurface,
+      fillColor: cs.surface,
+      contentStyle: text.bodyLarge.copyWith(color: cs.onSurface),
+      hintTextStyle: text.bodyLarge.copyWith(color: cs.onSurfaceVariant),
+      titleStyle: text.bodyMedium,
+      errorTextStyle: text.labelMedium.copyWith(color: cs.error),
+      fillDisabledColor: cs.surfaceContainerLowest,
+      disabledTextColor: cs.outline,
+      iconColor: cs.onSurface,
+      requiredColor: cs.error,
       isDense: true,
 
       // --- Border Defaults ---
       borderRadius: 12.borderCircular,
       contentPadding: 10.allPadding,
-      enabledBorderColor: AppMaterialColors.primaryContainer,
-      focusedBorderColor: AppMaterialColors.primary,
-      errorBorderColor: AppMaterialColors.error,
-      disabledBorderColor: AppMaterialColors.inverseSurface,
+      enabledBorderColor: cs.primaryContainer,
+      focusedBorderColor: cs.primary,
+      errorBorderColor: cs.error,
+      disabledBorderColor: cs.inverseSurface,
       borderWidth: 0.6,
       noBorder: false,
 

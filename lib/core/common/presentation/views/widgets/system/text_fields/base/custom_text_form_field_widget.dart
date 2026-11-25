@@ -2,9 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../../../../../config/constants/enums/text_form_filed_enum.dart';
+import '../../../../../../../../config/constants/enums/text_form_field_enum.dart';
 import '../../../../../../../../config/themes/components_theme/app_text_form_field_theme.dart';
-import '../../../../../../domain/controllers/text_form_filed/text_field_controller.dart';
+import '../../../../../../domain/controllers/text_form_field/text_field_controller.dart';
 import '../../../../../extensions/size/size_extension.dart';
 import '../../../../../extensions/theme/theme_extension.dart';
 import '../../../../../helpers/handlers/field_interaction_handler.dart';
@@ -68,7 +68,7 @@ class _KTextFormFieldState extends State<KTextFormField> {
   late final PickerHandler _pickerHandler;
   late final FieldInteractionHandler _interactionHandler;
 
-  FormFieldTheme get _theme => FormStyles.getTheme(widget.theme);
+  FormFieldTheme get _theme => FormStyles.getTheme(context, widget.theme);
 
   @override
   void initState() {
@@ -149,7 +149,7 @@ class _KTextFormFieldState extends State<KTextFormField> {
       controller: _controllerManager.controller,
       // textAlign: _theme.textAlign ?? TextAlign.start,
       keyboardType: _theme.keyboardType,
-      obscuringCharacter: _theme.obscuringCharacter ?? '●',
+      obscuringCharacter: _theme.obscuringCharacter,
       obscureText: _getObscureTextState(isObscured),
       inputFormatters: _theme.inputFormatters,
       enableSuggestions: _theme.enableSuggestions ?? true,
@@ -338,7 +338,9 @@ class FieldDecorationBuilder {
   }
 
   static InputBorder? _buildBorder(FormFieldTheme theme, Color? borderColor) {
-    if (theme.noBorder ?? false) return InputBorder.none;
+    if (theme.noBorder ?? false) {
+      return InputBorder.none;
+    }
 
     return OutlineInputBorder(
       borderSide: BorderSide(
@@ -359,7 +361,9 @@ class FieldDecorationBuilder {
 /// - Custom icons from theme
 class FieldIconBuilder {
   static Widget? buildPrefixIcon(FormFieldTheme theme) {
-    if (theme.prefixIcon == null) return null;
+    if (theme.prefixIcon == null) {
+      return null;
+    }
 
     return Padding(
       padding: (8.h).topOnly + (8.h).bottomOnly + (12.w).leftOnly,
@@ -418,7 +422,9 @@ class FieldIconBuilder {
       child: ValueListenableBuilder<String>(
         valueListenable: textNotifier,
         builder: (context, text, child) {
-          if (text.trim().isEmpty) return const SizedBox.shrink();
+          if (text.trim().isEmpty) {
+            return const SizedBox.shrink();
+          }
 
           return GestureDetector(
             onTap: onClear,

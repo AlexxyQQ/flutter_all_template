@@ -5,9 +5,8 @@ import '../../../../core/common/presentation/routes/app_router.gr.dart';
 
 class SplashRoute {
   static final routes = AutoRoute(
-    page: SplashWrapperRoute.page,
+    page: SplashScreenRoute.page,
     path: AppPaths.splashRoute,
     initial: true,
-    children: [AutoRoute(page: SplashScreenRoute.page, initial: true)],
   );
 }
