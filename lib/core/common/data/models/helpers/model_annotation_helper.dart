@@ -3,118 +3,60 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../../config/constants/locales/app_locales.dart';
 
-/// A [JsonConverter] for the [IconData] class.
-///
-/// This converter enables the serialization and deserialization of [IconData]
-/// objects to and from a JSON format. It is particularly useful when using
-/// code generation libraries like `freezed` or `json_serializable` for data
-/// models that include icons.
-///
-/// The JSON representation is a map containing the `codePoint`, `fontFamily`,
-/// and `fontPackage` of the icon.
-///
-/// ### Example
-///
-/// To use this converter with a `freezed` model, annotate the `IconData`
-/// field with `@IconDataConverter()`.
-///
-/// ```dart
-/// import 'package:flutter/material.dart';
-/// import 'package:freezed_annotation/freezed_annotation.dart';
-/// // Assuming IconDataConverter is in the same directory or imported correctly.
-/// import 'model_annotations.helper.dart';
-///
-/// part 'my_model.freezed.dart';
-/// part 'my_model.g.dart';
-///
-/// @freezed
-/// class MyModel with _$MyModel {
-///   const factory MyModel({
-///     required String name,
-///     @IconDataConverter() required IconData icon,
-///   }) = _MyModel;
-///
-///   factory MyModel.fromJson(Map<String, dynamic> json) =>
-///       _$MyModelFromJson(json);
-/// }
-///
-/// void main() {
-///   // Create an instance of the model.
-///   final model = MyModel(name: 'Home', icon: Icons.home);
-///
-///   // Serialize the model to JSON.
-///   final json = model.toJson();
-///   print(json);
-///   // Output:
-///   // {
-///   //   "name": "Home",
-///   //   "icon": {
-///   //     "codePoint": 59530,
-///   //     "fontFamily": "MaterialIcons",
-///   //     "fontPackage": null
-///   //   }
-///   // }
-///
-///   // Deserialize the JSON back to a model instance.
-///   final newModel = MyModel.fromJson(json);
-///   print(newModel.icon == Icons.home); // Output: true
-/// }
-/// ```
-class IconDataConverter
-    implements JsonConverter<IconData, Map<String, dynamic>> {
-  const IconDataConverter();
+// JSON converters for Flutter types used in data models.
+//
+// ```dart
+// @freezed
+// abstract class ReminderModel with _$ReminderModel {
+//   const factory ReminderModel({
+//     @LocaleConverter() required Locale locale,
+//     @TimeOfDayConverter() required TimeOfDay at,
+//   }) = _ReminderModel;
+//
+//   factory ReminderModel.fromJson(Map<String, dynamic> json) =>
+//       _$ReminderModelFromJson(json);
+// }
+// ```
+//
+// Icons are intentionally not serialisable: building `IconData` from a stored
+// code point defeats icon tree-shaking. Store a stable key (e.g. an enum
+// name) and map it to a `const` icon in the presentation layer instead.
 
-  @override
-  IconData fromJson(Map<String, dynamic> json) {
-    return IconData(
-      json['codePoint'] as int,
-      fontFamily: json['fontFamily'] as String?,
-      fontPackage: json['fontPackage'] as String?,
-    );
-  }
-
-  @override
-  Map<String, dynamic> toJson(IconData iconData) {
-    return {
-      'codePoint': iconData.codePoint,
-      'fontFamily': iconData.fontFamily,
-      'fontPackage': iconData.fontPackage,
-    };
-  }
-}
-
+/// Serialises a [Locale] as a BCP-47-like tag (`en-GB`, `ne-NP`, `fr`),
+/// keeping the country code. Accepts `_` or `-` as separator when reading.
+/// `null` reads as [AppLocales.en].
 class LocaleConverter implements JsonConverter<Locale, String?> {
   const LocaleConverter();
 
   @override
   Locale fromJson(String? json) {
-    if (json == null) {
+    if (json == null || json.trim().isEmpty) {
       return AppLocales.en;
     }
-    final splitData = json.split('_');
-
-    return AppLocales.fromString(languageCode: splitData[0]);
+    final parts = json.trim().split(RegExp('[-_]'));
+    final country = parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
+    return Locale(parts[0], country);
   }
 
   @override
-  String? toJson(Locale object) {
-    return object.languageCode;
-  }
+  String? toJson(Locale object) => object.toLanguageTag();
 }
 
+/// Serialises a [TimeOfDay] as zero-padded `HH:mm`.
 class TimeOfDayConverter implements JsonConverter<TimeOfDay, String> {
   const TimeOfDayConverter();
 
   @override
   TimeOfDay fromJson(String json) {
     final parts = json.split(':');
-    final hour = int.parse(parts[0]);
-    final minute = int.parse(parts[1]);
-    return TimeOfDay(hour: hour, minute: minute);
+    if (parts.length < 2) {
+      throw FormatException('Expected HH:mm', json);
+    }
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
   @override
-  String toJson(TimeOfDay object) {
-    return '${object.hour}:${object.minute}';
-  }
+  String toJson(TimeOfDay object) =>
+      '${object.hour.toString().padLeft(2, '0')}:'
+      '${object.minute.toString().padLeft(2, '0')}';
 }

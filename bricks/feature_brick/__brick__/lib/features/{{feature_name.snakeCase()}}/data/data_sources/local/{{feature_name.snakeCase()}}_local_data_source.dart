@@ -1,79 +1,55 @@
-import 'package:fpdart/src/either.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../../config/constants/type_defs/typedef.dart';
-import '../../../../../core/common/domain/entities/params/filter_params.dart';
-import '../../../../../core/common/domain/services/storage/secure_storage_service.dart';
-import '../../../../../core/common/locator/service_locator.dart';
-import '../../../../../core/generic/data/data_sources/local/secure_storage_data_source.dart';
-{{#use_params}}import '../../../domain/entities/params/{{feature_name.snakeCase()}}_request_params.dart';
-{{/use_params}}import '../../models/{{feature_name.snakeCase()}}_model.dart';
-import '../{{feature_name.snakeCase()}}_data_source.dart';
+import '../../../../../core/generic/data/json_collection_store.dart';
+import '../../../../../core/storage/key_value_stores.dart';
+import '../../models/{{feature_name.snakeCase()}}_model.dart';
 
-@lazySingleton
-class {{feature_name.pascalCase()}}LocalDataSource extends ISecureStorageDataSource<{{feature_name.pascalCase()}}Model>
-    implements {{feature_name.pascalCase()}}DataSource {
-  {{feature_name.pascalCase()}}LocalDataSource()
-    : super(
-        secureStorageService: sl<SecureStorageService>(),
-        modelKey: 'app_{{feature_name.snakeCase()}}',
+/// Offline cache. Throws `StorageException` / `CacheMissException`.
+abstract interface class I{{feature_name.pascalCase()}}LocalDataSource {
+  Future<List<{{feature_name.pascalCase()}}Model>> get{{feature_name.pascalCase()}}s();
+
+  /// Throws `CacheMissException` if [id] isn't cached.
+  Future<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}(String id);
+
+  Future<void> save{{feature_name.pascalCase()}}s(Iterable<{{feature_name.pascalCase()}}Model> items);
+
+  Future<void> save{{feature_name.pascalCase()}}({{feature_name.pascalCase()}}Model item);
+
+  Future<void> delete{{feature_name.pascalCase()}}(String id);
+
+  Future<void> clear();
+}
+
+@LazySingleton(as: I{{feature_name.pascalCase()}}LocalDataSource)
+class {{feature_name.pascalCase()}}LocalDataSource implements I{{feature_name.pascalCase()}}LocalDataSource {
+  {{feature_name.pascalCase()}}LocalDataSource(PreferencesStore store)
+    : _items = JsonCollectionStore<{{feature_name.pascalCase()}}Model>(
+        store: store,
+        key: storageKey,
+        idOf: (item) => item.id,
+        toJson: (item) => item.toJson(),
+        fromJson: {{feature_name.pascalCase()}}Model.fromJson,
       );
 
-  @override
-  {{feature_name.pascalCase()}}Model copyWith(existingItem, newValue) {
-    return existingItem.copyWith(
-      id: newValue.id ?? existingItem.id,
-      // TODO: add copyWith field merges for each model field
-    );
-  }
+  static const String storageKey = 'cache.{{feature_name.snakeCase()}}';
+
+  final JsonCollectionStore<{{feature_name.pascalCase()}}Model> _items;
 
   @override
-  {{feature_name.pascalCase()}}Model fromJson(Map<String, dynamic> json) {
-    return {{feature_name.pascalCase()}}Model.fromJson(json);
-  }
+  Future<List<{{feature_name.pascalCase()}}Model>> get{{feature_name.pascalCase()}}s() => _items.readAll();
 
   @override
-  Map<String, dynamic> toJson({{feature_name.pascalCase()}}Model object) {
-    return object.toJson();
-  }
+  Future<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}(String id) => _items.read(id);
 
   @override
-  ResultFuture<{{feature_name.pascalCase()}}Model> create{{feature_name.pascalCase()}}({
-    {{#use_params}}required {{feature_name.pascalCase()}}RequestParams params,{{/use_params}}{{^use_params}}required Map<String, dynamic> data,{{/use_params}}
-  }) async {
-    {{#use_params}}final result = await create(value: params.toModel());{{/use_params}}{{^use_params}}final result = await create(value: {{feature_name.pascalCase()}}Model.fromJson(data));{{/use_params}}
-    return result.fold((l) => Left(l), (r) => Right(r.first));
-  }
+  Future<void> save{{feature_name.pascalCase()}}s(Iterable<{{feature_name.pascalCase()}}Model> items) => _items.upsertAll(items);
 
   @override
-  ResultFuture<{{feature_name.pascalCase()}}Model> delete{{feature_name.pascalCase()}}({String? id}) async {
-    final result = await deleteWhere(where: (item) => item.id == id);
-    return result.fold((l) => Left(l), (r) => Right(r.first));
-  }
+  Future<void> save{{feature_name.pascalCase()}}({{feature_name.pascalCase()}}Model item) => _items.upsert(item);
 
   @override
-  ResultFuture<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}({String? id}) async {
-    final result = await getWhere(where: (item) => item.id == id);
-    return result.fold((l) => Left(l), (r) => Right(r));
-  }
+  Future<void> delete{{feature_name.pascalCase()}}(String id) => _items.delete(id);
 
   @override
-  ResultFuture<List<{{feature_name.pascalCase()}}Model>> get{{feature_name.pascalCase()}}s({FilterParams? params}) async {
-    final result = await getAll();
-    return result.fold((l) => Left(l), (r) => Right(r));
-  }
-
-  @override
-  ResultFuture<{{feature_name.pascalCase()}}Model> update{{feature_name.pascalCase()}}({
-    {{#use_params}}required {{feature_name.pascalCase()}}RequestParams params,{{/use_params}}{{^use_params}}required Map<String, dynamic> data,{{/use_params}}
-  }) async {
-    {{#use_params}}final result = await updateWhere(
-      where: (item) => item.id == params.id,
-      newValue: params.toModel(),
-    );{{/use_params}}{{^use_params}}final result = await updateWhere(
-      where: (item) => item.id == data['id'],
-      newValue: {{feature_name.pascalCase()}}Model.fromJson(data),
-    );{{/use_params}}
-    return result.fold((l) => Left(l), (r) => Right(r));
-  }
+  Future<void> clear() => _items.clear();
 }

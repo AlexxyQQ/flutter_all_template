@@ -1,292 +1,233 @@
+import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../../config/constants/colors/material/material_primitive_colors.dart';
 import '../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../../common/presentation/extensions/size/size_extension.dart';
-import '../../../../common/presentation/extensions/theme/theme_extension.dart';
-import '../../../../common/presentation/views/components/app_color.dart';
-import '../../../../common/presentation/views/widgets/system/app_button.dart';
-import '../../../../common/presentation/views/widgets/system/icon/app_icon_widget.dart';
-import '../../../../common/presentation/views/widgets/system/text/app_text_widget.dart';
-import '../../bloc/crud/base_crud_bloc.dart';
+import '../../../../common/domain/entities/failure.dart';
+import '../../bloc/paged_list_bloc.dart';
 
-/// A generic pagination ListView widget that works with any PaginationBloc
-class PaginationListView<Entity> extends StatefulWidget {
+/// Infinite list bound to a [PagedListBloc].
+///
+/// Handles first load, empty and error placeholders, pull-to-refresh,
+/// automatic (scroll) or manual (button) load-more and load-more errors.
+///
+/// Built only on Material widgets and the ambient [Theme] so it works with
+/// any design system; pass builders to customise each placeholder.
+class PaginationListView<T> extends StatefulWidget {
   const PaginationListView({
     required this.bloc,
     required this.itemBuilder,
     super.key,
-    this.emptyWidget,
-    this.loadingWidget,
+    this.emptyBuilder,
+    this.loadingBuilder,
     this.errorBuilder,
     this.scrollController,
     this.showLoadMoreButton = false,
-    this.separator,
-    this.padding,
+    this.separatorBuilder,
+    this.padding = const EdgeInsets.all(16),
     this.enablePullToRefresh = true,
-    this.refreshIndicatorColor,
+    this.autoStart = true,
+    this.loadMoreThreshold = 200,
   });
 
-  /// The pagination bloc to use
-  final BaseCrudBloc<Entity> bloc;
+  /// Any `PagedListBloc<T, Q>` (the query type doesn't matter here).
+  final PagedListBloc<T, Object?> bloc;
 
-  /// Builder function for each item
-  final Widget Function(BuildContext context, Entity item, int index)
-  itemBuilder;
+  final Widget Function(BuildContext context, T item, int index) itemBuilder;
 
-  /// Widget to show when the list is empty
-  final Widget? emptyWidget;
+  /// Shown when the first page loaded and is empty.
+  final WidgetBuilder? emptyBuilder;
 
-  /// Widget to show while loading
-  final Widget? loadingWidget;
+  /// Shown while the first page loads.
+  final WidgetBuilder? loadingBuilder;
 
-  /// Widget to show when there's an error
-  final Widget Function(BuildContext context, String error)? errorBuilder;
+  /// Shown when the first page failed and there is nothing to show.
+  /// [retry] reloads the first page.
+  final Widget Function(
+    BuildContext context,
+    Failure failure,
+    VoidCallback retry,
+  )?
+  errorBuilder;
 
-  /// Scroll controller for the list
   final ScrollController? scrollController;
 
-  /// Whether to show a load more button instead of automatic loading
+  /// Shows a "load more" button instead of loading on scroll.
   final bool showLoadMoreButton;
 
-  /// Custom separator between entities
-  final Widget? separator;
-
-  /// Padding for the list
-  final EdgeInsets? padding;
-
-  /// Whether to enable pull to refresh
+  final IndexedWidgetBuilder? separatorBuilder;
+  final EdgeInsetsGeometry padding;
   final bool enablePullToRefresh;
 
-  /// Custom refresh indicator color
-  final KAppColor? refreshIndicatorColor;
+  /// Dispatches [PagedListStarted] on first build if the bloc is untouched.
+  final bool autoStart;
+
+  /// Distance (logical pixels) from the end at which the next page is loaded.
+  final double loadMoreThreshold;
 
   @override
-  State<PaginationListView<Entity>> createState() =>
-      _PaginationListViewState<Entity>();
+  State<PaginationListView<T>> createState() => _PaginationListViewState<T>();
 }
 
-class _PaginationListViewState<Entity>
-    extends State<PaginationListView<Entity>> {
-  late ScrollController _scrollController;
+class _PaginationListViewState<T> extends State<PaginationListView<T>> {
+  late final ScrollController _controller =
+      widget.scrollController ?? ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _scrollController = widget.scrollController ?? ScrollController();
-
-    // Add scroll listener only when load more button is hidden
     if (!widget.showLoadMoreButton) {
-      _scrollController.addListener(_onScroll);
+      _controller.addListener(_onScroll);
+    }
+    if (widget.autoStart && widget.bloc.state.isInitial) {
+      widget.bloc.add(const PagedListStarted());
     }
   }
 
   @override
   void dispose() {
-    if (!widget.showLoadMoreButton) {
-      _scrollController.removeListener(_onScroll);
-    }
-    // Only dispose if we created the controller
+    _controller.removeListener(_onScroll);
     if (widget.scrollController == null) {
-      _scrollController.dispose();
+      _controller.dispose();
     }
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 100) {
-      final state = widget.bloc.state;
-      if (!state.hasReachedNextEnd && !state.isLoadingNext) {
-        widget.bloc.add(const LoadNextPaginationEvent());
-      }
+    final position = _controller.position;
+    if (position.pixels >=
+            position.maxScrollExtent - widget.loadMoreThreshold &&
+        widget.bloc.state.canLoadMore) {
+      _loadMore();
+    }
+  }
+
+  void _loadMore() => widget.bloc.add(const PagedListNextPageRequested());
+
+  void _refresh() => widget.bloc.add(const PagedListRefreshed());
+
+  Future<void> _onPullToRefresh() async {
+    final done = widget.bloc.stream.firstWhere((s) => !s.isBusy);
+    _refresh();
+    try {
+      await done.timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      // Stop the spinner; the state will still update when the load ends.
+    } on StateError {
+      // Bloc closed before the refresh finished.
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BaseCrudBloc<Entity>, BaseCrudState<Entity>>(
+    return BlocBuilder<PagedListBloc<T, Object?>, PagedState<T, Object?>>(
       bloc: widget.bloc,
       builder: (context, state) {
-        // Build the main content based on state
-        Widget content;
-
-        if (state.isLoading && state.entities.isEmpty) {
-          content = _buildScrollablePlaceholder(
-            widget.loadingWidget ?? const _DefaultLoadingWidget(),
-          );
-        } else if (state.error != null && state.entities.isEmpty) {
-          content = _buildScrollablePlaceholder(
-            widget.errorBuilder?.call(context, state.error!.message) ??
-                _DefaultErrorWidget(
-                  error: state.error!.message,
-                  onRetry: () =>
-                      widget.bloc.add(const RefreshPaginationEvent()),
-                ),
-          );
-        } else if (state.entities.isEmpty) {
-          if (state.isInitial) {
-            content = const SizedBox.shrink();
-          } else {
-            content = _buildScrollablePlaceholder(
-              widget.emptyWidget ?? const _DefaultEmptyWidget(),
-            );
-          }
-        } else {
-          // Build the list
-          int itemCount = state.entities.length;
-          if (widget.showLoadMoreButton && !state.hasReachedNextEnd) {
-            itemCount++;
-          }
-
-          content = Stack(
-            children: [
-              ListView.separated(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: widget.padding ?? 16.allPadding,
-                itemCount: itemCount,
-                separatorBuilder: (context, index) =>
-                    widget.separator ?? 8.verticalGap,
-                itemBuilder: (context, index) {
-                  if (widget.showLoadMoreButton &&
-                      index == state.entities.length) {
-                    return _LoadMoreButton(bloc: widget.bloc, state: state);
-                  }
-                  return widget.itemBuilder(
-                    context,
-                    state.entities[index],
-                    index,
-                  );
-                },
-              ),
-              if (state.isLoadingNext && !widget.showLoadMoreButton)
-                const Positioned(
-                  bottom: 16,
-                  left: 0,
-                  right: 0,
-                  child: _LoadingIndicator(),
-                ),
-            ],
-          );
-        }
-
-        // Wrap with RefreshIndicator only if pull to refresh is enabled
-        // AND we have content that can actually be scrolled
+        final content = _buildContent(context, state);
         if (!widget.enablePullToRefresh || state.isInitial) {
           return content;
         }
-
-        // Use LayoutBuilder to ensure RefreshIndicator has proper constraints
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Only wrap with RefreshIndicator if we have valid dimensions
-            if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
-              return content;
-            }
-
-            return RefreshIndicator(
-              color: widget.refreshIndicatorColor ?? context.colors.primary,
-              onRefresh: () async {
-                widget.bloc.add(const RefreshPaginationEvent());
-
-                try {
-                  await widget.bloc.stream
-                      .firstWhere((state) => !state.isLoading)
-                      .timeout(const Duration(seconds: 10));
-                } catch (_) {
-                  // Handle timeout or stream errors silently
-                }
-              },
-              child: content,
-            );
-          },
-        );
+        return RefreshIndicator(onRefresh: _onPullToRefresh, child: content);
       },
     );
   }
 
-  /// Helper to make non-list widgets (Empty, Error, Loader) scrollable
-  /// so RefreshIndicator works.
-  Widget _buildScrollablePlaceholder(Widget child) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Use constraints or fallback to MediaQuery
-        final height = constraints.maxHeight > 0
-            ? constraints.maxHeight * 0.8
-            : MediaQuery.of(context).size.height * 0.8;
-
-        return ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            // ignore: avoid_sized_box_height
-            SizedBox(
-              height: height,
-              child: Center(child: child),
-            ),
-          ],
+  Widget _buildContent(BuildContext context, PagedState<T, Object?> state) {
+    final failure = state.failure;
+    if (state.items.isEmpty) {
+      if (state.isInitial) {
+        return const SizedBox.shrink();
+      }
+      if (state.isBusy) {
+        return _Placeholder(
+          child:
+              widget.loadingBuilder?.call(context) ??
+              const CircularProgressIndicator.adaptive(),
         );
-      },
-    );
-  }
-}
-
-class _LoadMoreButton<Entity> extends StatelessWidget {
-  const _LoadMoreButton({required this.bloc, required this.state});
-  final BaseCrudBloc<Entity> bloc;
-  final BaseCrudState<Entity> state;
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.hasReachedNextEnd) {
-      return Container(
-        padding: 16.allPadding,
-        alignment: Alignment.center,
-        child: AppText(
-          LocaleKeys.common_sentences_noMoreData,
-          style: context.textStyles.bodySmall,
-        ),
+      }
+      if (failure != null) {
+        return _Placeholder(
+          child:
+              widget.errorBuilder?.call(context, failure, _refresh) ??
+              _ErrorMessage(failure: failure, onRetry: _refresh),
+        );
+      }
+      return _Placeholder(
+        child: widget.emptyBuilder?.call(context) ?? const _EmptyMessage(),
       );
     }
 
-    return Container(
-      padding: 16.allPadding,
-      child: AppButton.stroke(
-        onPressed: () => bloc.add(const LoadNextPaginationEvent()),
-        label: LocaleKeys.common_sentences_loadMore,
-        width: double.infinity,
+    final footer = _buildFooter(context, state);
+    final itemCount = state.items.length + (footer == null ? 0 : 1);
+    return ListView.separated(
+      controller: _controller,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: widget.padding,
+      itemCount: itemCount,
+      separatorBuilder: (context, index) =>
+          widget.separatorBuilder?.call(context, index) ??
+          const SizedBox(height: 8),
+      itemBuilder: (context, index) => index < state.items.length
+          ? widget.itemBuilder(context, state.items[index], index)
+          : footer!,
+    );
+  }
+
+  Widget? _buildFooter(BuildContext context, PagedState<T, Object?> state) {
+    final failure = state.failure;
+    if (state.isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
+    if (failure != null && state.hasMore) {
+      return _ErrorMessage(failure: failure, onRetry: _loadMore);
+    }
+    if (!widget.showLoadMoreButton) {
+      return null;
+    }
+    if (!state.hasMore) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          LocaleKeys.common_sentences_noMoreData.tr(),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: OutlinedButton(
+        onPressed: state.canLoadMore ? _loadMore : null,
+        child: Text(LocaleKeys.common_sentences_loadMore.tr()),
       ),
     );
   }
 }
 
-class _LoadingIndicator extends StatelessWidget {
-  const _LoadingIndicator();
+/// Centers [child] in a scrollable so pull-to-refresh also works on
+/// placeholders.
+class _Placeholder extends StatelessWidget {
+  const _Placeholder({required this.child});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: 8.allPadding,
-        decoration: BoxDecoration(
-          color: AppMaterialPrimitives.white,
-          borderRadius: 8.rounded,
-          boxShadow: [
-            BoxShadow(
-              color: AppMaterialPrimitives.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          width: 20.r,
-          height: 20.r,
-          child: CircularProgressIndicator.adaptive(
-            strokeWidth: 2.w,
-            valueColor: AlwaysStoppedAnimation(context.colors.primary),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+            minWidth: constraints.maxWidth,
+          ),
+          child: Center(
+            child: Padding(padding: const EdgeInsets.all(16), child: child),
           ),
         ),
       ),
@@ -294,79 +235,61 @@ class _LoadingIndicator extends StatelessWidget {
   }
 }
 
-class _DefaultLoadingWidget extends StatelessWidget {
-  const _DefaultLoadingWidget();
+class _ErrorMessage extends StatelessWidget {
+  const _ErrorMessage({required this.failure, required this.onRetry});
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation(context.colors.primary),
-      ),
-    );
-  }
-}
-
-class _DefaultErrorWidget extends StatelessWidget {
-  const _DefaultErrorWidget({required this.error, required this.onRetry});
-  final String error;
+  final Failure failure;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: 16.allPadding,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48.w, color: context.colors.error),
-            16.verticalGap,
-            AppText(
-              error,
-              style: context.textStyles.bodyLarge.copyWith(
-                color: context.colors.error,
-              ),
-              textAlign: TextAlign.center,
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+          const SizedBox(height: 16),
+          Text(
+            failure.message.tr(),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.error,
             ),
-            16.verticalGap,
-            AppButton.primary(
-              onPressed: onRetry,
-              label: LocaleKeys.common_words_retry,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: onRetry,
+            child: Text(LocaleKeys.common_words_retry.tr()),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DefaultEmptyWidget extends StatelessWidget {
-  const _DefaultEmptyWidget();
+class _EmptyMessage extends StatelessWidget {
+  const _EmptyMessage();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: 16.allPadding,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AppIcon(
-              Icons.inbox_outlined,
-              size: 48.w,
-              color: context.colors.onSurface,
-            ),
-            16.verticalGap,
-            AppText(
-              LocaleKeys.common_errors_noDataFound,
-              style: context.textStyles.bodyLarge.copyWith(
-                color: context.colors.onSurface,
-              ),
-            ),
-          ],
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.inbox_outlined,
+          size: 48,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-      ),
+        const SizedBox(height: 16),
+        Text(
+          LocaleKeys.common_errors_noDataFound.tr(),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyLarge,
+        ),
+      ],
     );
   }
 }
