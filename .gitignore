@@ -62,11 +62,13 @@ app.*.map.json
 # brick/__brick__/ios/Runner/GoogleService-Info.plist
 # brick/__brick__/lib/config/firebase/firebase_options.dart
 
-# Environment files (real values — never commit)
-env/.env
+# Environment files (real values — never commit). Only *.example.json is tracked.
+env/*.json
+!env/*.example.json
 .env
+.env.*
 # ============================================================
-# Generated code — produced by `rps build` / CI, never committed
+# Generated code — produced by `rps gen` / CI, never committed
 # ============================================================
 *.g.dart
 *.freezed.dart
@@ -75,9 +77,16 @@ env/.env
 *.mocks.dart
 lib/config/constants/gen/
 
-# Mason local state & compiled hooks (contain absolute local paths)
+# Mason local state & compiled hooks (contain absolute local paths).
+# mason-lock.json is machine-specific for local `path:` bricks — regenerate with `mason get`.
 .mason/
+mason-lock.json
 bricks/**/hooks/build/
+
+# Android release signing (never commit)
+android/key.properties
+*.jks
+*.keystore
 
 # Local tool settings
 .claude/settings.local.json

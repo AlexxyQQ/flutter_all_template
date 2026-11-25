@@ -1,258 +1,214 @@
 # Flutter All Template
 
-A production-ready Flutter starter template built on Clean Architecture, Material 3, and a fully pre-wired BLoC + DI stack. Pick only the modules you need — powered by [Mason](https://pub.dev/packages/mason_cli).
+A Flutter starter template built on Clean Architecture, Material 3, BLoC and
+injectable DI, with Mason bricks to generate new projects and feature slices.
+
+> **Status:** the template is being modernised (see
+> [`docs/TEMPLATE_AUDIT_AND_PLAN.md`](docs/TEMPLATE_AUDIT_AND_PLAN.md)). Folder names
+> under `lib/core/` may still move between refactor waves.
 
 ---
 
-## Quick Start (Mason — Recommended)
+## Requirements
 
-Generate a new project with only the features you want:
+| Tool | Version | Notes |
+|---|---|---|
+| Flutter | **3.38.5** (pinned in [`.fvmrc`](.fvmrc)) | Use [FVM](https://fvm.app): `fvm install && fvm use` — then prefix commands with `fvm` (e.g. `fvm flutter run`) |
+| Dart | bundled with Flutter (`sdk: ^3.10.4`) | |
+| [rps](https://pub.dev/packages/rps) | latest | `dart pub global activate rps` — runs the `scripts:` in `pubspec.yaml` |
+| [Mason CLI](https://pub.dev/packages/mason_cli) | `>=0.1.0-dev.52 <0.2.0` | Only for generating projects/features |
+| JDK 17 + Android SDK / Xcode | | For device builds |
+
+CI uses the exact version in `.fvmrc`, so keep it the single source of truth.
+
+---
+
+## Quick start (clone as-is)
 
 ```bash
-# 1. Install Mason (once)
-dart pub global activate mason_cli
-
-# 2. Clone this repo
 git clone https://github.com/AlexxyQQ/flutter_all_template
 cd flutter_all_template
 
-# 3. Fetch the bricks
-mason get
+# 1. Flutter version from .fvmrc (skip if your global Flutter already matches)
+fvm install && fvm use
 
-# 4. Generate your project — answer 5 questions
-mason make flutter_all_template
-# → What is the app name? › my_app
-# → Organization (e.g. com.example)? › com.example
-# → Include Firebase? (y/N) › n
-# → Include push notifications? (y/N) › n
-# → Include permission screens? (y/N) › y
-
-# 5. Enter your new project and set up
-cd my_app
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs
-flutter run
-```
-
-See [bricks/project_brick/README.md](bricks/project_brick/README.md) for full details on what each option includes.
-
----
-
-## Manual Quick Start (clone as-is)
-
-```bash
-# 1. Clone / copy the repo
-# 2. Install dependencies
+# 2. Dependencies
 flutter pub get
 
-# 3. Copy env file and fill in values
-cp env/.env.example env/.env
+# 3. Compile-time config for each flavor you use (placeholders → your values)
+cp env/dev.example.json env/dev.json
+# cp env/staging.example.json env/staging.json
+# cp env/prod.example.json    env/prod.json
 
-# 4. Generate code (routes, DI, JSON, Freezed, assets)
-dart run build_runner build --delete-conflicting-outputs
-
-# 5. Generate localisation keys
-dart run easy_localization:generate \
-  -S assets/translations -f keys \
-  -O lib/config/constants/gen -o locale_keys.g.dart
-
-# 6. Run
-flutter run
-```
-
-> **Tip:** Use [rps](https://pub.dev/packages/rps) to run the scripts defined in `pubspec.yaml`:
-> `rps build` · `rps clean` · `rps gen` · `rps analyze`
-
----
-
-## Project Structure
-
-```
-lib/
-├── config/
-│   ├── constants/          # API, colours, text, enums, asset gen, locales
-│   ├── firebase/           # Firebase options (generated)
-│   ├── observers/          # Route observer
-│   └── themes/             # Material 3 theme + component themes
-├── core/
-│   ├── abstract/           # Abstract colour / text style interfaces
-│   ├── common/
-│   │   ├── data/           # Shared model helpers (annotation, conversion, generation)
-│   │   ├── domain/
-│   │   │   ├── controllers/   # TextEditingController factory
-│   │   │   ├── entities/      # Failure, FilterParams (Freezed)
-│   │   │   └── services/
-│   │   │       ├── files/        # File log output
-│   │   │       ├── logger/       # AppLogger ← README inside
-│   │   │       ├── navigation/   # NavigationService ← README inside
-│   │   │       ├── network/      # DioService + ApiHandler ← README inside
-│   │   │       ├── notification/ # Push notifications ← README inside
-│   │   │       └── storage/      # SecureStorageService ← README inside
-│   │   ├── features/
-│   │   │   ├── app_settings/  # Settings BLoC + local persistence ← README inside
-│   │   │   └── permission/    # Permission handling module ← README inside
-│   │   ├── locator/           # GetIt / Injectable setup
-│   │   └── presentation/
-│   │       ├── blocs/         # Global BLoC providers (Theme, Locale)
-│   │       ├── extensions/    # BuildContext extensions ← README inside
-│   │       ├── helpers/       # SnackbarHelper, FilePickerHelper
-│   │       ├── routes/        # AppRouter (auto_route)
-│   │       ├── themes/        # Colour + text resolvers
-│   │       └── views/
-│   │           ├── pages/     # Shared dialogs & bottom sheets
-│   │           ├── routes/    # Dialog / bottom-sheet route wrappers
-│   │           └── widgets/
-│   │               ├── common/   # Error widget, empty state
-│   │               └── system/   # Reusable UI components ← README inside
-│   └── generic/
-│       ├── data/              # SecureStorage data source, base cache
-│       ├── domain/            # BaseCacheService
-│       └── presentation/
-│           └── bloc/crud/     # Generic CRUD BLoC + mixins ← README inside
-├── features/
-│   ├── splash/                # Splash screen + design component showcase
-│   └── another/               # Example second feature / screen
-├── core/app.dart              # MaterialApp.router entry
-├── core/bootstrap.dart        # App initialisation (DI, notifications, locale)
-└── main.dart                  # Entrypoint
-```
-
----
-
-## Module READMEs
-
-Each reusable module has its own README explaining how to copy and configure it:
-
-| Module | README |
-|--------|--------|
-| Logger Service | [lib/core/common/domain/services/logger/README.md](lib/core/common/domain/services/logger/README.md) |
-| Network (DioService + ApiHandler) | [lib/core/common/domain/services/network/README.md](lib/core/common/domain/services/network/README.md) |
-| Secure Storage | [lib/core/common/domain/services/storage/README.md](lib/core/common/domain/services/storage/README.md) |
-| Navigation Service | [lib/core/common/domain/services/navigation/README.md](lib/core/common/domain/services/navigation/README.md) |
-| Push Notifications | [lib/core/common/domain/services/notification/docs/README.md](lib/core/common/domain/services/notification/docs/README.md) |
-| Permission Handling | [lib/core/common/features/permission/README.md](lib/core/common/features/permission/README.md) |
-| Translations / Locale Keys | [assets/translations/README.md](assets/translations/README.md) |
-| App Settings Feature | [lib/core/common/features/app_settings/README.md](lib/core/common/features/app_settings/README.md) |
-| Base CRUD BLoC | [lib/core/generic/presentation/bloc/crud/README.md](lib/core/generic/presentation/bloc/crud/README.md) |
-| Theme System | [lib/config/themes/README.md](lib/config/themes/README.md) |
-| Context Extensions | [lib/core/common/presentation/extensions/README.md](lib/core/common/presentation/extensions/README.md) |
-| System Widgets | [lib/core/common/presentation/views/widgets/system/README.md](lib/core/common/presentation/views/widgets/system/README.md) |
-
----
-
-## Key Dependencies
-
-| Category | Package | Version |
-|----------|---------|---------|
-| State Management | `flutter_bloc` | ^9.1.1 |
-| DI / Service Locator | `get_it` + `injectable` | ^9.2.0 / ^2.7.1 |
-| Navigation | `auto_route` | ^11.1.0 |
-| HTTP | `dio` | ^5.9.0 |
-| Functional types | `fpdart` | ^1.2.0 |
-| Secure Storage | `flutter_secure_storage` | ^10.0.0 |
-| Localisation | `easy_localization` | ^3.0.8 |
-| Responsive UI | `flutter_screenutil` | ^5.9.3 |
-| Push Notifications | `firebase_messaging` + `awesome_notifications` | ^16.1.1 / ^0.10.1 |
-| Logging | `logger` | ^2.6.2 |
-| Code generation | `freezed`, `json_serializable`, `build_runner` | latest |
-
----
-
-## Code Generation
-
-Run after any model, route, or DI annotation change:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-# or
-rps build
-```
-
-Watch mode during development:
-
-```bash
-rps watch
-```
-
----
-
-## Environment Variables
-
-Create `env/.env` (never commit this file):
-
-```env
-BASE_URL=https://api.your-app.com
-ALLOW_HTTP=false
-# PROXY=192.168.1.5:8888   # uncomment for Charles/mitmproxy
-```
-
-Loaded at startup via `flutter_dotenv`.
-
----
-
-## Localisation
-
-Translation files live in `assets/translations/`. See [assets/translations/README.md](assets/translations/README.md) for the full key-naming convention.
-
-After adding new keys to the JSON, regenerate `locale_keys.g.dart`:
-
-```bash
+# 4. Generate code — generated files are NOT committed
+#    (build_runner: Freezed, JSON, injectable, auto_route, flutter_gen + locale keys)
 rps gen
-# expands to:
-dart run easy_localization:generate \
-  -S assets/translations -f keys \
+
+# 5. Run the dev flavor
+rps run dev
+# = flutter run --dart-define-from-file=env/dev.json
+```
+
+Without `rps`, step 4 is:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+dart run easy_localization:generate -S assets/translations -f keys \
   -O lib/config/constants/gen -o locale_keys.g.dart
 ```
 
-Use generated keys in code:
+Re-run `rps gen` after every `git pull`, branch switch, or change to an annotated
+class, route, asset, or translation file.
 
-```dart
-Text(LocaleKeys.common_errors_somethingWentWrong.tr())
+**Firebase:** the tracked `google-services.json`, `GoogleService-Info.plist` and
+`firebase.json` contain placeholders only. Run `flutterfire configure` against your
+own Firebase project and **do not commit** the generated values
+(see [`SECURITY.md`](SECURITY.md)).
+
+---
+
+## Environment & flavors
+
+Configuration is compiled in with `--dart-define-from-file=env/<flavor>.json` and read
+through [`lib/config/env/app_env.dart`](lib/config/env/app_env.dart). `flutter_dotenv`
+and `.env` assets are gone.
+
+| Key | Purpose |
+|---|---|
+| `FLAVOR` | `dev` · `staging` · `prod` |
+| `BASE_URL` | API base URL |
+| `ENABLE_LOG_UPLOAD` / `LOG_UPLOAD_URL` | Opt-in remote log upload (off by default) |
+| `DEV_PROXY` / `DEV_TRUST_SELF_SIGNED_CERTS` | Debug-only escape hatches, ignored in release |
+
+Everything in these files ships inside the binary — **never put secrets there**.
+Details: [`docs/FLAVORS.md`](docs/FLAVORS.md) and [`env/README.md`](env/README.md).
+
+VS Code has launch configurations for `dev`, `staging` and `prod` (profile/release).
+
+---
+
+## Scripts (`rps`)
+
+| Command | What it does |
+|---|---|
+| `rps gen` | build_runner + locale keys (all code generation) |
+| `rps gen:keys` | locale keys only |
+| `rps watch` | build_runner in watch mode |
+| `rps check` | everything CI checks: gen → format check → analyze → test |
+| `rps analyze` | `flutter analyze` + `custom_lint` |
+| `rps test` | `flutter test --coverage` |
+| `rps format` / `rps fix` | `dart format lib test` / `dart fix --apply` |
+| `rps reset` | `flutter clean` + pub get + gen (only when the build cache is broken) |
+| `rps icons` | regenerate splash screens and launcher icons |
+| `rps run dev\|staging\|prod` | run a flavor |
+| `rps build apk dev\|staging\|prod` | release APK |
+| `rps build appbundle staging\|prod` | release AAB (Play Store) |
+| `rps build ipa staging\|prod` | release IPA |
+| `rps shorebird release android\|ios` | optional Shorebird OTA release (prod config) |
+
+All release builds use `--obfuscate --split-debug-info=build/symbols/<flavor>`.
+Keep those symbol files (per release) to de-obfuscate crash stack traces.
+
+Android release signing reads `android/key.properties`; without it the build is
+debug-signed and Gradle prints a warning — see [`docs/CODE_SIGNING.md`](docs/CODE_SIGNING.md).
+
+---
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and
+on pushes to `main`:
+
+1. Flutter from `.fvmrc` → `flutter pub get` → code generation
+2. `dart format --output=none --set-exit-if-changed lib test`
+3. `flutter analyze`
+4. `flutter test --coverage` (lcov uploaded as an artifact)
+5. **security job:** gitleaks (full history) and OSV-Scanner on `pubspec.lock`
+
+Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) opens update PRs for
+pub, Gradle and GitHub Actions. Actions are pinned to commit SHAs.
+
+Run the same checks locally before pushing with `rps check`. Optional pre-commit hook
+(not enforced) — save as `.git/hooks/pre-commit` and `chmod +x` it:
+
+```sh
+#!/bin/sh
+set -e
+dart format --output=none --set-exit-if-changed lib test
+flutter analyze
+command -v gitleaks >/dev/null && gitleaks protect --staged --config .gitleaks.toml
 ```
 
-> **Note:** If codegen cannot run (SDK version mismatch), add the new `static const` entries manually to `lib/config/constants/gen/locale_keys.g.dart` following the existing pattern — the value is always the dot-joined JSON key path.
-
 ---
 
-## Firebase Setup
+## Mason bricks
 
-1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com).
-2. Run `flutterfire configure` to generate `lib/config/firebase/firebase_options.dart`.
-3. For push notifications, follow [lib/core/common/domain/services/notification/docs/NOTIFICATION_SETUP.md](lib/core/common/domain/services/notification/docs/NOTIFICATION_SETUP.md).
+```bash
+dart pub global activate mason_cli
+mason get                       # resolves bricks from mason.yaml (mason-lock.json is git-ignored)
+```
 
----
+**New project** (`bricks/project_brick`):
 
-## Adding a New Feature (Mason)
+```bash
+mason make flutter_all_template
+# → What is the app name?                       my_app
+# → What is the organization? (e.g. com.example) com.example
+# → Include Firebase?                            n
+# → Include push notifications?                  n
+# → Include permission screens?                  y
+cd my_app && flutter pub get && rps gen
+```
 
-Generate a complete clean-architecture feature module from the project root:
+> The project brick is regenerated from this repo in a later refactor wave; until then
+> it may lag behind the template. See [bricks/project_brick/README.md](bricks/project_brick/README.md).
+
+**New feature slice** (`bricks/feature_brick`), from the project root:
 
 ```bash
 mason make flutter_feature
-# → What is the feature name? (snake_case) › user_profile
-# → Include a local data source (SecureStorage)? (y/N) › n
-# → Generate a typed RequestParams class? (Y/n) › y
+# → What is the feature name? (snake_case, e.g. user_profile)  user_profile
+# → Include a local data source (SecureStorage)?                n
+# → Generate a typed RequestParams class?                       y
+rps gen
 ```
 
-This scaffolds `lib/features/<feature_name>/` with all layers pre-wired.
-See [bricks/feature_brick/README.md](bricks/feature_brick/README.md) for the full file tree.
-
-After generation:
-1. Add fields to `_entity.dart`, `_model.dart`, and (if present) `_request_params.dart`.
-2. Add an API path constant in `lib/config/constants/api/api_paths.dart`.
-3. Add routes with `@RoutePage()` and register in `AppRouter`.
-4. Run `rps build`.
+Then add an API path in `lib/config/constants/api/api_paths.dart`, register routes in
+the `AppRouter`, and write tests. See [bricks/feature_brick/README.md](bricks/feature_brick/README.md).
 
 ---
 
-## Scripts (via `rps`)
+## Project structure
 
-```bash
-rps get       # flutter clean + pub get
-rps build     # build_runner + gen
-rps clean     # full clean + lint
-rps analyze   # flutter analyze + custom lint
-rps gen       # regenerate localisation keys
-rps icons     # regenerate splash + app icons
-rps build:apk      # release APK
-rps build:ipa      # release IPA
+High-level only — see [`FOLDER_STRUCTURE.md`](FOLDER_STRUCTURE.md) for details.
+
 ```
+lib/
+├── config/       # env (AppEnv), constants, themes, firebase options, observers
+├── core/
+│   ├── error/    # AppException (data layer) + guard() → Failure
+│   ├── network/  # ApiClient interface
+│   ├── storage/  # SecureStore (secrets) / PreferencesStore (non-secret)
+│   ├── session/  # tokens + SessionManager (login/logout orchestration)
+│   ├── common/   # shared services, app settings, permissions, DI, presentation
+│   └── generic/  # generic CRUD bloc + base data sources
+└── features/     # feature slices (data / domain / presentation)
+```
+
+---
+
+## Documentation
+
+| Topic | Where |
+|---|---|
+| Security policy, secrets, key rotation | [`SECURITY.md`](SECURITY.md) |
+| Flavors & compile-time config | [`docs/FLAVORS.md`](docs/FLAVORS.md) |
+| Android/iOS release signing | [`docs/CODE_SIGNING.md`](docs/CODE_SIGNING.md) |
+| Platform permissions, backup, network security | [`docs/PLATFORM_SETUP.md`](docs/PLATFORM_SETUP.md) |
+| Folder conventions | [`FOLDER_STRUCTURE.md`](FOLDER_STRUCTURE.md) |
+| Audit & modernisation plan | [`docs/TEMPLATE_AUDIT_AND_PLAN.md`](docs/TEMPLATE_AUDIT_AND_PLAN.md) |
+| Translations | [`assets/translations/README.md`](assets/translations/README.md) |
+| Push notifications | `lib/core/common/domain/services/notification/docs/` |
+| Backlog | [`TODO.md`](TODO.md) |
+
+Module READMEs live next to their code (`lib/**/README.md`).
