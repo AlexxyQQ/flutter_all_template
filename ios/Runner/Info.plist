@@ -45,50 +45,45 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- Notification Setup -->
+	<!-- Push notifications: remote-notification lets FCM wake the app for
+	     data/silent messages. Nothing else runs in the background. -->
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Used for local notifications</string>
-	<!-- Notification Setup -->
-	<!-- Permissions -->
+	<!-- ============================================================
+	     Permission module — remove the ones your app doesn't use.
+	     App Review rejects purpose strings that are vague or unused.
+	     Rewrite each string to say exactly why YOUR app needs it.
+	     permission_handler also needs the matching PERMISSION_* macros
+	     in ios/Podfile (see docs/PLATFORM_SETUP.md).
+	     ============================================================ -->
 	<!-- Camera -->
 	<key>NSCameraUsageDescription</key>
-	<string>This app requires access to the camera to take profile pictures.</string>
+	<string>Allow camera access to take photos in the app.</string>
 	<!-- Microphone -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app requires access to the microphone for voice notes.</string>
-	<!-- Location -->
+	<string>Allow microphone access to record audio in the app.</string>
+	<!-- Location (while in use only; add "Always" keys only if you truly need background location) -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs your location to show nearby services.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs your location to track rides even when in the background.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs your location to track rides in the background.</string>
+	<string>Allow location access to show content relevant to where you are.</string>
 	<!-- Photos -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs access to your gallery to upload images.</string>
+	<string>Allow photo library access to choose images to upload.</string>
 	<!-- Contacts -->
 	<key>NSContactsUsageDescription</key>
-	<string>This app needs access to your contacts.</string>
-	<!-- Calendar -->
+	<string>Allow contacts access to find people you know.</string>
+	<!-- Calendar (iOS 17+ full access, and pre-iOS 17) -->
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>This app needs full access to your calendar to manage events.</string>
+	<string>Allow calendar access to view and add your events.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>This app needs access to your calendar to manage events.</string>
+	<string>Allow calendar access to view and add your events.</string>
 	<!-- Bluetooth -->
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>This app uses Bluetooth to connect to nearby devices.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>This app uses Bluetooth to connect to nearby devices.</string>
-	<!-- Activity Recognition / Motion -->
+	<string>Allow Bluetooth access to connect to nearby devices.</string>
+	<!-- Motion & fitness -->
 	<key>NSMotionUsageDescription</key>
-	<string>This app needs motion and fitness data to track your activity.</string>
-	<!-- Permissions -->
-
-
+	<string>Allow motion access to show your activity.</string>
+	<!-- ===================== Permission module end ===================== -->
 </dict>
 </plist>

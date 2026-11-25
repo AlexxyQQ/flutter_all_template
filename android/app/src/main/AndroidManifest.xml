@@ -1,57 +1,81 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Permission -->
-    <!-- Internet -->
+    <!-- ================================================================
+         Permission module — remove the ones your app doesn't use.
+         Every dangerous permission you declare must be justified in the
+         Play Console and is shown to the user. Plugins merge their own
+         required permissions (e.g. firebase_messaging adds WAKE_LOCK,
+         ACCESS_NETWORK_STATE, POST_NOTIFICATIONS), so only list what the
+         app itself requests at runtime.
+         Keep this list in sync with lib/core/common/features/permission/.
+         ================================================================ -->
+
+    <!-- Network (normal permission, always needed) -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- Notification Setup -->
-    <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- Notifications (firebase_messaging + awesome_notifications).
+         Add RECEIVE_BOOT_COMPLETED only if you SCHEDULE local notifications
+         and need them restored after a reboot. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Notification Setup-->
-    <!-- Camera -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- Camera (image_picker / camera permission screen) -->
     <uses-permission android:name="android.permission.CAMERA"/>
+
     <!-- Microphone -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <!-- Location -->
+
+    <!-- Location (geolocator) — foreground only. Never add
+         ACCESS_BACKGROUND_LOCATION without a Play Console declaration. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <!-- Storage -->
- <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+
+    <!-- Storage / media. Prefer the system photo picker (no permission) where possible. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+        android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- Contacts -->
+
+    <!-- Contacts (read-only) -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
-    <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
-    <!-- Calendar -->
+
+    <!-- Calendar (read-only) -->
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
-    <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
-    <!-- Bluetooth (API 31+) -->
+
+    <!-- Bluetooth (API 31+): scan without deriving location, connect to paired devices -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
     <!-- Bluetooth (API 30 and below) -->
     <uses-permission android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30"/>
-    <!-- Phone -->
+
+    <!-- Phone state (read-only; no CALL_PHONE — use an ACTION_DIAL intent instead) -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.CALL_PHONE"/>
-    <!-- Activity Recognition (API 29+) -->
+
+    <!-- Activity recognition (API 29+) -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
-    <!-- Permission End -->
+    <!-- ======================= Permission module end ======================= -->
 
-
+    <!-- allowBackup="false": tokens, settings and logs are never copied to cloud
+         or device-to-device backups. If you ever enable backup, keep the
+         exclusion rules in res/xml/data_extraction_rules.xml + backup_rules.xml.
+         Cleartext HTTP is blocked; see res/xml/network_security_config.xml
+         (debug builds allow it for emulator/localhost only). -->
     <application
         android:label="flutter_all_template"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-        
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -61,12 +85,12 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            
+
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-            
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -80,7 +104,7 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance" />
-            
+
     </application>
 
     <queries>

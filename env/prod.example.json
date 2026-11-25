@@ -1,0 +1,8 @@
+{
+  "FLAVOR": "prod",
+  "BASE_URL": "https://api.example.com/api/v1/",
+  "ENABLE_LOG_UPLOAD": false,
+  "LOG_UPLOAD_URL": "",
+  "DEV_PROXY": "",
+  "DEV_TRUST_SELF_SIGNED_CERTS": false
+}

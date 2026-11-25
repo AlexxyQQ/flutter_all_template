@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release/profile builds: HTTPS only, system CAs only (user-installed CAs are
+     not trusted). Add a <domain-config> with a <pin-set> here if you adopt
+     certificate pinning. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

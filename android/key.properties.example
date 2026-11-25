@@ -1,0 +1,6 @@
+# Copy to android/key.properties (git-ignored) and fill in. See docs/CODE_SIGNING.md.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+# Path relative to android/app/ (or absolute). Keep the .jks OUTSIDE the repo if possible.
+storeFile=../upload-keystore.jks
