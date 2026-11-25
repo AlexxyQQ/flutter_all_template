@@ -28,7 +28,9 @@ dependencies:
   get_it: ^9.2.0 # Service Locator for DI
   injectable: ^2.7.1+4 # Code generator for GetIt
   equatable: ^2.0.8 # Value equality comparisons (helps Bloc)
-  nested: any # Simplifies nested builder widgets
+  nested: ^1.0.0 # Simplifies nested builder widgets
+  bloc: ^9.2.0
+  bloc_concurrency: ^0.3.0 # droppable/restartable/sequential event transformers
   fpdart: ^1.2.0 # Functional programming (Either, Option)
 
   # ============================================================
@@ -82,6 +84,12 @@ dependencies:
   logger: ^2.6.2 # Pretty console logging
   rxdart: ^0.28.0 # Reactive extensions (Streams)
   cached_network_image: ^3.4.1
+  collection: ^1.19.1
+  freezed_annotation: ^3.1.0
+  intl: ^0.20.2
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.4
+  uuid: ^4.5.2
 
 dev_dependencies:
   # ============================================================
@@ -90,6 +98,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mockito: ^5.6.3 # Mocking library for unit tests
+  mocktail: ^1.0.4 # Codegen-free mocks (preferred for new tests)
   bloc_test: ^10.0.0 # Testing helpers for BLoC
   network_image_mock: ^2.1.1 # Mock network images in widget tests
 
@@ -111,7 +120,7 @@ dev_dependencies:
   app_custom_lints: # Custom lint rules from Git
     git:
       url: https://github.com/AlexxyQQ/custom_lints.git
-      ref: main
+      ref: 21861a7f0fd56aaa33eb01e31c1d8d241eca814a # pinned commit (never track a moving branch)
 
 # ============================================================
 # 🎨 FlutterGen (Assets) Configuration

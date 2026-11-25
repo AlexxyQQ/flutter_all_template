@@ -52,11 +52,7 @@ class AppErrorWidget extends StatelessWidget {
     // Priority: errorMessage string -> error.message -> default
     final title = errorMessage ?? error?.message ?? 'An error occurred';
 
-    // Attempting to extract 'data' from Failure if it exists (based on your usage example)
-    // You might need to adjust this depending on the actual Failure class definition
-    final String? effectiveSub = error != null
-        ? (error as Failure).data
-        : subtitle;
+    final String? effectiveSub = subtitle;
 
     return Center(
       child: SingleChildScrollView(

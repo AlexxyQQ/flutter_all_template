@@ -65,3 +65,19 @@ app.*.map.json
 # Environment files (real values — never commit)
 env/.env
 .env
+# ============================================================
+# Generated code — produced by `rps build` / CI, never committed
+# ============================================================
+*.g.dart
+*.freezed.dart
+*.gr.dart
+*.config.dart
+*.mocks.dart
+lib/config/constants/gen/
+
+# Mason local state & compiled hooks (contain absolute local paths)
+.mason/
+bricks/**/hooks/build/
+
+# Local tool settings
+.claude/settings.local.json

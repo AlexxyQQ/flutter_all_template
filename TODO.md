@@ -26,7 +26,7 @@ Tick a box and move the item into `CHANGELOG.md` once shipped.
 > from the Firebase console before this repo goes public.
 
 - [ ] **Rotate Android API key** — Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials), find the Android key for project `flutter-all-template`, and delete or restrict it. Run `flutterfire configure` to generate a fresh key.
-- [ ] **Rotate iOS API key** — Same as above for the iOS API key. The old key (`AIzaSyBtU1CXHdIpVqQaRUKvbHH9awbN4Dmf4Jc`) must be revoked.
+- [ ] **Rotate iOS API key** — Same as above for the iOS API key. The old key (see Google Cloud Console → Credentials; value intentionally not stored in the repo) must be revoked.
 - [ ] **Purge keys from git history** — Use `git filter-repo` or BFG Repo Cleaner to remove the old commits containing real keys. Then force-push `main` and notify collaborators to re-clone. Command:
   ```bash
   # Install: pip install git-filter-repo

@@ -38,11 +38,8 @@ class DcCommonDataHandling extends StatelessWidget {
             error: const Failure(
               message: LocaleKeys
                   .features_splash_presentation_views_widgets_design_components_dc_common_data_handling_network_connection_failed,
-              code: '503',
-              data: LocaleKeys
-                  .features_splash_presentation_views_widgets_design_components_dc_common_data_handling_we_could_not_reach_the_server_,
-              path: LocaleKeys
-                  .features_splash_presentation_views_widgets_design_components_dc_common_data_handling_home,
+              type: FailureType.network,
+              statusCode: 503,
             ),
             onRetry: () {},
           ),

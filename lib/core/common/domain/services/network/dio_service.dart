@@ -229,7 +229,7 @@ class ApiHandler {
       );
 
       await onError?.call(e.response?.data ?? {});
-      return Left(Failure.fromDioException(e));
+      return const Left(Failure.unknown());
     } catch (e, s) {
       // LOG: Unexpected Error
       AppLogger.error(

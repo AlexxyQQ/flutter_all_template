@@ -167,9 +167,7 @@ class PermissionRepositoryImpl extends IPermissionRepository {
       }
     } catch (e) {
       return Left(
-        Failure.fromException(
-          e,
-        ).copyWith(navigateRoute: NotificationPermissionScreenRoute()),
+        Failure.fromException(e),
       );
     }
   }
