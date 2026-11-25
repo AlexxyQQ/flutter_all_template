@@ -1,97 +1,49 @@
-# Logger Service
+# Logger
 
-A structured logging service that writes to both the console and local log files, with optional periodic upload to a remote server.
-
-## Files
+A small logging facade with pluggable sinks and built-in redaction.
 
 | File | Purpose |
 |------|---------|
-| `logger_service.dart` | Abstract interface + `AppLogger` implementation |
-| `../files/file_log_output_service.dart` | Custom `LogOutput` that writes to a daily rotating log file |
+| `logger_service.dart` | `ILoggerService` (d/i/w/e), `LoggerService` (redacts + fans out to sinks), static `AppLogger` facade |
+| `log_sinks.dart` | `LogEntry`, `LogSink`, `ConsoleLogSink`, `CrashReporter` + `CrashReporterSink` |
+| `log_redactor.dart` | `LogRedactor.redact()` (Bearer/Basic, JWTs, `password=`, `token=`, JSON secret fields) and `redactHeaders()` |
+| `logging_module.dart` | Registers the active logger in DI as `ILoggerService` |
 
-## Dependencies
+## Behaviour
 
-```yaml
-dependencies:
-  logger: ^2.6.2
-  path_provider: ^2.x.x
-  dio: ^5.x.x          # Only needed if using log upload feature
-  easy_localization: ^3.x.x
-  get_it: ^9.x.x
-  injectable: ^2.x.x
-```
-
-## How It Works
-
-- **Debug logs** (`d()`) use `dart:developer` — appear in DevTools but are **not** written to file.
-- **Info logs** (`i()`) and **Error logs** (`e()`) use the `logger` package and are written to both the console (via `ConsoleOutput`) and a daily-rotating local file (via `FileLogOutput`).
-- Log files are stored at `<app_documents>/app_logs/app_log_<yyyy-MM-dd>.txt`.
-- `startPeriodicUpload()` runs every 15 minutes, uploading any log files from **previous days** to a remote endpoint and deleting them after a successful upload. Today's log is left on device until tomorrow.
-
-## Setup
-
-### 1. Register via Injectable
-
-`AppLogger` is decorated with `@LazySingleton(as: ILoggerService)`. Run the build runner once to generate the DI config:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-### 2. Start periodic upload in `App.build()`
-
-```dart
-// lib/core/app.dart
-sl<ILoggerService>().startPeriodicUpload();
-```
-
-### 3. Point the upload URL to your server
-
-In `logger_service.dart`, find `_uploadSingleFile` and replace the placeholder:
-
-```dart
-// Before
-url: 'https://your-server.com/api/logs/upload',
-'device_id': 'unique_device_id_here',
-
-// After
-url: ApiPaths.uploadLogs,   // your actual endpoint
-'device_id': deviceId,      // real device identifier
-```
+- **Debug builds**: every level goes to the console (`logger` package pretty printer).
+- **Release/profile builds**: only **warnings and errors** are kept, and they go to a
+  `CrashReporter` (no-op by default). Nothing is written to disk and nothing is uploaded.
+- Every message passes through `LogRedactor` before reaching any sink. This is a safety
+  net: never log tokens, passwords, storage values, route arguments or push tokens.
 
 ## Usage
 
-### Via static helpers (preferred — no context needed)
-
 ```dart
-AppLogger.debug('Fetching user profile');
-AppLogger.info('User logged in', name: 'AuthService');
-AppLogger.error('Token refresh failed', error: e, stackTrace: s, name: 'AuthService');
+AppLogger.debug('Loaded ${items.length} items', name: 'TodoRepository');
+AppLogger.warning('Retrying sync', name: 'Sync');
+AppLogger.error('Sync failed', error: e, stackTrace: s, name: 'Sync');
 ```
 
-### Via injected interface
+Classes that need a logger as a real dependency take `ILoggerService` in their constructor.
+
+## Wiring Crashlytics / Sentry
+
+Implement `CrashReporter` and install it at the top of `bootstrap()` / your `initializers`:
 
 ```dart
-class MyRepository {
-  MyRepository(this._logger);
-  final ILoggerService _logger;
-
-  void doSomething() {
-    _logger.i('Doing something');
-  }
-}
+AppLogger.configure(
+  LoggerService.platformDefault(crashReporter: CrashlyticsReporter()),
+);
 ```
 
-### Force-upload logs immediately (e.g., on logout)
+See the doc comment on `CrashReporter` in `log_sinks.dart` for a Crashlytics and Sentry example.
+`bootstrap.dart` already routes `FlutterError.onError`, `PlatformDispatcher.onError`, zone
+errors, `BlocObserver.onError` and `guard()`'s unexpected errors through `AppLogger.error`.
 
-```dart
-await sl<ILoggerService>().uploadLogs(force: true);
-```
+## Remote log upload
 
-## Copying to a New Project
-
-1. Copy `logger_service.dart` and `file_log_output_service.dart`.
-2. Add the dependencies listed above to `pubspec.yaml`.
-3. Run `build_runner` to register the singleton.
-4. Call `sl<ILoggerService>().startPeriodicUpload()` in `App.build()`.
-5. Replace the upload URL and device ID with real values.
+Removed from the default path. If you need it, build an opt-in uploader that runs only when
+`AppEnv.enableLogUpload && AppEnv.logUploadUrl.isNotEmpty`, uses its **own** `Dio` (never the API
+client — it must not carry the bearer token), uploads only redacted warning/error events, and is
+started from bootstrap (never from a widget `build`).
