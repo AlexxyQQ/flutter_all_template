@@ -1,115 +1,76 @@
-# Architecture & Operational Overview
+# Notification module
 
-**Filename:** `NOTIFICATION_OVERVIEW.md`
+Push notifications (Firebase Cloud Messaging) rendered as local notifications
+(`awesome_notifications`).
 
-This document explains the internal architecture, logic flows, and features of the `NotificationService`.
+## Files
 
----
+| File | Responsibility |
+|---|---|
+| `notification_service.dart` | `@lazySingleton` facade: init, permission, toggle, display, thread suppression, tap navigation, push-token lifecycle. Implements `NotificationPermissionApi`. |
+| `notification_permission_api.dart` | Interface used by other modules (the permission feature) to check/request the notification permission. |
+| `notification_module.dart` | Injectable `@module`: `AwesomeNotifications` and the `NotificationPermissionApi` alias. |
+| `push/push_messaging_client.dart` | `PushMessagingClient` seam over `FirebaseMessaging` (token, permission, streams, background handler). |
+| `domain/push_token_repository.dart` / `data/push_token_repository_impl.dart` | Registers / unregisters the device token with the backend through `ApiClient`. |
+| `notification_api_paths.dart` | Backend endpoint(s) (`NotificationApiPaths.pushToken`). |
+| `notification_route_allowlist.dart` | Maps payload `type` / `route` keys to known app paths (security allowlist). |
+| `helpers/notification_display_helper.dart` | Renders notifications; no DI so the background isolate can use it. |
+| `helpers/fcm_background_handler.dart` | Top-level `@pragma('vm:entry-point')` background handler. |
+| `helpers/notification_channels.dart` | Android channel definitions. |
+| `helpers/notification_prefs.dart` | Preference keys shared with the background isolate. |
+| `helpers/notification_thread.dart` | `normalizeThreadId` (`th_` prefix handling). |
 
-# Notification Service Overview
+## Lifecycle
 
-## 1. Introduction
+1. Bootstrap: `Firebase.initializeApp(...)`, DI, then **once**
+   `await sl<NotificationService>().initialize();`
+2. `initialize()` configures channels and listeners, registers the FCM
+   background handler, subscribes to foreground messages / token refreshes /
+   session status, and registers a `SessionManager` logout hook.
+3. While the session is `authenticated` and notifications are enabled, the
+   FCM token is registered with the backend (`POST /devices/push-token`),
+   also after token refreshes and after the permission is granted.
+4. Logout hook: unregisters the token (`DELETE /devices/push-token`) and
+   deletes it locally so the next user never receives the previous user's
+   pushes.
 
-The `NotificationService` is a robust wrapper around `firebase_messaging` (remote) and `awesome_notifications` (local display). It creates a unified interface for handling push notifications, specifically designed to handle complex scenarios like chat thread suppression, global toggles, and deep linking.
+The token itself is never logged.
 
-## 2. Architecture: Separation of Concerns
+## Payload contract & navigation (security)
 
-The service is split into four distinct components to maintain clean code and testability:
+A push payload is untrusted. Tapping a notification only navigates when the
+payload contains `type` (preferred) or `route` whose **value is a key** in
+`NotificationRouteAllowlist.defaultRoutes`; the destination path always comes
+from that table. Unknown values are ignored and logged (without the value).
+Add your notification types there:
 
-| Component   | Class                         | Responsibility                                                                                                                                    |
-| ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Facade**  | `NotificationService`         | The public entry point. Manages initialization, streams, and delegates tasks.                                                                     |
-| **Logic**   | `NotificationLogicHelper`     | Handles business rules: Should a notification show? Is the user in the specific chat thread? Is the global toggle on? **(Needs API integration)** |
-| **Display** | `NotificationDisplayHelper`   | Handles UI rendering: Creating the Awesome Notification object, parsing images, showing progress bars, and handling specific platform UI quirks.  |
-| **Handler** | `fcm_background_handler.dart` | A standalone isolate entry point that handles messages when the app is **Terminated** or in the **Background**.                                   |
-
-## 3. Key Features & Logic Flows
-
-### A. Global Notification Toggle
-
-- **Function:** Users can completely disable notifications.
-- **Mechanism:**
-- When `toggleNotifications(false)` is called, the system sets a `SharedPreference` flag.
-- **Crucially**, it also calls `deleteToken()` on Firebase. This stops the server from sending messages entirely, saving bandwidth and server resources.
-- It cancels all currently active notifications in the system tray.
-
-### B. Intelligent "Context" Suppression
-
-- **Use Case:** If a user is currently looking at Chat Thread A, they should not receive a push notification for a new message in Chat Thread A.
-- **How it works:**
-
-1. When entering a screen, call `suppressNotificationsForContext('th_123')`.
-2. This saves the ID to `SharedPreferences`.
-3. When a message arrives, `NotificationLogicHelper` compares the incoming `thread_id` with the saved ID.
-4. If they match, the notification is silently dropped.
-
-### C. Background Isolation Handling
-
-Flutter apps run background tasks in a separate memory isolate.
-
-- **The Problem:** The background isolate cannot access the main app's variables or singleton instances.
-- **The Solution:** The `firebaseMessagingBackgroundHandler`:
-
-1. Re-initializes `SharedPreferences` independently.
-2. Checks the "Global Toggle" preference directly from disk.
-3. Initializes a temporary instance of `NotificationService` to render the display.
-
-### D. Deep Linking (Navigation)
-
-- **Trigger:** User taps a notification.
-- **Flow:**
-
-1. `_onActionReceived` captures the event.
-2. `NotificationLogicHelper` parses the `payload` (handling JSON strings if necessary).
-3. It extracts `redirect_url`.
-4. It utilizes the `NavigationService` (via `GetIt`) to push the named route.
-
-## 4. Notification Channels
-
-The service is pre-configured with two specific Android channels (defined in `NotificationChannels`):
-
-1. **High Importance (`high_importance`):**
-
-- Max priority, plays sound, LED lights, pops up on screen.
-- Used for standard messages.
-
-2. **Progress (`progress_channel`):**
-
-- Low priority, no sound.
-- Used for the `showProgressNotification` method (e.g., file uploads/downloads) to prevent constant "dinging" sound updates.
-
-## 5. Data Flow Diagram (Conceptual)
-
-```text
-[FCM Cloud]
-     |
-     v
-[Device Receives Message]
-     |
-     +--- Is App Foreground?
-     |      |
-     |      +-- YES: Fire `onMessage` stream
-     |      |      -> Check `LogicHelper.shouldSuppress()`
-     |      |      -> IF allowed: `DisplayHelper.showNotification()`
-     |      |
-     |      +-- NO (Background/Terminated):
-     |             -> Spawns Background Isolate
-     |             -> `firebaseMessagingBackgroundHandler`
-     |             -> Check SharedPrefs (Toggle)
-     |             -> `NotificationService.showNotification()`
-     v
-[User Taps Notification]
-     |
-     v
-[AwesomeNotifications ActionStream]
-     |
-     v
-[NotificationService] -> Parse Payload -> NavigationService -> Push Route
-
+```dart
+static const Map<String, String> defaultRoutes = {
+  'home': AppPaths.splashRoute,
+  'order_shipped': '/orders', // example
+};
 ```
 
-## 6. Next Steps for Developers
+## Global toggle
 
-- **Testing:** Use the "Test Notification" feature in the Firebase Console. Ensure you test whilst the app is Killed, Backgrounded, and in the Foreground.
-- **Customization:** Edit `NotificationDisplayHelper` to change the default icons or colors.
-- **API Integration:** **Urgent:** You must implement the token registration logic in `NotificationLogicHelper` (as detailed in the Setup Guide) to actually receive messages from your backend.
+`toggleNotifications(isEnabled: false)` stores the flag in `PreferencesStore`,
+unregisters and deletes the FCM token (FCM stops delivering) and cancels all
+displayed notifications. `isEnabled: true` re-registers the token. The
+background isolate reads the same flag directly from `SharedPreferences`
+(`NotificationPrefs.enabledKey`).
+
+## Thread suppression
+
+When the user is looking at a conversation, call
+`suppressNotificationsForThread(threadId)`; foreground pushes whose
+`thread_id` matches (ignoring an optional `th_` prefix) are not shown.
+Call `clearThreadSuppression()` when leaving the screen.
+
+## Background isolate
+
+`firebaseMessagingBackgroundHandler` runs without the GetIt container: it
+initialises Firebase with `DefaultFirebaseOptions.currentPlatform`, reads the
+toggle from `SharedPreferences`, and renders **data-only** messages (messages
+with a `notification` block are already shown by the OS).
+
+See `NOTIFICATION_SETUP.md` for platform setup.

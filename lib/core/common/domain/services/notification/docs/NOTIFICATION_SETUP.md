@@ -108,80 +108,36 @@ Add the necessary permissions and the Awesome Notifications receiver inside the 
 
 ## 4. Service Locator Registration
 
-The service depends on `ILoggerService` and `NavigationService`. Register these in your `service_locator.dart` (or `injection.dart`) before initializing the app.
+Everything is registered by `injectable` (`@lazySingleton` / `@module`). The
+service needs implementations of `ApiClient`, `PreferencesStore` and
+`SessionManager` (provided by core infrastructure). Regenerate after changes:
 
-```dart
-// inside your setupLocator function
-sl.registerLazySingleton<ILoggerService>(() => LoggerServiceImpl());
-sl.registerLazySingleton<NavigationService>(() => NavigationServiceImpl());
-
+```bash
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-## 5. FCM Token Registration (Crucial Step)
+## 5. FCM Token Registration
 
-The service automatically retrieves the FCM token, but it **does not send it to your backend automatically**. You must implement this bridge.
+Already wired: `PushTokenRepository` posts the token to
+`NotificationApiPaths.pushToken` while the session is authenticated, after
+token refreshes and after the notification permission is granted, and a
+logout hook unregisters + deletes it. Adapt the endpoint/body in
+`notification_api_paths.dart` and `data/push_token_repository_impl.dart` to
+your backend.
 
-**Step A: Connect Toggle Logic to API**
-Open `notification_logic_helper.dart` and locate the `setAppNotificationsEnabled` method. You need to connect this to your User Repository or API Service so the server knows this device is active.
+## 6. Initialization
 
-```dart
-// inside notification_logic_helper.dart
-
-Future<void> setAppNotificationsEnabled(bool isEnabled) async {
-    // ... existing logic ...
-
-    if (isEnabled) {
-      String? token = await _firebaseMessaging.getToken();
-
-      // [TODO] CALL YOUR API HERE
-      // await sl<UserRepository>().updateFcmToken(token);
-
-      _logger.i('Notifications Enabled. New Token: $token');
-    } else {
-      // ... existing logic ...
-    }
-}
-
-```
-
-**Step B: Sync on Login**
-In your **Login/Auth Bloc**, after a user successfully logs in, you must ensure the current token is synced:
+Bootstrap initializes the service **once**, after Firebase and DI, before
+`runApp`:
 
 ```dart
-// In your AuthBloc / LoginLogic
-final token = await NotificationService.instance.fcmToken;
-if (token != null) {
-   await _userRepository.registerDeviceToken(token);
-}
-
-```
-
-## 6. Initialization in `main.dart`
-
-The service must be initialized **after** Firebase but **before** `runApp` to ensure background handlers attach correctly.
-
-```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 1. Initialize Firebase
-  await Firebase.initializeApp();
-
-  // 2. Setup Dependency Injection
-  setupLocator();
-
-  // 3. Initialize Notification Service
-  await NotificationService.instance.initialize();
-
-  runApp(MyApp());
-}
-
+await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+await configureInjection();
+await sl<NotificationService>().initialize();
 ```
 
 ## 7. Handling Background Messages
 
-The `firebaseMessagingBackgroundHandler` is defined as a top-level function with `@pragma('vm:entry-point')`.
-
-- **Important:** Do not move this function inside a class (unless static). It must remain accessible to the VM isolate when the app is terminated.
-
----
+`firebaseMessagingBackgroundHandler` is a top-level function with
+`@pragma('vm:entry-point')`. It runs in its own isolate (no DI): it initializes
+Firebase itself and builds what it needs directly. Do not move it into a class.
