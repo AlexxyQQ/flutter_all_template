@@ -5,6 +5,52 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.0] — 2026-11-26
+
+A security- and architecture-focused rewrite. **Breaking** for anything generated from 1.x: see the migration notes.
+Findings and rationale: [docs/TEMPLATE_AUDIT_AND_PLAN.md](docs/TEMPLATE_AUDIT_AND_PLAN.md).
+
+### Security
+- Removed the committed Google API key text from `TODO.md` (**the key must still be revoked/rotated and git history rewritten — see `TODO.md` §0**).
+- Deleted the trust-all-certificates `MyHttpOverrides`; debug-only proxy/self-signed trust is now scoped to the API host and ignored in release builds.
+- Bearer tokens are attached only to requests for the API host; added single-flight token refresh that signs the user out when refresh fails.
+- Tokens moved out of the settings blob into a dedicated `TokenStore` on secure storage; preferences live in `PreferencesStore`.
+- Logger redacts tokens/credentials; stored values, FCM tokens and route arguments are never logged; periodic remote log upload and file logging removed.
+- Push-notification `redirect_url` is validated against an allow-list; permission screens only accept typed routes.
+- Android: release signing from `key.properties`, R8 shrinking, `allowBackup=false`, no cleartext, dropped unused dangerous permissions. iOS: generic purpose strings, no "Always" location.
+- `env/` is no longer bundled as an asset; configuration comes from `--dart-define-from-file=env/<flavor>.json` (`AppEnv`). Added CI secret scanning (gitleaks), OSV scanning and Dependabot.
+
+### Fixed
+- Example feature deleted/updated **every** row (`(id) => id == id`), its repository was never registered in DI, delete used `POST`.
+- `204`/`201` responses were reported as failures; server error bodies never reached callers.
+- Pagination off-by-one, ignored cursors, concurrent page loads and data loss on search failure.
+- `skip` on a permission was treated as *granted*; `MaterialApp` was rebuilt (losing navigation state) on every locale change.
+- 7 failing tests, 24 analyzer warnings, 7 undeclared dependencies, and unused `uuid`.
+
+### Changed
+- **Architecture:** `Failure` is pure Dart; data sources throw a sealed `AppException`, repositories convert once with `guard()`; constructor injection replaces service-locator lookups; `ApiClient` interface replaces the static `ApiHandler`.
+- **CRUD:** the 25-field `BaseCrudBloc` + 8 mixins are replaced by `LoadState`/`LoadCubit`, `PagedListBloc` (page + cursor, `bloc_concurrency`) and `SelectionCubit`. `ISecureStorageDataSource` is replaced by `JsonCollectionStore`.
+- **Permissions:** 10 screens + 10 guards + 30 events collapsed into one config-driven `PermissionScreen`/`PermissionGuard`/`PermissionBloc`.
+- **Theming:** one Material 3 `ColorScheme` + `AppTokens` extension; the parallel custom theme system and `AppMaterialColors` globals are removed. `AppButton` variants share one implementation.
+- Example feature rewritten as a small Todo slice; `feature_brick` regenerated from it.
+- Flutter pinned to 3.44.1; dependencies refreshed within their constraints; stricter analysis (`strict-casts/inference/raw-types`, async-safety lints); generated code is no longer committed.
+
+### Added
+- `bricks/project_brick` is now **generated** from the repository by `tool/sync_brick.dart` (CI fails if stale); it renders into `<app_name>/`, moves `MainActivity.kt`, sets the iOS bundle id, and was verified by generating, analyzing and testing three module combinations.
+- Dev/staging/prod flavors, CI workflow, `SECURITY.md`, `docs/FLAVORS.md`, `docs/CODE_SIGNING.md`, `docs/PLATFORM_SETUP.md`.
+- DI smoke test, ~270 tests (network, storage, session, permissions, notifications, paging, widgets).
+
+### Removed
+- `flutter_dotenv`, `features/another`, `notification_no_logger.zip`, compiled Mason hook binaries and machine-specific Mason state from git.
+
+### Migration notes
+- Replace `ApiHandler.*` with an injected `ApiClient` and `guard()`; replace `AppSettingBloc`/`AppSetting` with `IAppPreferencesRepository` + `SessionManager`.
+- Replace `BaseCrudBloc` mixins with `PagedListBloc`/`LoadCubit`; move request params to `domain/params/`.
+- Create `env/<flavor>.json` from the `*.example.json` files and run with `--dart-define-from-file`.
+- Run `rps gen` after checkout: generated files are git-ignored.
+
+---
+
 ## [1.0.3] — 2026-03-10
 
 ### Added

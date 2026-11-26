@@ -22,11 +22,11 @@ vars:
     default: false
   use_notifications:
     type: boolean
-    description: Include push notifications — FCM + awesome_notifications (requires Firebase)
+    description: Include push notifications — FCM + awesome_notifications (implies Firebase)
     prompt: Include push notifications?
     default: false
   use_permissions:
     type: boolean
-    description: Include 10 permission screens + PermissionBloc + route guard
+    description: Include the permission flow (PermissionBloc + screen + route guard)
     prompt: Include permission screens?
     default: false

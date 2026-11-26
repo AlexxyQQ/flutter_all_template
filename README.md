@@ -13,7 +13,7 @@ injectable DI, with Mason bricks to generate new projects and feature slices.
 
 | Tool | Version | Notes |
 |---|---|---|
-| Flutter | **3.38.5** (pinned in [`.fvmrc`](.fvmrc)) | Use [FVM](https://fvm.app): `fvm install && fvm use` — then prefix commands with `fvm` (e.g. `fvm flutter run`) |
+| Flutter | **3.44.1** (pinned in [`.fvmrc`](.fvmrc)) | Use [FVM](https://fvm.app): `fvm install && fvm use` — then prefix commands with `fvm` (e.g. `fvm flutter run`) |
 | Dart | bundled with Flutter (`sdk: ^3.10.4`) | |
 | [rps](https://pub.dev/packages/rps) | latest | `dart pub global activate rps` — runs the `scripts:` in `pubspec.yaml` |
 | [Mason CLI](https://pub.dev/packages/mason_cli) | `>=0.1.0-dev.52 <0.2.0` | Only for generating projects/features |
@@ -160,8 +160,8 @@ mason make flutter_all_template
 cd my_app && flutter pub get && rps gen
 ```
 
-> The project brick is regenerated from this repo in a later refactor wave; until then
-> it may lag behind the template. See [bricks/project_brick/README.md](bricks/project_brick/README.md).
+> The project brick is generated from this repo (`dart run tool/sync_brick.dart`) and CI fails
+> if it is stale. See [bricks/project_brick/README.md](bricks/project_brick/README.md).
 
 **New feature slice** (`bricks/feature_brick`), from the project root:
 

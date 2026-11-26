@@ -1,6 +1,8 @@
+// brick:if use_permissions
 import 'package:flutter_all_template/core/common/features/permission/domain/repository/permission_repository.dart';
 import 'package:flutter_all_template/core/common/features/permission/presentation/bloc/permission_bloc.dart';
 import 'package:flutter_all_template/core/common/features/permission/presentation/routes/permission_gate.dart';
+// brick:end
 import 'package:flutter_all_template/core/common/locator/service_locator.dart';
 import 'package:flutter_all_template/core/common/presentation/blocs/locale/locale_cubit.dart';
 import 'package:flutter_all_template/core/common/presentation/blocs/theme/theme_cubit.dart';
@@ -41,11 +43,13 @@ void main() {
     expect(sl<TodoListBloc>(), isNotNull);
   });
 
+  // brick:if use_permissions
   test('permission module resolves', () {
     expect(sl<IPermissionRepository>(), isNotNull);
     expect(sl<PermissionGate>(), isNotNull);
     expect(sl<PermissionBloc>(), isNotNull);
   });
+  // brick:end
 
   test('presentation roots resolve', () {
     expect(sl<AppRouter>(), isNotNull);

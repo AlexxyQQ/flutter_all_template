@@ -4,7 +4,9 @@ import 'package:injectable/injectable.dart';
 import '../../../../features/gallery/presentation/routes/gallery_route.dart';
 import '../../../../features/home/presentation/routes/home_route.dart';
 import '../../../../features/splash/presentation/routes/splash_route.dart';
+// brick:if use_permissions
 import '../../features/permission/presentation/routes/permission_route.dart';
+// brick:end
 import '../views/routes/dialog/bottom_sheet_route.dart';
 import '../views/routes/dialog/dialog_route.dart';
 export 'app_router.gr.dart';
@@ -20,7 +22,9 @@ class AppRouter extends RootStackRouter {
     SplashRoute.routes,
     HomeRoutes.route,
     ...GalleryRoutes.routes,
+    // brick:if use_permissions
     PermissionRoute.routes,
+    // brick:end
     ...DialogRoutes.all,
     ...BottomSheetRoute.all,
   ];

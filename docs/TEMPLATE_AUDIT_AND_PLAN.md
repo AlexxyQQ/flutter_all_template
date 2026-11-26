@@ -9,6 +9,29 @@ Every finding cites a file and line so it can be turned directly into an issue.
 
 ---
 
+## Status after the 2.0.0 refactor (2026-11-26)
+
+The sections below are the **original audit** (kept for rationale). Result of the refactor:
+
+| Result | Before | After |
+|---|---|---|
+| `flutter analyze` | 121 issues (24 warnings) | **0** (plus `custom_lint`: 0) |
+| `flutter test` | 40 pass / 7 fail | **273 pass / 0 fail** |
+| DI graph resolves at runtime | no (example feature crashed) | covered by `di_smoke_test.dart` |
+| Generated projects (3 module combos) | not verified | analyze 0 issues, 228 / 273 / 246 tests pass |
+
+**Done:** Phases 0 (except the manual items below), 1, 2 (tooling, CI, flavors, in-constraint dependency refresh), 3, 4, 5, 6 (config level) and 7 (tests/docs).
+
+**Still requires a human / not done**
+1. **Revoke the leaked Google API key** and **rewrite git history** (`git filter-repo`, force-push). The key text was removed from the working tree but still exists in earlier commits (S1). Left alone on purpose: it is destructive and needs your decision.
+2. **Major dependency upgrades** were not attempted (`firebase_*` 5/17, `flutter_secure_storage` 11, `permission_handler` 13, `injectable` 3, `equatable` 3, `file_picker` 13, `upgrader` 14, …): they need real-device/Firebase verification. Only patch/minor upgrades inside the existing constraints were applied.
+3. **Not executed here:** Android/iOS release builds (no JDK/Xcode available), the GitHub Actions workflows, and `shorebird`. Gradle/R8/manifest changes and CI action pins are reviewed but unproven.
+4. **Crash reporting** is a no-op sink until you wire Crashlytics/Sentry (see the logger README).
+5. Push-token endpoint (`/devices/push-token`), refresh endpoint (`auth/refresh`) and the notification route allow-list are placeholders for your backend.
+6. Certificate pinning, screenshot protection and an offline write-queue (optional items 6.4/6.5 / sync) were not implemented.
+
+---
+
 ## 0. Executive summary
 
 The template has a solid *intent* — Clean Architecture folders, BLoC, injectable DI,

@@ -59,6 +59,9 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      - name: Mason project brick is in sync
+        run: dart run tool/sync_brick.dart --check
+
       # Custom lint rules (app_custom_lints); `flutter analyze` does not run them.
       - name: Custom lint
         run: dart run custom_lint

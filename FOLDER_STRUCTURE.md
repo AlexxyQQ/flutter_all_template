@@ -192,28 +192,16 @@ Shared domain entities and all singleton application services.
 ```
 core/common/domain/
 ├── controllers/
-│   └── text_form_filed/
+│   └── text_form_field/
 │       └── text_field_controller.dart   # Factory for TextEditingController
 ├── entities/
-│   ├── failure.dart                     # Freezed union for typed errors
-│   └── params/
-│       └── filter_params.dart           # Common pagination/filter params
+│   └── failure.dart                     # Pure-Dart Failure(message key, type, statusCode)
 └── services/
-    ├── files/
-    │   └── file_log_output_service.dart  # Writes logs to disk
-    ├── logger/                           # AppLogger — see README inside
+    ├── logger/                           # AppLogger facade, redaction, sinks — see README inside
     ├── navigation/                       # NavigationService — see README inside
-    ├── network/                          # DioService + interceptors — see README inside
-    │   └── interceptor/
-    │       ├── authentication_interceptor.dart
-    │       ├── connectivity_interceptor.dart
-    │       ├── error_interceptor.dart
-    │       ├── http_override.dart
-    │       └── token_interceptor.dart
-    ├── notification/                     # FCM + local notifications — see README inside
-    │   ├── helpers/
-    │   └── docs/
-    └── storage/                          # SecureStorageService — see README inside
+    └── notification/                     # FCM + local notifications — see README inside
+        ├── helpers/
+        └── docs/
 ```
 
 **What goes where in `core/common/domain/`:**
@@ -221,9 +209,9 @@ core/common/domain/
 | You are adding… | Put it in |
 |-----------------|-----------|
 | A domain entity shared by 2+ features | `entities/` |
-| A singleton infrastructure service (HTTP, storage, etc.) | `services/<service-name>/` |
-| A reusable Dio interceptor | `services/network/interceptor/` |
-| A new text-field controller pattern | `controllers/text_form_filed/` |
+| A singleton infrastructure service (logging, notifications…) | `services/<service-name>/` (HTTP, storage and session live in `core/network`, `core/storage`, `core/session`) |
+| A reusable Dio interceptor | `lib/core/network/interceptors/` |
+| A new text-field controller pattern | `controllers/text_form_field/` |
 
 ---
 
@@ -347,16 +335,17 @@ Base classes and mixins that features subclass — no feature-specific logic.
 ```
 core/generic/
 ├── data/
-│   ├── data_sources/     # BaseLocalDataSource, BaseRemoteDataSource
-│   └── repositories/     # BaseRepository
+│   ├── async_lock.dart              # Tiny Future-chain mutex
+│   ├── json_collection_store.dart   # Id-keyed offline cache on PreferencesStore
+│   └── single_flight_cache.dart     # One TTL'd value, concurrent callers share one fetch
 ├── domain/
-│   └── services/         # BaseCacheService
+│   └── entities/page.dart           # PageRequest / PageResult<T> (page or cursor)
 └── presentation/
-    └── bloc/
-        └── crud/         # BaseCrudBloc + mixins — see README inside
+    ├── bloc/                        # LoadState/LoadCubit, PagedListBloc, SelectionCubit
+    └── views/widgets/               # PaginationListView<T>
 ```
 
-**Rule:** Only abstract base classes and mixins here. No `@injectable` annotations — concrete subclasses register themselves.
+**Rule:** Only generic building blocks here — no feature-specific logic, no `@injectable` annotations.
 
 ---
 
@@ -378,13 +367,13 @@ Every feature follows the same clean-architecture layout:
 lib/features/<feature_name>/
 ├── data/
 │   ├── data_sources/
-│   │   ├── local/          # Hive / SharedPrefs / SecureStorage data sources
-│   │   └── remote/         # Dio-based API data sources
+│   │   ├── local/          # JsonCollectionStore-backed offline cache (optional)
+│   │   └── remote/         # ApiClient-based API data sources (throw AppException)
 │   ├── models/             # JSON-serialisable Freezed data models
 │   └── repositories/       # RepositoryImpl — implements the domain interface
 ├── domain/
 │   ├── entities/           # Pure Dart domain objects (no JSON annotations)
-│   │   └── params/         # Request param objects (Freezed + JSON-serialisable)
+│   ├── params/             # Typed request params (Freezed; optional)
 │   └── repositories/       # Abstract repository interface
 └── presentation/
     ├── bloc/               # Feature BLoC / Cubit
@@ -404,48 +393,21 @@ lib/features/<feature_name>/
 The `lib/features/example/` directory is the reference implementation. Its actual layout:
 
 ```
-lib/features/example/
+lib/features/example/            # Todo reference slice (copy via `mason make flutter_feature`)
 ├── data/
 │   ├── data_sources/
-│   │   ├── example_data_source.dart          # Shared interface for local + remote
-│   │   ├── local/
-│   │   │   └── example_local_data_source.dart
-│   │   └── remote/
-│   │       └── example_remote_data_source.dart
-│   ├── models/
-│   │   ├── example_model.dart                # Root model (Freezed + JSON)
-│   │   ├── example_model.freezed.dart
-│   │   ├── example_model.g.dart
-│   │   ├── example_sub_model.dart
-│   │   ├── example_sub_model.freezed.dart
-│   │   ├── example_sub_model.g.dart
-│   │   ├── example_address_model.dart
-│   │   ├── example_address_model.freezed.dart
-│   │   ├── example_address_model.g.dart
-│   │   ├── example_profile_settings_model.dart
-│   │   ├── example_profile_settings_model.freezed.dart
-│   │   └── example_profile_settings_model.g.dart
-│   └── repositories/
-│       └── example_repository_impl.dart
+│   │   ├── local/todo_local_data_source.dart    # JsonCollectionStore offline cache
+│   │   └── remote/todo_remote_data_source.dart  # ApiClient, throws AppException
+│   ├── models/todo_model.dart                   # Freezed + JSON, toEntity()
+│   └── repositories/todo_repository_impl.dart   # remote-first, local fallback, guard()
 ├── domain/
-│   ├── entities/
-│   │   ├── example_entity.dart
-│   │   ├── example_entity.freezed.dart
-│   │   ├── example_sub_entity.dart
-│   │   ├── example_sub_entity.freezed.dart
-│   │   ├── example_address_entity.dart
-│   │   ├── example_address_entity.freezed.dart
-│   │   ├── example_profile_settings_entity.dart
-│   │   ├── example_profile_settings_entity.freezed.dart
-│   │   └── params/
-│   │       ├── example_request_params.dart
-│   │       ├── example_request_params.freezed.dart
-│   │       └── example_request_params.g.dart
-│   └── repositories/
-│       └── example_repository.dart           # Abstract interface
+│   ├── entities/todo.dart
+│   ├── params/todo_params.dart
+│   └── repositories/todo_repository.dart        # ITodoRepository
 └── presentation/
     └── bloc/
-        └── example_bloc.dart
+        ├── todo_list_bloc.dart                  # built on PagedListBloc
+        └── todo_list_event.dart
 ```
 
 ### Adding a New Feature — Checklist
@@ -453,7 +415,7 @@ lib/features/example/
 1. Create `lib/features/<feature_name>/` with the layout above.
 2. Define domain entities and the repository interface in `domain/`.
 3. Implement the repository in `data/repositories/`.
-4. Create the BLoC extending `BaseCrudBloc` with needed mixins in `presentation/bloc/`.
+4. Build the BLoC on `PagedListBloc` (lists) or `LoadCubit` (single value) in `presentation/bloc/`.
 5. Annotate services/repos/BLoC with `@injectable` or `@lazySingleton`.
 6. Create screen widgets annotated with `@RoutePage()`.
 7. Register the route(s) in `lib/core/common/presentation/routes/app_router.dart`.
@@ -464,7 +426,7 @@ lib/features/example/
 | Belongs inside the feature | Belongs in `core/` |
 |----------------------------|--------------------|
 | Feature-specific BLoC events/states | Global app state (theme, locale) |
-| Feature API data source | DioService, interceptors |
+| Feature API data source (uses `ApiClient`) | `ApiClient`, interceptors, token refresh |
 | Feature-only widgets | Design-system primitives |
 | Feature route definition | AppRouter registration |
 | Feature-only model helpers | Shared model annotation helpers |

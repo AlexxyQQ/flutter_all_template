@@ -4,7 +4,9 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
+    // brick:if use_firebase
     id("com.google.gms.google-services")
+    // brick:end
     // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.

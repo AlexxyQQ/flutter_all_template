@@ -3,7 +3,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../../../config/constants/type_defs/typedef.dart';
 import '../../../../../error/guard.dart';
+// brick:if use_notifications
 import '../../../../domain/services/notification/notification_permission_api.dart';
+// brick:end
 import '../../domain/entities/app_permission.dart';
 import '../../domain/entities/app_permission_status.dart';
 import '../../domain/repository/permission_repository.dart';
@@ -12,23 +14,32 @@ import '../data_sources/permission_platform_data_source.dart';
 
 @LazySingleton(as: IPermissionRepository)
 class PermissionRepositoryImpl implements IPermissionRepository {
-  const PermissionRepositoryImpl(this._platform, this._notifications);
+  const PermissionRepositoryImpl(
+    this._platform,
+    // brick:if use_notifications
+    this._notifications,
+    // brick:end
+  );
 
   final PermissionPlatformDataSource _platform;
 
+  // brick:if use_notifications
   /// Notification permission is owned by the notification module (it also
   /// has to talk to FCM / the local-notification plugin).
   final NotificationPermissionApi _notifications;
+  // brick:end
 
   @override
   ResultFuture<AppPermissionStatus> check(AppPermission permission) =>
       guard(() async {
         switch (permission) {
+          // brick:if use_notifications
           case AppPermission.notification:
             if (await _notifications.isPermissionGranted()) {
               return AppPermissionStatus.granted;
             }
             return _platformStatus(permission);
+          // brick:end
           case AppPermission.location:
             if (!await _platform.isLocationServiceEnabled()) {
               // GPS is off: treat as not granted so the UI prompts.
@@ -44,12 +55,14 @@ class PermissionRepositoryImpl implements IPermissionRepository {
   ResultFuture<AppPermissionStatus> request(AppPermission permission) =>
       guard(() async {
         switch (permission) {
+          // brick:if use_notifications
           case AppPermission.notification:
             if (await _notifications.requestPermission()) {
               return AppPermissionStatus.granted;
             }
             // Distinguish "denied" from "denied forever".
             return _platformStatus(permission);
+          // brick:end
           case AppPermission.location:
             if (!await _platform.isLocationServiceEnabled()) {
               await _platform.openLocationSettings();

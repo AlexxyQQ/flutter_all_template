@@ -9,7 +9,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../config/constants/locales/app_locales.dart';
 import '../config/observers/app_bloc_observer.dart';
 import 'common/domain/services/logger/logger_service.dart';
+// brick:if use_notifications
 import 'common/domain/services/notification/notification_service.dart';
+// brick:end
 import 'common/features/app_settings/domain/repositories/app_preferences_repository.dart';
 import 'common/locator/service_locator.dart';
 import 'common/presentation/blocs/locale/locale_cubit.dart';
@@ -44,7 +46,9 @@ Future<void> bootstrap({
 
       await configureInjection();
       await sl<SessionManager>().restore();
+      // brick:if use_notifications
       await sl<NotificationService>().initialize();
+      // brick:end
 
       final startLocale = LocaleCubit.resolveStartLocale(
         savedTag: sl<IAppPreferencesRepository>().read().localeTag,

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../config/constants/gen/locale_keys.g.dart';
+// brick:if use_permissions
 import '../../../../../../core/common/features/permission/domain/entities/app_permission.dart';
+// brick:end
 import '../../../../../../core/common/presentation/extensions/size/size_extension.dart';
 import '../../../../../../core/common/presentation/routes/app_router.gr.dart';
 import '../../../../../../core/common/presentation/views/widgets/system/app_button.dart';
@@ -32,6 +34,7 @@ class DcNavigation extends StatelessWidget {
                 label: LocaleKeys
                     .features_home_presentation_views_screens_home_screen_title,
               ),
+              // brick:if use_permissions
               AppButton.stroke(
                 onPressed: () => context.router.push(
                   PermissionScreenRoute(
@@ -41,6 +44,7 @@ class DcNavigation extends StatelessWidget {
                 label: LocaleKeys
                     .core_common_features_permission_presentation_screens_notification_permission_screen_title,
               ),
+              // brick:end
             ],
           ),
         ],

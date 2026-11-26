@@ -41,7 +41,18 @@ AppException mapDioException(DioException e) {
         debugMessage: 'HTTP ${e.response?.statusCode}: $where',
         cause: e,
       );
-    case DioExceptionType.unknown:
+    // Deliberately not exhaustive: newer Dio releases add enum values (e.g.
+    // `transformTimeout` in 5.11), and an exhaustive switch would stop the
+    // whole app compiling on a routine `pub upgrade`.
+    default:
+      // Matched by name so this compiles against Dio versions with and
+      // without the value.
+      if (e.type.name == 'transformTimeout') {
+        return RequestTimeoutException(
+          debugMessage: 'Timeout: $where',
+          cause: e,
+        );
+      }
       return UnknownException(debugMessage: 'Unknown: $where', cause: e);
   }
 }
