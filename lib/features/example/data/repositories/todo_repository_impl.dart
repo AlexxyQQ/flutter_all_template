@@ -52,9 +52,7 @@ class TodoRepositoryImpl implements ITodoRepository {
   @override
   ResultFuture<Todo> getTodo({required String id}) => guard(() async {
     try {
-      final model = await _remote.getTodo(id: id);
-      await _cache(() => _local.saveTodo(todo: model));
-      return model.toEntity();
+      return await _fetchAndCacheTodo(fetch: () => _remote.getTodo(id: id));
     } on AppException catch (e) {
       if (!_isOffline(e)) {
         rethrow;
@@ -68,20 +66,14 @@ class TodoRepositoryImpl implements ITodoRepository {
   });
 
   @override
-  ResultFuture<Todo> createTodo({required CreateTodoParams params}) =>
-      guard(() async {
-        final model = await _remote.createTodo(params: params);
-        await _cache(() => _local.saveTodo(todo: model));
-        return model.toEntity();
-      });
+  ResultFuture<Todo> createTodo({required CreateTodoParams params}) => guard(
+    () => _fetchAndCacheTodo(fetch: () => _remote.createTodo(params: params)),
+  );
 
   @override
-  ResultFuture<Todo> updateTodo({required UpdateTodoParams params}) =>
-      guard(() async {
-        final model = await _remote.updateTodo(params: params);
-        await _cache(() => _local.saveTodo(todo: model));
-        return model.toEntity();
-      });
+  ResultFuture<Todo> updateTodo({required UpdateTodoParams params}) => guard(
+    () => _fetchAndCacheTodo(fetch: () => _remote.updateTodo(params: params)),
+  );
 
   @override
   ResultFuture<void> deleteTodo({required String id}) => guard(() async {
@@ -91,6 +83,14 @@ class TodoRepositoryImpl implements ITodoRepository {
 
   static bool _isOffline(AppException e) =>
       e is NetworkException || e is RequestTimeoutException;
+
+  Future<Todo> _fetchAndCacheTodo({
+    required Future<TodoModel> Function() fetch,
+  }) async {
+    final model = await fetch();
+    await _cache(() => _local.saveTodo(todo: model));
+    return model.toEntity();
+  }
 
   /// Cache writes are best-effort: the remote call already succeeded.
   static Future<void> _cache(Future<void> Function() write) async {

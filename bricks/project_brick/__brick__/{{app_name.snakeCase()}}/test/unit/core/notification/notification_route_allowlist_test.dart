@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const allowlist = NotificationRouteAllowlist.custom({
-    'home': AppPaths.splashRoute,
+    'home': AppPaths.home,
     'order': '/orders',
   });
 
@@ -14,7 +14,14 @@ void main() {
   });
 
   test('falls back to the route key', () {
-    expect(allowlist.resolve({'route': 'home'}), AppPaths.splashRoute);
+    expect(allowlist.resolve({'route': 'home'}), AppPaths.home);
+  });
+
+  test('default home destination is the registered home path', () {
+    expect(
+      NotificationRouteAllowlist().resolve({'type': 'home'}),
+      AppPaths.home,
+    );
   });
 
   test('ignores unknown values and raw paths', () {

@@ -96,9 +96,13 @@ class NotificationService implements NotificationPermissionApi {
         NotificationChannelConfig.channels,
         debug: kDebugMode,
       );
-      await _awesome.setListeners(onActionReceivedMethod: _onActionReceived);
+      final initialAction = await _awesome.getInitialNotificationAction(
+        removeFromActionEvents: true,
+      );
       _subscriptions
-        ..add(_actions.stream.listen(_handleAction))
+        ..add(
+          _actions.stream.listen((action) => unawaited(_handleAction(action))),
+        )
         ..add(_push.onMessage.listen(_onForegroundMessage))
         ..add(_push.onTokenRefresh.listen(_onTokenRefresh))
         ..add(_session.statusStream.listen(_onSessionStatus));
@@ -107,10 +111,10 @@ class NotificationService implements NotificationPermissionApi {
       );
       _session.registerLogoutHook(hook: _onLogout);
 
-      final initialAction = await _awesome.getInitialNotificationAction();
       if (initialAction != null) {
-        _handleAction(initialAction);
+        await _handleAction(initialAction);
       }
+      await _awesome.setListeners(onActionReceivedMethod: _onActionReceived);
       if (_session.status == SessionStatus.authenticated) {
         await _syncToken();
       }
@@ -259,7 +263,11 @@ class NotificationService implements NotificationPermissionApi {
   Future<void> navigateFromPayload(Map<String, dynamic> payload) async {
     final path = _routes.resolve(payload);
     if (path != null) {
-      await _navigation.pushNamed(path);
+      await _navigation.navigateToPath(
+        path,
+        onFailure: (_) =>
+            _logger.i('Could not open an allowlisted notification route.'),
+      );
       return;
     }
     if (_routes.hasRoutingKey(payload)) {
@@ -278,14 +286,22 @@ class NotificationService implements NotificationPermissionApi {
     }
   }
 
-  void _handleAction(ReceivedAction action) {
+  Future<void> _handleAction(ReceivedAction action) async {
     final payload = parsePayload(action.payload);
     _events.add({
       ...payload,
       'action': 'clicked',
       'response': action.buttonKeyPressed,
     });
-    unawaited(navigateFromPayload(payload));
+    try {
+      await navigateFromPayload(payload);
+    } catch (error, stackTrace) {
+      _logger.e(
+        'Notification navigation failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _onForegroundMessage(RemoteMessage message) async {

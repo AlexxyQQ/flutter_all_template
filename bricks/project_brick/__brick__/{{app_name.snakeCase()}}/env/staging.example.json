@@ -3,6 +3,9 @@
   "BASE_URL": "https://staging-api.example.com/api/v1/",
   "ENABLE_LOG_UPLOAD": false,
   "LOG_UPLOAD_URL": "",
+  "ANALYTICS_ENABLED": false,
+  "ANALYTICS_API_URL": "",
+  "ANALYTICS_FIREBASE_ENABLED": false,
   "DEV_PROXY": "",
   "DEV_TRUST_SELF_SIGNED_CERTS": false
 }

@@ -38,7 +38,14 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) {
       return;
     }
-    unawaited(context.router.replace(_resolveNext()));
+    final router = context.router;
+    final splash = RouteData.of(context);
+    if (router.currentChild != splash) {
+      // An external navigation may have opened a destination during splash.
+      router.removeRoute(splash);
+      return;
+    }
+    unawaited(router.replace(_resolveNext()));
   }
 
   @override

@@ -13,10 +13,22 @@ class MyService {
 }
 ```
 
-Available helpers: `push`, `replace`, `pushNamed`, `replaceNamed`, `replaceAll`,
-`maybePop`, `popForced`, `popUntil`, `popUntilRoot`, `canPop`, `removeWhere`, `checkIfAlreadyOpened`
-and `current`. Only pass `AppPaths` constants or allow-listed values to the `*Named`
-methods, never raw push payloads or deep-link parameters.
+Use `navigateToPath` for allowlisted notification destinations. It reuses a
+destination already in the stack and can set the initial route before the
+navigator mounts. Pass trusted app paths to all path-based helpers.
+
+`current` and `checkIfAlreadyOpened` inspect the active page, including nested
+pages. `maybePop` and `popForced` start with the active navigator, including
+pageless overlays. `closeSpecificRoute` searches the active stack hierarchy by
+page name.
+
+## Presenting modals
+
+Inject `ModalService` and call `showPopup<T>` with an `AppPopupDialog` or
+`showSheet<T>` with an `AppBottomSheet`. Widgets can pass their context.
+Services can omit it to use the mounted root navigator. Return a typed value
+with `Navigator.of(context).pop(result)` inside the builder. Normal dismissal
+completes with `null`.
 
 ## Adding a route
 

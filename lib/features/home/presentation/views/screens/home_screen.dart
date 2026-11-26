@@ -51,7 +51,7 @@ class HomeScreen extends StatelessWidget {
                 child: ElevatedButton(
                   key: const Key('home_open_todos_button'),
                   onPressed: () =>
-                      unawaited(context.router.push(const TodoRoute())),
+                      unawaited(context.router.push(const TodoWrapperRoute())),
                   child: Text(
                     LocaleKeys
                         .features_home_presentation_screens_home_screen_openTodos

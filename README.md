@@ -65,7 +65,7 @@ You are asked for:
 |---|---|---|
 | `app_name` | App name; snake_cased for the package | `my_flutter_app` |
 | `app_org` | Organization id, e.g. `com.acme` | `com.example` |
-| `use_firebase` | Firebase core + FlutterFire config | `false` |
+| `use_firebase` | Firebase Core, Firebase Analytics and FlutterFire config | `false` |
 | `use_notifications` | Push notifications (FCM + local; implies Firebase) | `false` |
 | `use_permissions` | Permission bloc, screen and route guard | `false` |
 
@@ -134,10 +134,19 @@ rps gen
 ```
 
 You get `domain/` (entity, params, use cases, repository interface), `data/` (model, remote
-and optional local data source, repository) and `presentation/bloc/`, and an `ApiPaths`
-entry. Add the screen and route yourself, following `lib/features/example/` (until you
-delete it) or [FOLDER_STRUCTURE.md](FOLDER_STRUCTURE.md). Details:
-[bricks/feature_brick](bricks/feature_brick/README.md).
+and optional local data source, repository) and `presentation/` (bloc, route, wrapper that
+provides the bloc, list screen with its widgets), plus an `ApiPaths` entry, the route
+registered in `AppRouter`, the translation keys in both locale files and a widget test.
+Left for you: the entity fields, the API contract in the remote data source and a way to
+open the page (`context.router.push(const NoteRoute())`). `rps gen` also generates the
+`LocaleKeys`. Details: [bricks/feature_brick](bricks/feature_brick/README.md).
+
+## Analytics
+
+Set `ANALYTICS_ENABLED=true` in a flavor file to keep encrypted local action,
+screen and error history. Enable Firebase Analytics or set an HTTPS batch
+endpoint to forward the same events remotely. Identify the user after sign-in
+with an opaque account ID. [Analytics setup](lib/core/common/domain/services/analytics/README.md)
 
 ## Ship it
 

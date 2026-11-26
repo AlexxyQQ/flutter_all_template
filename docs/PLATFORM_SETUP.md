@@ -57,6 +57,7 @@ requests a 4 GB Gradle heap, which fits standard CI runners.
 
 ## iOS — `ios/Runner/Info.plist`
 
+- The project targets iOS 15 or later for the Firebase SDK.
 - Purpose strings (`NS*UsageDescription`) are generic placeholders. **Rewrite each one**
   to say exactly why your app needs the data — vague strings are a common rejection.
 - Only "When In Use" location is declared. Add `NSLocationAlwaysAndWhenInUseUsageDescription`

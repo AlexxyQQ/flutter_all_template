@@ -17,7 +17,7 @@ vars:
     default: com.example
   use_firebase:
     type: boolean
-    description: Include Firebase (firebase_core + firebase_messaging)
+    description: Include Firebase Core and Firebase Analytics
     prompt: Include Firebase?
     default: false
   use_notifications:

@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
+import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_service.dart';
 import 'package:flutter_all_template/core/generic/presentation/bloc/paged_list_bloc.dart';
 import 'package:flutter_all_template/features/example/domain/entities/todo.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
@@ -20,6 +21,8 @@ class MockUpdateTodo extends Mock implements UpdateTodoUseCase {}
 
 class MockDeleteTodo extends Mock implements DeleteTodoUseCase {}
 
+class MockAnalytics extends Mock implements IAnalyticsService {}
+
 Todo _todo(String id, {bool isDone = false}) =>
     Todo(id: id, title: 'Todo $id', isDone: isDone, updatedAt: DateTime(2026));
 
@@ -30,12 +33,14 @@ void main() {
   late MockCreateTodo createTodo;
   late MockUpdateTodo updateTodo;
   late MockDeleteTodo deleteTodo;
+  late MockAnalytics analytics;
 
   setUpAll(() {
     registerFallbackValue(const PageRequest.first(limit: 1));
     registerFallbackValue(const TodoQuery());
     registerFallbackValue(const CreateTodoParams(title: ''));
     registerFallbackValue(const UpdateTodoParams(id: ''));
+    registerFallbackValue(Object());
   });
 
   setUp(() {
@@ -43,6 +48,13 @@ void main() {
     createTodo = MockCreateTodo();
     updateTodo = MockUpdateTodo();
     deleteTodo = MockDeleteTodo();
+    analytics = MockAnalytics();
+    when(
+      () => analytics.trackAction(
+        name: any(named: 'name'),
+        parameters: any(named: 'parameters'),
+      ),
+    ).thenReturn('action-1');
     when(
       () => getTodos(
         page: any(named: 'page'),
@@ -59,6 +71,7 @@ void main() {
     createTodo: createTodo,
     updateTodo: updateTodo,
     deleteTodo: deleteTodo,
+    analytics: analytics,
     queryDebounce: Duration.zero,
   );
 
@@ -167,4 +180,117 @@ void main() {
       loaded([_todo('1')]).copyWith(failure: () => _failure),
     ],
   );
+
+  group('analytics', () {
+    blocTest<TodoListBloc, TodoListState>(
+      'create tracks the title length, never the title',
+      setUp: () => when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('3'))),
+      build: build,
+      seed: () => loaded([_todo('1')]),
+      act: (bloc) => bloc.add(const TodoCreated('  Secret plan ')),
+      verify: (_) {
+        verify(
+          () => analytics.trackAction(
+            name: 'todo_create',
+            parameters: {'title_length': 11},
+          ),
+        ).called(1);
+        verifyNever(
+          () => analytics.trackError(
+            source: any(named: 'source'),
+            error: any(named: 'error'),
+            correlationId: any(named: 'correlationId'),
+            fatal: any(named: 'fatal'),
+          ),
+        );
+      },
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'a failed toggle reports the failure correlated with the toggle action',
+      setUp: () => when(
+        () => updateTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => const Left(_failure)),
+      build: build,
+      seed: () => loaded([_todo('1')]),
+      act: (bloc) => bloc.add(TodoToggled(_todo('1'))),
+      verify: (_) {
+        verify(
+          () => analytics.trackAction(
+            name: 'todo_toggle',
+            parameters: {'is_done': true},
+          ),
+        ).called(1);
+        verify(
+          () => analytics.trackError(
+            source: 'todo_toggle',
+            error: _failure,
+            correlationId: 'action-1',
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'a failed delete reports the failure correlated with the delete action',
+      setUp: () => when(
+        () => deleteTodo(id: '1'),
+      ).thenAnswer((_) async => const Left(_failure)),
+      build: build,
+      seed: () => loaded([_todo('1')]),
+      act: (bloc) => bloc.add(const TodoDeleted('1')),
+      verify: (_) => verify(
+        () => analytics.trackError(
+          source: 'todo_delete',
+          error: _failure,
+          correlationId: 'action-1',
+        ),
+      ).called(1),
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'search tracks the query length, never the search text',
+      build: build,
+      act: (bloc) => bloc.add(
+        const PagedListQueryChanged(TodoQuery(search: 'milk', onlyOpen: true)),
+      ),
+      wait: const Duration(milliseconds: 10),
+      verify: (_) => verify(
+        () => analytics.trackAction(
+          name: 'todo_search',
+          parameters: {'query_length': 4, 'only_open': true},
+        ),
+      ).called(1),
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'a failed refresh reports a list-load error correlated with the refresh',
+      setUp: () => when(
+        () => getTodos(
+          page: any(named: 'page'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) async => const Left(_failure)),
+      build: build,
+      seed: () => loaded([_todo('1')]),
+      act: (bloc) => bloc.add(const PagedListRefreshed()),
+      verify: (_) {
+        verify(
+          () => analytics.trackAction(
+            name: 'todo_refresh',
+            parameters: any(named: 'parameters'),
+          ),
+        ).called(1);
+        verify(
+          () => analytics.trackError(
+            source: 'todo_list_load',
+            error: _failure,
+            correlationId: 'action-1',
+          ),
+        ).called(1);
+      },
+    );
+  });
 }

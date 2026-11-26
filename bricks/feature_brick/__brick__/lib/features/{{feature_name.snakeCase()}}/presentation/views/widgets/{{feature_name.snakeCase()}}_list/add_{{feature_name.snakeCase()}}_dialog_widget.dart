@@ -1,0 +1,61 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+
+import '../../../../../../config/constants/gen/locale_keys.g.dart';
+
+class Add{{feature_name.pascalCase()}}Dialog extends StatefulWidget {
+  const Add{{feature_name.pascalCase()}}Dialog({super.key});
+
+  @override
+  State<Add{{feature_name.pascalCase()}}Dialog> createState() => _Add{{feature_name.pascalCase()}}DialogState();
+}
+
+class _Add{{feature_name.pascalCase()}}DialogState extends State<Add{{feature_name.pascalCase()}}Dialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.of(context).pop(_controller.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        LocaleKeys.features_{{feature_name.snakeCase()}}_presentation_screens_{{feature_name.snakeCase()}}_list_screen_add
+            .tr(),
+      ),
+      content: Semantics(
+        identifier: '{{feature_name.snakeCase()}}_title_field',
+        child: TextField(
+          key: const Key('{{feature_name.snakeCase()}}_title_field'),
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: LocaleKeys
+                .features_{{feature_name.snakeCase()}}_presentation_screens_{{feature_name.snakeCase()}}_list_screen_hint
+                .tr(),
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(LocaleKeys.common_words_cancel.tr()),
+        ),
+        Semantics(
+          identifier: '{{feature_name.snakeCase()}}_save_button',
+          child: ElevatedButton(
+            key: const Key('{{feature_name.snakeCase()}}_save_button'),
+            onPressed: _submit,
+            child: Text(LocaleKeys.common_words_save.tr()),
+          ),
+        ),
+      ],
+    );
+  }
+}

@@ -15,6 +15,12 @@ class NavigationService {
 
   final AppRouter _appRouter;
 
+  /// The mounted root navigator context used to present app-wide modals.
+  BuildContext? get modalContext {
+    final context = _appRouter.navigatorKey.currentContext;
+    return context != null && context.mounted ? context : null;
+  }
+
   Future<T?> push<T extends Object?>(
     PageRouteInfo<Object?> route, {
     OnNavigationFailure? onFailure,
@@ -33,7 +39,22 @@ class NavigationService {
   Future<void> replaceNamed(String path, {OnNavigationFailure? onFailure}) =>
       _appRouter.replacePath(path, onFailure: onFailure);
 
-  void popForced<T extends Object?>([T? result]) => _appRouter.pop<T>(result);
+  /// Opens a trusted app path, reusing an existing destination in the stack.
+  Future<void> navigateToPath(String path, {OnNavigationFailure? onFailure}) =>
+      _appRouter.navigatePath(path, onFailure: onFailure);
+
+  void popForced<T extends Object?>([T? result]) {
+    final top = _appRouter.topMostRouter();
+    StackRouter? router = top is StackRouter ? top : top.parentAsStackRouter;
+    while (router != null) {
+      if (router.canPop(ignoreChildRoutes: true, ignoreParentRoutes: true)) {
+        router.pop<T>(result);
+        return;
+      }
+      router = router.parentAsStackRouter;
+    }
+    _appRouter.pop<T>(result);
+  }
 
   Future<bool> maybePop<T extends Object?>([T? result]) =>
       _appRouter.maybePopTop<T>(result);
@@ -58,17 +79,31 @@ class NavigationService {
   bool removeWhere(RouteDataPredicate predicate, {bool notify = true}) =>
       _appRouter.removeWhere(predicate, notify: notify);
 
-  /// Pops the route named [name] if it is on top, otherwise removes it from
-  /// the stack.
+  /// Closes the nearest matching page in the active stack hierarchy.
   FutureOr<bool> closeSpecificRoute({required String name}) {
-    if (_appRouter.current.name == name) {
-      return _appRouter.maybePop();
+    final top = _appRouter.topMostRouter();
+    StackRouter? router = top is StackRouter ? top : top.parentAsStackRouter;
+    while (router != null) {
+      for (final page in router.stack.reversed) {
+        final route = page.routeData;
+        if (route.name != name) {
+          continue;
+        }
+        if (route == router.currentChild) {
+          // A pageless route belongs to its own caller, even if it covers
+          // the named page.
+          return router.hasPagelessTopRoute ? false : router.maybePop();
+        }
+        router.removeRoute(route);
+        return true;
+      }
+      router = router.parentAsStackRouter;
     }
-    return _appRouter.removeWhere((route) => route.name == name);
+    return false;
   }
 
   bool checkIfAlreadyOpened({required String name}) =>
-      _appRouter.current.name == name;
+      _appRouter.hasEntries && current.name == name;
 
-  RouteData<Object?> get current => _appRouter.current;
+  RouteData<Object?> get current => _appRouter.topRoute;
 }

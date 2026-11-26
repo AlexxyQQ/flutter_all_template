@@ -43,6 +43,8 @@ void run(HookContext context) async {
       _materialiseFirebaseConfig();
     } else {
       _deleteDir('lib/config/firebase');
+      _deleteDir('lib/core/common/domain/services/analytics/firebase');
+      _deleteDir('test/unit/core/analytics/firebase');
       for (final f in _firebaseConfigFiles) {
         _deleteFile(f);
         _deleteFile('$f.example');
@@ -156,6 +158,12 @@ void _updateAndroidConfig(String appOrg, String appName) {
   // app/build.gradle.kts
   _replaceInFile(
     'android/app/build.gradle.kts',
+    'com.alexxy.flutter_all_template',
+    packageId,
+  );
+
+  _replaceInFile(
+    'android/app/google-services.json.example',
     'com.alexxy.flutter_all_template',
     packageId,
   );

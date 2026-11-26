@@ -56,11 +56,12 @@ lib/
 | `bootstrap.dart`, `app.dart` | DI setup, global error handling, `MaterialApp.router` with the global providers |
 | `error/` | `AppException` (thrown by data sources) and `guard()` which turns it into a `Failure` |
 | `network/` | `ApiClient` interface, Dio implementation, auth / refresh-token / logging interceptors |
-| `storage/` | `SecureStore` (secrets) and `PreferencesStore` (non-secret) behind small interfaces |
+| `storage/` | `SecureStore` for secrets, `PreferencesStore` for settings, and `EncryptedHiveStore` for private local records |
 | `session/` | `TokenStore` on secure storage and `SessionManager` (sign-in / sign-out) |
 | `generic/` | `PagedListBloc`, `LoadCubit`, `SelectionCubit`, `PageRequest`/`PageResult`, `JsonCollectionStore`, `AsyncLock`, `SingleFlightCache` (see its README) |
 | `common/data/models/helpers/` | JSON and entity conversion helpers |
 | `common/domain/entities/failure.dart` | `Failure`; its `message` is a localization key |
+| `common/domain/services/analytics/` | per-user action, navigation and error analytics with local and remote destinations |
 | `common/domain/services/logger/` | redacting logger with pluggable sinks |
 | `common/domain/services/navigation/` | `NavigationService` over `AppRouter` |
 | `common/domain/services/notification/` | FCM + local notifications (optional module) |
@@ -68,6 +69,7 @@ lib/
 | `common/features/permission/` | one enum, one spec table, one bloc, one screen, one guard (optional module) |
 | `common/locator/` | get_it + injectable setup (`sl`) |
 | `common/presentation/blocs/` | `LocaleCubit`, global bloc providers |
+| `common/presentation/modals/` | shared bottom sheets and popup dialogs |
 | `common/presentation/routes/` | `AppRouter` (auto_route) |
 
 ### `features/`
@@ -78,11 +80,11 @@ Each feature is self-contained:
 features/<name>/
 ├── data/            models, data_sources/{remote,local}, repositories (impl)
 ├── domain/          entities, params, repository interfaces, usecases (pure Dart)
-└── presentation/    bloc/, routes/ (@RoutePage wrappers), views/screens/
+└── presentation/    bloc/, routes/ (route table), views/{wrappers (route shell, provides the bloc), screens, widgets}
 ```
 
 Current features: `splash` and `home` (presentation only) and `example` (a complete Todo slice
-with paging, search and an offline cache). Generate new slices with `mason make flutter_feature`.
+with paging, search and an offline cache). Generate new slices (with page, wrapper, route and widget test) with `mason make flutter_feature`.
 
 ## Layering rules
 
@@ -103,7 +105,7 @@ with paging, search and an offline cache). Generate new slices with `mason make 
 
 | Task | Do |
 |---|---|
-| New feature | `mason make flutter_feature`, add a route, run `rps gen` |
+| New feature | `mason make flutter_feature` (route is registered for you), run `rps gen` |
 | New route | `@RoutePage` screen, `*Route` class, register it in `app_router.dart` |
 | New translation | add the key to every `assets/translations/*.json`, run `rps gen:keys` |
 | New permission | see `lib/core/common/features/permission/README.md` |

@@ -17,6 +17,22 @@ abstract final class AppEnv {
   static const bool enableLogUpload = bool.fromEnvironment('ENABLE_LOG_UPLOAD');
   static const String logUploadUrl = String.fromEnvironment('LOG_UPLOAD_URL');
 
+  /// Analytics master switch (default off). Enabling it retains events
+  /// locally and sends them to the configured remote destinations.
+  static const bool analyticsEnabled = bool.fromEnvironment(
+    'ANALYTICS_ENABLED',
+  );
+
+  /// Absolute URL of a custom analytics batch endpoint (empty = off).
+  static const String analyticsApiUrl = String.fromEnvironment(
+    'ANALYTICS_API_URL',
+  );
+
+  /// Also send events to Firebase Analytics. Requires a Firebase build.
+  static const bool analyticsFirebaseEnabled = bool.fromEnvironment(
+    'ANALYTICS_FIREBASE_ENABLED',
+  );
+
   /// Debug-only escape hatches. Ignored in release builds.
   static const String devProxy = String.fromEnvironment('DEV_PROXY');
   static const bool devTrustSelfSignedCerts = bool.fromEnvironment(

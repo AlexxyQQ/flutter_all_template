@@ -20,7 +20,7 @@ Every feature is `data` → `domain` ← `presentation`. Dependencies point **in
 features/<name>/
 ├── data/          models, data_sources/{remote,local}, repositories (impl)
 ├── domain/        entities, params, repository interfaces, usecases   (pure Dart)
-└── presentation/  bloc/, routes/, views/screens/
+└── presentation/  bloc/, routes/, views/{wrappers,screens,widgets}/   (a wrapper route provides the bloc)
 ```
 
 | Layer | May import | Must NOT import |
@@ -296,10 +296,9 @@ class TodoRepositoryImpl {
 
 ## 6. UI
 
-The template ships **plain Material 3 with the default `ThemeData`** — no design system, no custom
-widget library. Build screens from Flutter's own widgets (`Scaffold`, `AppBar`, `ListTile`,
-`ElevatedButton`, `AlertDialog`, `SnackBar`). If your product needs a design system, add it in your app,
-not in `core/`.
+The template uses **Material 3 with the default `ThemeData`**. Build screens from Flutter's
+widgets and use `ModalService` with `AppPopupDialog` or `AppBottomSheet` for shared modal layouts.
+Keep product-specific design systems in the app.
 
 ✅ **Do**
 
@@ -320,8 +319,8 @@ Theme(data: ThemeData(...), child: ...)                    // ✗ per-screen the
 ```
 
 - Colours/typography come from `Theme.of(context)`; never hard-code hex values in widgets.
-- Use `const` constructors wherever possible; break big `build` methods into small private widgets
-  (classes, **not** `_buildFoo()` helper methods — they defeat rebuild optimisation).
+- Use `const` constructors wherever possible. Extract parts of a large `build` method into
+  public widgets in their own files.
 - Every screen has a loading, empty and error state. Errors show a retry action.
 - **Test ids:** every interactive widget the E2E flows touch gets **both** a `Key('<screen>_<thing>')`
   and `Semantics(identifier: '<screen>_<thing>')` (Maestro matches the semantics id). See
@@ -384,7 +383,16 @@ Text(failure.message)                     // ✗ shows the key; call .tr() on it
 - Types are explicit where inference would be `dynamic` (`strict-casts`, `strict-inference`, `strict-raw-types`
   are on): `List<String>`, not `List`.
 - Files are `snake_case.dart`; classes `UpperCamelCase`; interfaces are prefixed `I` (`ITodoRepository`).
-- Keep files small and single-purpose. A file that needs scrolling to find things should be split.
+- Declare at most one class or interface per hand-written Dart file. Split
+  implementations, models, events, states, and widgets into their own files. Use Dart library
+  parts when related sealed types must share a library.
+- Declare classes public. A `StatefulWidget` may keep its own private `State` subclass in the
+  widget file. Private methods and fields are allowed.
+- Declare no top-level variables or constants. Own state in an instance and inject that
+  instance where it is used. Put shared constants on the class that owns the value.
+- Declare functions as instance or static methods on the class that owns the behavior.
+  Keep runtime-required entry points such as Dart's `main` thin and delegate their
+  work to a class.
 - Comments explain **why**, not what. Public interfaces get a one-line `///` doc.
 
 ---
@@ -419,6 +427,8 @@ debugPrint(response.headers.toString()) // ✗ may contain Authorization
   `GoogleService-Info.plist`, API keys, tokens. See [`SECURITY.md`](SECURITY.md).
 - Tokens go in `SecureStore`; non-secret settings in `PreferencesStore`. Never put a token in
   `SharedPreferences`.
+- Use `EncryptedHiveStore` for sensitive local records such as diagnostic events. Keep
+  signing keys, tokens, and the store's encryption keys in platform secure storage.
 
 ✅ **Do** — `AppEnv.baseUrl`  ·  ❌ **Don't** — `const apiKey = 'sk-live-…';`
 
@@ -479,6 +489,7 @@ class, route, asset or translation.
 - [ ] Dependencies are injected through **named, `required`** constructor parameters (private fields set in the initializer list)
 - [ ] Errors go through `guard()` → `Failure`; nothing swallowed
 - [ ] No hard-coded strings, colours or secrets
+- [ ] One class per file, no private helper classes, and no top-level variables or helper functions
 - [ ] New interactive widgets have `Key` + `Semantics(identifier: ...)` when E2E-relevant
 - [ ] Tests added/updated; `rps check` passes
 - [ ] `rps gen` / `rps brick` run if annotations or template files changed

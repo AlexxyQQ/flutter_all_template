@@ -3,6 +3,7 @@ class AppPaths {
   // Root & Core
   // ─────────────────────────────────────────────
   static const String splashRoute = '/';
+  static const String home = '/home';
 
   // ─────────────────────────────────────────────
   // Permission

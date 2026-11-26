@@ -27,6 +27,9 @@ cp env/dev.example.json env/dev.json
   "BASE_URL": "http://10.0.2.2:8080/api/v1/",
   "ENABLE_LOG_UPLOAD": false,
   "LOG_UPLOAD_URL": "",
+  "ANALYTICS_ENABLED": false,
+  "ANALYTICS_API_URL": "",
+  "ANALYTICS_FIREBASE_ENABLED": false,
   "DEV_PROXY": "",
   "DEV_TRUST_SELF_SIGNED_CERTS": false
 }
@@ -42,6 +45,9 @@ They are constants, so unused branches (e.g. `if (AppEnv.isDev)`) are tree-shake
 | `BASE_URL` | string | API root with trailing slash. Must be `https://` outside debug builds — Android blocks cleartext in release (`network_security_config.xml`) and iOS ATS blocks it everywhere |
 | `ENABLE_LOG_UPLOAD` | bool | Remote log upload is **off** unless this is `true` |
 | `LOG_UPLOAD_URL` | string | Used only when upload is enabled |
+| `ANALYTICS_ENABLED` | bool | Analytics is **off** unless this is `true` (and a destination below is set) |
+| `ANALYTICS_API_URL` | string | Absolute `https://` URL of your analytics batch endpoint; empty = not used |
+| `ANALYTICS_FIREBASE_ENABLED` | bool | Also send to Firebase Analytics; only in projects generated with Firebase |
 | `DEV_PROXY` | string | `host:port` for Charles/mitmproxy. Honoured only in debug builds |
 | `DEV_TRUST_SELF_SIGNED_CERTS` | bool | Honoured only in debug builds. Never enable for staging/prod |
 

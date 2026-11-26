@@ -113,3 +113,18 @@ Logs are written to the console in debug builds and may be persisted to files an
   strings from notifications or deep links.
 
 See [`docs/PLATFORM_SETUP.md`](docs/PLATFORM_SETUP.md) for details.
+
+## Encrypted Hive CE storage
+
+Inject `EncryptedHiveStore` for app-private records that need to survive a restart.
+The store authenticates and encrypts each key/value pair with AES-256-GCM. Hive
+stores ciphertext under a keyed digest, so the database file contains neither
+readable values nor readable record names. The two random keys are held by
+platform secure storage. The Apple key is device-only, and the Android vault has
+its own Keystore-backed namespace. An existing database with a missing or invalid
+key fails closed. Android excludes app data from backups and device transfers.
+
+The store is native-only. The database file still reveals size and write patterns.
+At-rest encryption cannot protect records from a compromised process or a device
+that can access the running app's memory. Keep tokens in `SecureStore` and record
+only the data the feature needs.

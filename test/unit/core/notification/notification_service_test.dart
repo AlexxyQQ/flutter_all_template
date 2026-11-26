@@ -87,11 +87,14 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
-      () => awesome.getInitialNotificationAction(),
+      () => awesome.getInitialNotificationAction(removeFromActionEvents: true),
     ).thenAnswer((_) async => null);
     when(() => awesome.cancelAll()).thenAnswer((_) async {});
     when(() => awesome.isNotificationAllowed()).thenAnswer((_) async => true);
-    when(() => navigation.pushNamed(any())).thenAnswer((_) async {});
+    when(
+      () =>
+          navigation.navigateToPath(any(), onFailure: any(named: 'onFailure')),
+    ).thenAnswer((_) async {});
 
     service = NotificationService(
       push: push,
@@ -100,9 +103,7 @@ void main() {
       tokens: tokens,
       session: session,
       navigation: navigation,
-      routes: const NotificationRouteAllowlist.custom({
-        'home': AppPaths.splashRoute,
-      }),
+      routes: const NotificationRouteAllowlist.custom({'home': AppPaths.home}),
       logger: logger,
     );
   });
@@ -111,16 +112,49 @@ void main() {
     test('navigates to an allowlisted destination', () async {
       await service.navigateFromPayload({'type': 'home'});
 
-      verify(() => navigation.pushNamed(AppPaths.splashRoute)).called(1);
+      verify(
+        () => navigation.navigateToPath(
+          AppPaths.home,
+          onFailure: any(named: 'onFailure'),
+        ),
+      ).called(1);
     });
 
     test('ignores and logs an unknown route', () async {
       await service.navigateFromPayload({'route': '/internal/debug'});
       await service.navigateFromPayload({'redirect_url': '/anything'});
 
-      verifyNever(() => navigation.pushNamed(any()));
+      verifyNever(
+        () => navigation.navigateToPath(
+          any(),
+          onFailure: any(named: 'onFailure'),
+        ),
+      );
       verify(() => logger.i(any())).called(1);
     });
+  });
+
+  test('initial tap is handled before the listener can replay it', () async {
+    when(
+      () => awesome.getInitialNotificationAction(removeFromActionEvents: true),
+    ).thenAnswer(
+      (_) async => ReceivedAction().fromMap({
+        'payload': <String, String>{'type': 'home'},
+      }),
+    );
+
+    await service.initialize();
+
+    verifyInOrder([
+      () => awesome.getInitialNotificationAction(removeFromActionEvents: true),
+      () => navigation.navigateToPath(
+        AppPaths.home,
+        onFailure: any(named: 'onFailure'),
+      ),
+      () => awesome.setListeners(
+        onActionReceivedMethod: any(named: 'onActionReceivedMethod'),
+      ),
+    ]);
   });
 
   group('logout hook', () {

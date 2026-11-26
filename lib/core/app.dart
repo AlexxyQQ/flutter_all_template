@@ -3,7 +3,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../config/observers/route_observer.dart';
 import 'common/presentation/blocs/global_bloc_providers.dart';
 import 'common/presentation/blocs/locale/locale_cubit.dart';
 import 'common/presentation/routes/app_router.dart';
@@ -11,10 +10,18 @@ import 'common/presentation/routes/app_router.dart';
 /// Root widget. Dependencies are passed in by the composition root
 /// (`main.dart`); `build` has no side effects.
 class App extends StatefulWidget {
-  const App({required this.router, required this.routeObserver, super.key});
+  const App({
+    required this.router,
+    required this.navigatorObservers,
+    super.key,
+  });
 
   final AppRouter router;
-  final AppRouteObserver routeObserver;
+
+  /// Called once per router (root and every nested one). Must return
+  /// **new** observer instances: a `NavigatorObserver` can only observe one
+  /// navigator.
+  final NavigatorObserversBuilder navigatorObservers;
 
   @override
   State<App> createState() => _AppState();
@@ -24,7 +31,7 @@ class _AppState extends State<App> {
   // Created once: re-creating the router config on rebuild would reset
   // navigation state.
   late final RouterConfig<UrlState> _routerConfig = widget.router.config(
-    navigatorObservers: () => [widget.routeObserver],
+    navigatorObservers: widget.navigatorObservers,
   );
 
   @override

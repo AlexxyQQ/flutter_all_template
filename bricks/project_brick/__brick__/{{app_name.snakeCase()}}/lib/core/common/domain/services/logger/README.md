@@ -29,7 +29,7 @@ Classes that need a logger as a real dependency take `ILoggerService` in their c
 
 ## Wiring Crashlytics / Sentry
 
-Implement `CrashReporter` and install it at the top of `bootstrap()` / your `initializers`:
+Implement `CrashReporter` and install it through `Bootstrap.run`'s `initializers` callback:
 
 ```dart
 AppLogger.configure(

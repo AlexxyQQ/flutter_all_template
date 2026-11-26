@@ -20,10 +20,8 @@ typedef {{feature_name.pascalCase()}}ListState = PagedState<{{feature_name.pasca
 /// `PagedListQueryChanged`). Mutations run one at a time and report errors
 /// through [PagedState.failure] without touching the loaded items.
 ///
-/// Provide it with `BlocProvider(create: (_) => sl<{{feature_name.pascalCase()}}ListBloc>())` and
-/// render `state.items` with a `ListView`. See
-/// `lib/features/example/presentation/views/screens/todo_list_screen.dart`
-/// for a complete Material screen.
+/// Provided by the `{{feature_name.pascalCase()}}Wrapper` route (see `views/wrappers/`), which loads the
+/// first page; `{{feature_name.pascalCase()}}ListScreen` and its widgets render `state.items`.
 @injectable
 class {{feature_name.pascalCase()}}ListBloc extends PagedListBloc<{{feature_name.pascalCase()}}, {{#use_params}}{{feature_name.pascalCase()}}Query{{/use_params}}{{^use_params}}String{{/use_params}}> {
   {{feature_name.pascalCase()}}ListBloc({

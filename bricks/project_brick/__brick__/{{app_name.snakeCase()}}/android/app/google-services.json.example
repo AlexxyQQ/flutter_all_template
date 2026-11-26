@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "YOUR_ANDROID_APP_ID",
         "android_client_info": {
-          "package_name": "YOUR_ANDROID_PACKAGE_NAME"
+          "package_name": "com.alexxy.flutter_all_template"
         }
       },
       "oauth_client": [],

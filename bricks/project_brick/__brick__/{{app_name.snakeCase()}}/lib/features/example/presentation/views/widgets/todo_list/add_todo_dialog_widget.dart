@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../../config/constants/gen/locale_keys.g.dart';
+import '../../../../../../core/common/presentation/modals/app_popup_dialog.dart';
 
 class AddTodoDialog extends StatefulWidget {
   const AddTodoDialog({super.key});
@@ -23,11 +24,10 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        LocaleKeys.features_example_presentation_screens_todo_list_screen_add
-            .tr(),
-      ),
+    return AppPopupDialog(
+      title: LocaleKeys
+          .features_example_presentation_screens_todo_list_screen_add
+          .tr(),
       content: Semantics(
         identifier: 'todo_title_field',
         child: TextField(

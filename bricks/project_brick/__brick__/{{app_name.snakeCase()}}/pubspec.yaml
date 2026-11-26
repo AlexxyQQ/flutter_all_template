@@ -40,8 +40,11 @@ dependencies:
   # ============================================================
   # 💾 Data, Storage & Serialization
   # ============================================================
-  flutter_secure_storage: ^10.0.0 # Secure storage for keys/tokens
+  flutter_secure_storage: ^10.3.4 # Secure storage for keys/tokens
   json_annotation: ^4.9.0 # Annotations for JSON serialization
+  hive_ce: ^2.24.0 # Bulk local storage
+  cryptography: ^2.9.0 # Authenticated encryption for Hive records
+  path_provider: ^2.1.6 # App-private storage directory
 
   # ============================================================
   # 📱 Device Features & Permissions
@@ -56,6 +59,7 @@ dependencies:
   # ============================================================
 {{#use_firebase}}
   firebase_core: ^4.4.0 # Core Firebase setup
+  firebase_analytics: ^12.6.1 # Optional Firebase analytics destination
 {{/use_firebase}}
 {{#use_notifications}}
   firebase_messaging: ^16.1.1 # FCM (Push Notifications)

@@ -19,9 +19,7 @@ class NotificationRouteAllowlist {
   const NotificationRouteAllowlist.custom(this.routes);
 
   /// Add an entry per notification type your backend sends.
-  static const Map<String, String> defaultRoutes = {
-    'home': AppPaths.splashRoute,
-  };
+  static const Map<String, String> defaultRoutes = {'home': AppPaths.home};
 
   /// Payload keys inspected, in priority order.
   static const List<String> payloadKeys = ['type', 'route'];

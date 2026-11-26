@@ -282,6 +282,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.8"
+  cryptography:
+    dependency: "direct main"
+    description:
+      name: cryptography
+      sha256: "3eda3029d34ec9095a27a198ac9785630fe525c0eb6a49f3d575272f8e792ef0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.0"
   cupertino_ui:
     dependency: transitive
     description:
@@ -418,6 +426,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  firebase_analytics:
+    dependency: "direct main"
+    description:
+      name: firebase_analytics
+      sha256: a75501500b7a49755d5d40f968ccb4cedec392a96590a0ab3e1060390302d455
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.6.1"
+  firebase_analytics_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_analytics_platform_interface
+      sha256: "5c3ab4b681c837afd71f0abf77c7485f51c7b645d4ae77b96f9ed54779ff4126"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.7"
+  firebase_analytics_web:
+    dependency: transitive
+    description:
+      name: firebase_analytics_web
+      sha256: "09eb4d0ce4c9a16efbc277ac709a90eb197d5512592215a73c6a302ab1ab6c3a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.1+13"
   firebase_core:
     dependency: "direct main"
     description:
@@ -710,6 +742,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  hive_ce:
+    dependency: "direct main"
+    description:
+      name: hive_ce
+      sha256: "03ac73b673f98f48d7a3c364bb0b646a88f931240453e0f389ffcc0e18c5379f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.24.0"
   hooks:
     dependency: transitive
     description:
@@ -806,6 +846,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  isolate_channel:
+    dependency: transitive
+    description:
+      name: isolate_channel
+      sha256: c79d7ac344e6f7cd2e42b006b920be990136a59aa763f15c3c490350907710a4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.3"
   jni:
     dependency: transitive
     description:
@@ -1015,7 +1063,7 @@ packages:
     source: hosted
     version: "1.1.0"
   path_provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
