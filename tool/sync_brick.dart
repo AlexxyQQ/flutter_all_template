@@ -232,16 +232,33 @@ List<String> _diff(Map<String, List<int>> expected) {
   return stale;
 }
 
+/// Compares file contents ignoring CRLF vs LF, which differs between
+/// checkouts (git `autocrlf` on Windows) but is irrelevant to the brick.
 bool _sameBytes(List<int> a, List<int> b) {
-  if (a.length != b.length) {
+  final left = _withoutCarriageReturns(a);
+  final right = _withoutCarriageReturns(b);
+  if (left.length != right.length) {
     return false;
   }
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) {
+  for (var i = 0; i < left.length; i++) {
+    if (left[i] != right[i]) {
       return false;
     }
   }
   return true;
+}
+
+List<int> _withoutCarriageReturns(List<int> bytes) {
+  const cr = 13;
+  const lf = 10;
+  final out = <int>[];
+  for (var i = 0; i < bytes.length; i++) {
+    if (bytes[i] == cr && i + 1 < bytes.length && bytes[i + 1] == lf) {
+      continue;
+    }
+    out.add(bytes[i]);
+  }
+  return out;
 }
 
 const String _projectReadme = '''# {{app_name.titleCase()}}
