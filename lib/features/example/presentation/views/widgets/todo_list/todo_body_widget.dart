@@ -4,12 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../../core/generic/presentation/bloc/bloc_exports.dart';
-import '../../../../domain/entities/todo.dart';
 import '../../../bloc/todo_list_bloc.dart';
 import 'todo_tile_widget.dart';
 
 class TodoBody extends StatelessWidget {
-  const TodoBody({required this.state});
+  const TodoBody({required this.state, super.key});
 
   final TodoListState state;
 

@@ -7,7 +7,7 @@ import '../../../../domain/entities/todo.dart';
 import '../../../bloc/todo_list_bloc.dart';
 
 class TodoTile extends StatelessWidget {
-  const TodoTile({required this.todo});
+  const TodoTile({required this.todo, super.key});
 
   final Todo todo;
 

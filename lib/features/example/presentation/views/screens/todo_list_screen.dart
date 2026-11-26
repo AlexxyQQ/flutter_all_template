@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../core/common/locator/service_locator.dart';
 import '../../../../../core/generic/presentation/bloc/paged_list_bloc.dart';
-import '../../../domain/entities/todo.dart';
 import '../../bloc/todo_list_bloc.dart';
 import '../widgets/todo_list/add_todo_dialog_widget.dart';
 import '../widgets/todo_list/todo_body_widget.dart';
