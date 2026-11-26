@@ -10,6 +10,8 @@ mason get
 mason make flutter_all_template        # renders into ./<app_name>/
 ```
 
+**Windows:** do not install this brick with `mason add --git-url ...`. Mason's git cache path plus the brick's deep file paths exceed the 260-character limit (`PathNotFoundException: Directory listing failed`). Clone to a short path (e.g. `C:\src\fat`) and use `mason add -g flutter_all_template --path C:\src\fat\bricks\project_brick`. See the root README.
+
 | Variable | Meaning | Default |
 |---|---|---|
 | `app_name` | App name; snake_cased for the package | `my_flutter_app` |

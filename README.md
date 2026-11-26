@@ -15,7 +15,7 @@ a small Todo example to copy from. Mason bricks generate a new project or a new 
 
 Use the Mason project brick. It renames the package, sets the Android `applicationId` and
 the iOS bundle id, wires CI/Codemagic/Maestro to your names, and removes the optional
-modules you do not pick. No clone of this repo is needed.
+modules you do not pick.
 
 **1. Install the tools** (once)
 
@@ -29,10 +29,29 @@ modules you do not pick. No clone of this repo is needed.
 
 **2. Register the bricks** (once per machine)
 
+Clone the repo to a **short path** and register both bricks from it. The folder is only a
+brick source; your app is generated somewhere else.
+
 ```bash
-mason add -g flutter_all_template --git-url https://github.com/AlexxyQQ/flutter_all_template --git-path bricks/project_brick
-mason add -g flutter_feature      --git-url https://github.com/AlexxyQQ/flutter_all_template --git-path bricks/feature_brick
+# macOS / Linux
+git clone --depth 1 https://github.com/AlexxyQQ/flutter_all_template ~/fat
+mason add -g flutter_all_template --path ~/fat/bricks/project_brick
+mason add -g flutter_feature      --path ~/fat/bricks/feature_brick
+
+# Windows (PowerShell): keep the clone path short, e.g. C:\src\fat
+git clone --depth 1 https://github.com/AlexxyQQ/flutter_all_template C:\src\fat
+mason add -g flutter_all_template --path C:\src\fat\bricks\project_brick
+mason add -g flutter_feature      --path C:\src\fat\bricks\feature_brick
 ```
+
+Update later with `git pull` in that folder.
+
+> **Windows: do not use `mason add --git-url`.** Mason copies git bricks into a cache
+> folder with a ~170-character name, and the brick's deeper files then exceed Windows'
+> 260-character path limit (`PathNotFoundException: Directory listing failed ... \kotlin\com\*`).
+> Enabling "long paths" does not help because Mason does not use them. A short local clone
+> avoids the problem. On macOS and Linux (no 260-character limit) `--git-url` with
+`--git-path bricks/project_brick` should also work, but the clone route is the tested one.
 
 **3. Generate your project**
 
@@ -53,9 +72,9 @@ You are asked for:
 Everything lands in `./<app_name>/`. Disabled modules are removed completely (files,
 dependencies, routes, tests), so you start with nothing you do not use.
 
-> Prefer to explore or contribute first? `git clone` this repo and follow
-> [Working on the template itself](#working-on-the-template-itself). Do not rename a
-> clone by hand to start an app: the brick does it correctly in one step.
+> Do not rename a clone of this repo by hand to start an app: the brick does it correctly
+> in one step. To explore or contribute, see
+> [Working on the template itself](#working-on-the-template-itself).
 
 ## First run
 
