@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
 import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_service.dart';
@@ -180,6 +182,135 @@ void main() {
       loaded([_todo('1')]).copyWith(failure: () => _failure),
     ],
   );
+
+  group('filtered lists', () {
+    const search = TodoQuery(search: 'todo 1');
+    const onlyOpen = TodoQuery(onlyOpen: true);
+
+    TodoListState seeded(TodoQuery query, List<Todo> items) =>
+        loaded(items).copyWith(query: query);
+
+    blocTest<TodoListBloc, TodoListState>(
+      'create does not insert an item the active search would hide',
+      setUp: () => when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('3'))),
+      build: build,
+      seed: () => seeded(search, [_todo('1')]),
+      act: (bloc) => bloc.add(const TodoCreated('New')),
+      verify: (bloc) => expect(bloc.state.items.map((t) => t.id), ['1']),
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'create inserts an item that matches the active search',
+      setUp: () => when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('10'))),
+      build: build,
+      seed: () => seeded(search, [_todo('1')]),
+      act: (bloc) => bloc.add(const TodoCreated('New')),
+      verify: (bloc) => expect(bloc.state.items.map((t) => t.id), ['10', '1']),
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'completing an item leaves an "only open" list, and a failure puts it '
+      'back where it was',
+      setUp: () => when(
+        () => updateTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => const Left(_failure)),
+      build: build,
+      seed: () => seeded(onlyOpen, [_todo('1'), _todo('2'), _todo('3')]),
+      act: (bloc) => bloc.add(TodoToggled(_todo('2'))),
+      expect: () => [
+        seeded(onlyOpen, [_todo('1'), _todo('3')]),
+        seeded(onlyOpen, [
+          _todo('1'),
+          _todo('2'),
+          _todo('3'),
+        ]).copyWith(failure: () => _failure),
+      ],
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'a successful completion stays out of an "only open" list',
+      setUp: () => when(
+        () => updateTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('2', isDone: true))),
+      build: build,
+      seed: () => seeded(onlyOpen, [_todo('1'), _todo('2')]),
+      act: (bloc) => bloc.add(TodoToggled(_todo('2'))),
+      verify: (bloc) => expect(bloc.state.items.map((t) => t.id), ['1']),
+    );
+
+    test(
+      'a mutation finishing after the query changed leaves the new list alone',
+      () async {
+        final updating = Completer<Either<Failure, Todo>>();
+        when(
+          () => updateTodo(params: any(named: 'params')),
+        ).thenAnswer((_) => updating.future);
+        final bloc = build()
+          ..emit(seeded(const TodoQuery(), [_todo('1'), _todo('2')]))
+          ..add(TodoToggled(_todo('1')));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const PagedListQueryChanged(onlyOpen));
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(bloc.state.query, onlyOpen);
+        expect(bloc.state.items, isEmpty); // Old query's items are gone.
+
+        updating.complete(const Left(_failure)); // Rollback must not re-insert.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        expect(bloc.state.query, onlyOpen);
+        expect(bloc.state.items.map((t) => t.id), ['1', '2']); // The new load.
+        await bloc.close();
+      },
+    );
+  });
+
+  group('mutation serialization', () {
+    test('a refresh fetched while a mutation ran is fetched again', () async {
+      final stale = Completer<Either<Failure, PageResult<Todo>>>();
+      var calls = 0;
+      when(
+        () => getTodos(
+          page: any(named: 'page'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) {
+        calls++;
+        return calls == 1
+            ? stale.future
+            : Future.value(
+                Right(
+                  PageResult(
+                    items: [_todo('1', isDone: true), _todo('2')],
+                    hasMore: false,
+                  ),
+                ),
+              );
+      });
+      when(
+        () => updateTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('1', isDone: true)));
+      final bloc = build()
+        ..emit(loaded([_todo('1'), _todo('2')]))
+        ..add(const PagedListRefreshed());
+      await Future<void>.delayed(Duration.zero);
+      bloc.add(TodoToggled(_todo('1')));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      // The refresh response predates the toggle.
+      stale.complete(
+        Right(PageResult(items: [_todo('1'), _todo('2')], hasMore: false)),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(calls, 2);
+      expect(bloc.state.items.first.isDone, isTrue);
+      expect(bloc.state.status, PagedStatus.idle);
+      await bloc.close();
+    });
+  });
 
   group('analytics', () {
     blocTest<TodoListBloc, TodoListState>(

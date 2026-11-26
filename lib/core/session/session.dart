@@ -26,6 +26,10 @@ typedef LogoutHook = Future<void> Function();
 /// Owns the session lifecycle: login, logout, and reacting to an
 /// unrecoverable 401 from the refresh interceptor.
 abstract interface class SessionManager {
+  Object? get identity;
+  Future<bool> saveRefresh(Object identity, AuthTokens tokens);
+  Future<void> expire(Object identity);
+
   SessionStatus get status;
   Stream<SessionStatus> get statusStream;
 
@@ -34,7 +38,7 @@ abstract interface class SessionManager {
 
   Future<void> signIn({required AuthTokens tokens});
 
-  /// Clears tokens and runs every registered [LogoutHook]. Never throws.
+  /// Clears tokens and runs every registered [LogoutHook]. Storage failures propagate.
   Future<void> signOut();
 
   void registerLogoutHook({required LogoutHook hook});

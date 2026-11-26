@@ -293,6 +293,63 @@ void main() {
     );
   });
 
+  group('failed query change', () {
+    test(
+      'drops the old query items and paging so load-more cannot mix them',
+      () async {
+        fetcher.responses
+          ..add(page([1, 2], cursor: 'c1'))
+          ..add(const Left(failure));
+        final bloc = build()..add(const PagedListStarted());
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.items, [1, 2]);
+        expect(bloc.state.canLoadMore, isTrue);
+
+        bloc.add(const PagedListQueryChanged('new'));
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(bloc.state.query, 'new');
+        expect(bloc.state.failure, failure);
+        expect(bloc.state.items, isEmpty);
+        expect(bloc.state.hasLoaded, isFalse);
+        expect(bloc.state.nextPage, isNull);
+        expect(bloc.state.canLoadMore, isFalse);
+
+        bloc.add(const PagedListNextPageRequested());
+        await Future<void>.delayed(Duration.zero);
+        expect(fetcher.requests, hasLength(2)); // No page-2 for 'new'.
+
+        // Retrying the same query (refresh) recovers.
+        fetcher.responses.add(page([7], hasMore: false));
+        bloc.add(const PagedListRefreshed());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(bloc.state.items, [7]);
+        expect(bloc.state.failure, isNull);
+        expect(fetcher.requests.last, (
+          const PageRequest.first(limit: 2),
+          'new',
+        ));
+        await bloc.close();
+      },
+    );
+
+    test('a failed refresh of the same query keeps items and paging', () async {
+      fetcher.responses
+        ..add(page([1, 2], cursor: 'c1'))
+        ..add(const Left(failure));
+      final bloc = build()..add(const PagedListStarted());
+      await Future<void>.delayed(Duration.zero);
+
+      bloc.add(const PagedListRefreshed());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.items, [1, 2]);
+      expect(bloc.state.failure, failure);
+      expect(bloc.state.canLoadMore, isTrue);
+      await bloc.close();
+    });
+  });
+
   group('PageRequest / PageResult', () {
     test('offset and fromItems', () {
       const request = PageRequest(page: 3, limit: 10);

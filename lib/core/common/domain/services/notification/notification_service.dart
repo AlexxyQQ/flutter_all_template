@@ -72,6 +72,7 @@ class NotificationService implements NotificationPermissionApi {
   final List<StreamSubscription<Object?>> _subscriptions = [];
 
   bool _initialized = false;
+  Future<void>? _initializing;
   String? _currentThreadId;
 
   /// Last token successfully registered with the backend (never logged).
@@ -84,18 +85,25 @@ class NotificationService implements NotificationPermissionApi {
   // Initialization
   // ---------------------------------------------------------------------------
 
-  Future<void> initialize() async {
+  Future<void> initialize() {
     if (_initialized) {
-      return;
+      return Future<void>.value();
     }
-    _initialized = true;
+    return _initializing ??= _initialize().whenComplete(() {
+      _initializing = null;
+    });
+  }
 
+  Future<void> _initialize() async {
     try {
-      await _awesome.initialize(
+      final ready = await _awesome.initialize(
         null,
         NotificationChannelConfig.channels,
         debug: kDebugMode,
       );
+      if (!ready) {
+        throw StateError('Notification plugin initialization failed');
+      }
       final initialAction = await _awesome.getInitialNotificationAction(
         removeFromActionEvents: true,
       );
@@ -109,32 +117,39 @@ class NotificationService implements NotificationPermissionApi {
       _push.registerBackgroundHandler(
         handler: firebaseMessagingBackgroundHandler,
       );
-      _session.registerLogoutHook(hook: _onLogout);
 
       if (initialAction != null) {
         await _handleAction(initialAction);
       }
-      await _awesome.setListeners(onActionReceivedMethod: _onActionReceived);
+      final listening = await _awesome.setListeners(
+        onActionReceivedMethod: _onActionReceived,
+      );
+      if (!listening) {
+        throw StateError('Notification listener setup failed');
+      }
       if (_session.status == SessionStatus.authenticated) {
         await _syncToken();
       }
-      _logger.i('NotificationService initialized.');
-    } catch (e, s) {
-      _logger.e(
-        'NotificationService initialization failed',
-        error: e,
-        stackTrace: s,
-      );
+      _session.registerLogoutHook(hook: _onLogout);
+      _initialized = true;
+    } catch (_) {
+      await _cancelSubscriptions();
+      rethrow;
     }
+    _logger.i('NotificationService initialized.');
   }
 
   @disposeMethod
   Future<void> dispose() async {
+    await _cancelSubscriptions();
+    await _events.close();
+  }
+
+  Future<void> _cancelSubscriptions() async {
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
     _subscriptions.clear();
-    await _events.close();
   }
 
   // ---------------------------------------------------------------------------

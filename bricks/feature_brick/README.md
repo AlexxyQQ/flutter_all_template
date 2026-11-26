@@ -44,7 +44,7 @@ The post-gen hook also, idempotently (running it twice never duplicates anything
 - adds `ApiPaths.notes = '/notes'` to `lib/config/constants/api/api_paths.dart`;
 - registers `NoteRoutes.route` (and its import) in `lib/core/common/presentation/routes/app_router.dart`;
 - adds `features.note.presentation.screens.note_list_screen.{title,add,hint}` to
-  `assets/translations/en-GB.json` and `ne-NP.json` (English text in both: translate
+  `assets/translations/en-GB.json` (translate
   `ne-NP` yourself; existing keys are never overwritten);
 - points the widget test at your package (`name:` in `pubspec.yaml`);
 - removes the folders of disabled options and formats the result.

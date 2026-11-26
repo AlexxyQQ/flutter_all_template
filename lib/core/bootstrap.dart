@@ -67,7 +67,16 @@ abstract final class Bootstrap {
           await analytics.clearIdentity();
         }
         // brick:if use_notifications
-        await sl<NotificationService>().initialize();
+        try {
+          await sl<NotificationService>().initialize();
+        } catch (error, stackTrace) {
+          AppLogger.error(
+            'NotificationService initialization failed',
+            error: error,
+            stackTrace: stackTrace,
+            name: 'Bootstrap',
+          );
+        }
         // brick:end
 
         final startLocale = LocaleCubit.resolveStartLocale(

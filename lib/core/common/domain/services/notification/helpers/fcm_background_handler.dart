@@ -29,9 +29,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.reload();
-    final enabled = prefs.getBool(NotificationPrefs.enabledKey) ?? true;
+    final enabled =
+        await SharedPreferencesAsync().getBool(NotificationPrefs.enabledKey) ??
+        true;
     if (!enabled || message.notification != null) {
       return;
     }

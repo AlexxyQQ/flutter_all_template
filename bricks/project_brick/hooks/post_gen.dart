@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:mason/mason.dart';
 
-void run(HookContext context) async {
-  final appName = _toSnakeCase(context.vars['app_name'] as String);
+Future<void> run(HookContext context) async {
+  final appName = (context.vars['app_name'] as String).snakeCase;
   final appOrg = context.vars['app_org'] as String;
   final useFirebase = context.vars['use_firebase'] as bool;
   final useNotifications = context.vars['use_notifications'] as bool;
@@ -12,9 +12,9 @@ void run(HookContext context) async {
   final progress = context.logger.progress('Configuring project...');
 
   // The brick renders into `<app_name>/`; every path below is relative to it.
-  Directory.current = Directory(appName);
-
+  final originalDirectory = Directory.current;
   try {
+    Directory.current = Directory(appName);
     // 1. Replace package name in all .dart files
     await _replaceInDartFiles(
       Directory('.'),
@@ -65,6 +65,8 @@ void run(HookContext context) async {
   } catch (e) {
     progress.fail('Configuration failed: $e');
     rethrow;
+  } finally {
+    Directory.current = originalDirectory;
   }
 
   // Print next steps
@@ -120,10 +122,6 @@ void _materialiseFirebaseConfig() {
     }
   }
 }
-
-/// Converts a string to snake_case (handles spaces and hyphens).
-String _toSnakeCase(String input) =>
-    input.trim().toLowerCase().replaceAll(RegExp(r'[\s\-]+'), '_');
 
 /// Recursively replaces [from] with [to] in all `.dart` files under [dir].
 Future<void> _replaceInDartFiles(
@@ -182,6 +180,7 @@ void _updateAndroidConfig(String appOrg, String appName) {
 /// `package` line, otherwise the generated Android app can't find its activity.
 void _moveMainActivity(String packageId) {
   const oldPackage = 'com.alexxy.flutter_all_template';
+  if (packageId == oldPackage) return;
   const kotlinRoot = 'android/app/src/main/kotlin';
   final oldFile = File(
     '$kotlinRoot/${oldPackage.replaceAll('.', '/')}/MainActivity.kt',

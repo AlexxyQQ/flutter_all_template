@@ -7,13 +7,11 @@ const _apiPathsFile = 'lib/config/constants/api/api_paths.dart';
 const _routerFile = 'lib/core/common/presentation/routes/app_router.dart';
 const _translationFiles = [
   'assets/translations/en-GB.json',
-  'assets/translations/ne-NP.json',
 ];
 const _testHelper = 'test/widget/helpers/test_app.dart';
 
 Future<void> run(HookContext context) async {
   final name = context.vars['feature_name'] as String;
-  final useLocal = context.vars['use_local_datasource'] as bool;
   final useParams = context.vars['use_params'] as bool;
 
   // Must match the mustache lambdas used in the templates.
@@ -25,23 +23,25 @@ Future<void> run(HookContext context) async {
   final testFile = 'test/widget/features/$snake/${snake}_flow_test.dart';
 
   final progress = context.logger.progress('Configuring $featureDir');
-  if (!useParams) {
-    _deleteDir('$featureDir/domain/params');
-  }
-  if (!useLocal) {
-    _deleteDir('$featureDir/data/data_sources/local');
-  }
   final addedPath = _addApiPath(pathConstant, pathValue);
   final addedRoute = _addRoute(snake, pascal);
   final translated = [
     for (final file in _translationFiles) _addTranslations(file, snake, name),
   ];
   final testPatched = _fixTestPackage(testFile, snake);
-  await Process.run(
+  final formatted = await Process.run(
     'dart',
     ['format', featureDir, 'test/widget/features/$snake'],
     runInShell: true,
   );
+  if (formatted.exitCode != 0) {
+    progress.fail('dart format failed');
+    throw ProcessException(
+        'dart',
+        ['format', featureDir, 'test/widget/features/$snake'],
+        '${formatted.stdout}\n${formatted.stderr}',
+        formatted.exitCode);
+  }
   progress.complete('Generated $featureDir');
 
   final log = context.logger;
@@ -69,6 +69,9 @@ Future<void> run(HookContext context) async {
               '{title, add, hint} to ${_translationFiles[i]} by hand.',
     );
   }
+  log.info(
+      'Translate features.$snake.presentation.screens.${snake}_list_screen '
+      '{title, add, hint} in assets/translations/ne-NP.json.');
   if (!testPatched) {
     log.warn(
       'No package name found in pubspec.yaml: in $testFile replace '
@@ -106,18 +109,29 @@ bool _addApiPath(String constant, String value) {
     return false;
   }
   final source = file.readAsStringSync();
-  if (source.contains(' $constant ')) {
-    return true;
+  // Restrict automatic edits to the template's simple constant-only class.
+  final matches = RegExp(
+    r'^abstract final class ApiPaths \{\r?\n'
+    r"((?:[ \t]*static const String \w+ = '/[\w/-]*';[ \t]*\r?\n|[ \t]*\r?\n)*)"
+    r'\}',
+    multiLine: true,
+  ).allMatches(source).toList();
+  if (matches.length != 1 ||
+      source.contains('/*') ||
+      source.contains("'''") ||
+      source.contains('\"\"\"')) return false;
+  final match = matches.single;
+  final body = match.group(1)!;
+  if (RegExp('static const String $constant = ').hasMatch(body)) {
+    return body.contains("static const String $constant = '$value';");
   }
-  final classStart = source.indexOf('class ApiPaths');
-  final classEnd = source.lastIndexOf('}');
-  if (classStart < 0 || classEnd < classStart) {
-    return false;
-  }
-  final line = "  static const String $constant = '$value';\n";
-  file.writeAsStringSync(
-    source.substring(0, classEnd) + line + source.substring(classEnd),
-  );
+  final eol = source.contains('\r\n') ? '\r\n' : '\n';
+  final end = match.end - 1;
+  file.writeAsStringSync(source.replaceRange(
+    end,
+    end,
+    "  static const String $constant = '$value';$eol",
+  ));
   return true;
 }
 
@@ -318,11 +332,4 @@ bool _fixTestPackage(String path, String snake) {
   lines.replaceRange(start, end + 1, sorted);
   file.writeAsStringSync(lines.join('\n'));
   return true;
-}
-
-void _deleteDir(String path) {
-  final dir = Directory(path);
-  if (dir.existsSync()) {
-    dir.deleteSync(recursive: true);
-  }
 }

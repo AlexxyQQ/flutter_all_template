@@ -27,6 +27,31 @@ class SessionManagerImpl implements SessionManager {
   final BehaviorSubject<SessionStatus> _status =
       BehaviorSubject<SessionStatus>.seeded(SessionStatus.unknown);
 
+  Future<void> _pending = Future<void>.value();
+  Object? _identity = Object();
+  @override
+  Object? get identity => _identity;
+
+  Future<T> _serialize<T>(Future<T> Function() action) {
+    final result = _pending.then((_) => action());
+    _pending = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
+  @override
+  Future<bool> saveRefresh(Object identity, AuthTokens tokens) =>
+      _serialize(() async {
+        if (!identical(identity, _identity)) {
+          return false;
+        }
+        await _tokenStore.save(tokens: tokens);
+        return identical(identity, _identity);
+      });
+
+  @override
+  Future<void> expire(Object identity) =>
+      identical(identity, _identity) ? signOut() : Future<void>.value();
+
   Future<void>? _signingOut;
 
   @override
@@ -37,7 +62,7 @@ class SessionManagerImpl implements SessionManager {
   Stream<SessionStatus> get statusStream => _status.stream;
 
   @override
-  Future<void> restore() async {
+  Future<void> restore() => _serialize(() async {
     try {
       final tokens = await _tokenStore.read();
       _setStatus(
@@ -54,19 +79,37 @@ class SessionManagerImpl implements SessionManager {
       );
       _setStatus(SessionStatus.unauthenticated);
     }
+  });
+
+  @override
+  Future<void> signIn({required AuthTokens tokens}) {
+    _identity = null;
+    _signingOut = null;
+    return _serialize(() async {
+      await _tokenStore.save(tokens: tokens);
+      _identity = Object();
+      _setStatus(SessionStatus.authenticated);
+    });
   }
 
   @override
-  Future<void> signIn({required AuthTokens tokens}) async {
-    await _tokenStore.save(tokens: tokens);
-    _setStatus(SessionStatus.authenticated);
+  Future<void> signOut() {
+    _identity = null;
+    final existing = _signingOut;
+    if (existing != null) {
+      return existing;
+    }
+    late final Future<void> run;
+    run = _serialize(_signOut).whenComplete(() {
+      if (identical(run, _signingOut)) {
+        _signingOut = null;
+      }
+    });
+    return _signingOut = run;
   }
-
-  @override
-  Future<void> signOut() =>
-      _signingOut ??= _signOut().whenComplete(() => _signingOut = null);
 
   Future<void> _signOut() async {
+    _identity = null;
     for (final hook in List<LogoutHook>.of(_logoutHooks)) {
       try {
         await hook().timeout(hookTimeout);
@@ -88,6 +131,7 @@ class SessionManagerImpl implements SessionManager {
         stackTrace: s,
         name: _name,
       );
+      rethrow;
     }
     _setStatus(SessionStatus.unauthenticated);
   }

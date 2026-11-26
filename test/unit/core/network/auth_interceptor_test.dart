@@ -9,6 +9,8 @@ import 'helpers/fake_http_adapter.dart';
 
 class _MockTokenStore extends Mock implements TokenStore {}
 
+class _MockSession extends Mock implements SessionManager {}
+
 void main() {
   late FakeHttpAdapter adapter;
   late Dio dio;
@@ -23,6 +25,7 @@ void main() {
       ..httpClientAdapter = adapter
       ..interceptors.add(
         AuthInterceptor(
+          sessionManager: _MockSession(),
           tokenStore: tokenStore,
           baseUrl: 'https://api.example.com/v1/',
         ),

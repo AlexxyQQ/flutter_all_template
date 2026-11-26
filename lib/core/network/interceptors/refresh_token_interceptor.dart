@@ -2,11 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../config/constants/api/api_constants.dart';
-import '../../common/domain/services/logger/logger_service.dart';
 import '../../error/app_exception.dart';
 import '../../session/session.dart';
 import '../network_constants.dart';
 import '../token_refresher.dart';
+import 'auth_interceptor.dart';
 
 /// Handles `401` responses from the API host:
 ///
@@ -15,7 +15,7 @@ import '../token_refresher.dart';
 ///    were sent with an outdated token reuse the already-refreshed token).
 /// 2. Retries the original request once with the new token, using a separate
 ///    Dio without these interceptors (no recursion / deadlock).
-/// 3. If the refresh fails, signs the user out and rejects with
+/// 3. If the refresh credential expires, signs the originating session out with
 ///    [UnauthorizedException].
 @lazySingleton
 class RefreshTokenInterceptor extends QueuedInterceptor {
@@ -37,8 +37,6 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
   final Dio _retryDio;
   final ApiHostMatcher _hostMatcher;
 
-  Future<AuthTokens?>? _inFlight;
-
   @override
   Future<void> onError(
     DioException err,
@@ -50,6 +48,11 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
       return;
     }
 
+    final Object? identity = options.extra[AuthInterceptor.identityKey];
+    if (identity == null || !identical(identity, _sessionManager.identity)) {
+      handler.next(err);
+      return;
+    }
     final AuthTokens? current;
     try {
       current = await _tokenStore.read();
@@ -57,34 +60,44 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
       handler.next(err);
       return;
     }
-    if (current == null) {
+    if (current == null || !identical(identity, _sessionManager.identity)) {
       // Not signed in: a plain 401, nothing to refresh.
       handler.next(err);
       return;
     }
 
     final sentToken = _bearerOf(options);
-    final AuthTokens? fresh =
-        sentToken != null && sentToken != current.accessToken
-        // Another request already refreshed while this one was in flight.
-        ? current
-        : await _refreshOnce(current);
-
-    if (fresh == null) {
-      await _sessionManager.signOut();
-      handler.reject(
-        DioException(
-          requestOptions: options,
-          response: err.response,
-          type: DioExceptionType.badResponse,
-          error: const UnauthorizedException(
-            debugMessage: 'Token refresh failed; signed out',
-          ),
-        ),
-      );
+    var fresh = current;
+    try {
+      if (sentToken == current.accessToken) {
+        final refresh = current.refreshToken;
+        if (refresh == null || refresh.isEmpty) {
+          throw const UnauthorizedException();
+        }
+        fresh = await _refresher.refresh(refreshToken: refresh);
+        if (!await _sessionManager.saveRefresh(identity, fresh)) {
+          handler.next(err);
+          return;
+        }
+      }
+    } catch (error) {
+      if (error is UnauthorizedException) {
+        try {
+          await _sessionManager.expire(identity);
+        } catch (storageError) {
+          handler.reject(
+            DioException(requestOptions: options, error: storageError),
+          );
+          return;
+        }
+      }
+      handler.reject(DioException(requestOptions: options, error: error));
       return;
     }
-
+    if (!identical(identity, _sessionManager.identity)) {
+      handler.next(err);
+      return;
+    }
     options
       ..headers['Authorization'] = 'Bearer ${fresh.accessToken}'
       ..extra[RequestExtras.retried] = true;
@@ -102,28 +115,6 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
         options.extra[RequestExtras.skipAuth] != true &&
         options.extra[RequestExtras.retried] != true &&
         !options.uri.path.endsWith(ApiConstants.refreshTokenPath);
-  }
-
-  Future<AuthTokens?> _refreshOnce(AuthTokens current) {
-    return _inFlight ??= _refresh(current).whenComplete(() => _inFlight = null);
-  }
-
-  Future<AuthTokens?> _refresh(AuthTokens current) async {
-    final refreshToken = current.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) {
-      return null;
-    }
-    try {
-      final tokens = await _refresher.refresh(refreshToken: refreshToken);
-      await _tokenStore.save(tokens: tokens);
-      return tokens;
-    } catch (e) {
-      AppLogger.warning(
-        'Token refresh failed (${e.runtimeType})',
-        name: 'RefreshTokenInterceptor',
-      );
-      return null;
-    }
   }
 
   static String? _bearerOf(RequestOptions options) {

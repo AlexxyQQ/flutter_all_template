@@ -279,27 +279,35 @@ class AnalyticsServiceImpl implements IAnalyticsService {
     if (_loaded) {
       return;
     }
-    _loaded = true;
-    try {
-      _identity = await _identityStore.read();
-    } catch (e) {
-      _warn('Could not read analytics identity', e);
-    }
     if (_identity == null) {
-      await _setIdentity(AnalyticsIdentity(anonymousId: _ids.next()));
+      try {
+        _identity = await _identityStore.read();
+      } catch (e) {
+        _warn('Could not read analytics identity', e);
+      }
+      if (_identity == null) {
+        await _setIdentity(AnalyticsIdentity(anonymousId: _ids.next()));
+      }
     }
     try {
       final known = _registry.ids;
+      final inMemory = _queue.map((entry) => entry.event.id).toSet();
+      final backlog = <QueuedAnalyticsEvent>[];
       for (final entry in await _queueStore.load()) {
+        if (inMemory.contains(entry.event.id)) {
+          continue;
+        }
         // Destinations removed since the event was queued are no longer owed.
         final pending = entry.pendingDestinations.intersection(known);
         if (pending.isEmpty) {
-          await _queueStore.remove(eventId: entry.event.id);
+          await _remove(entry.event.id);
         } else {
-          _queue.add(entry.copyWith(pendingDestinations: pending));
+          backlog.add(entry.copyWith(pendingDestinations: pending));
         }
       }
+      _queue.insertAll(0, backlog);
       await _trimQueue();
+      _loaded = true;
     } catch (e) {
       _warn('Could not load the analytics queue', e);
     }

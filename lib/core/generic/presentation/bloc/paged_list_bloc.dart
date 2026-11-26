@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fpdart/fpdart.dart';
 
 import '../../../../config/constants/type_defs/typedef.dart';
+import '../../../common/domain/entities/failure.dart';
+import '../../data/async_lock.dart';
 import '../../domain/entities/page.dart';
 import 'event_transformers.dart';
 import 'paged_list_event.dart';
@@ -24,7 +30,15 @@ typedef PageFetcher<T, Q> =
 ///   (`restartable`); a refresh or query change also discards a load-more
 ///   that was still in flight, so stale pages are never appended;
 /// * the cursor/page of the previous result is passed to the next request;
-/// * errors set [PagedState.failure] and never clear loaded items.
+/// * a failed **refresh or load-more** sets [PagedState.failure] and keeps the
+///   loaded items; a failed **query change** clears the previous query's
+///   items (they belong to another query) and its paging position, so the
+///   list shows the failure with nothing to load more from until a refresh
+///   or another query change succeeds;
+/// * loads and subclass mutations (see [serialized]) never interleave their
+///   state updates: a mutation runs to completion before a load result is
+///   applied, and a load that was fetched while a mutation ran is fetched
+///   again, so a stale snapshot never overwrites a mutation.
 ///
 /// Use directly, or extend it to register as an injectable feature bloc and
 /// add feature events:
@@ -64,6 +78,59 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
 
   /// Items requested per page.
   final int pageSize;
+
+  final AsyncLock _serial = AsyncLock();
+
+  // Incremented when a [serialized] mutation starts and when it ends.
+  int _mutationEpoch = 0;
+
+  /// Runs a mutation [body] after every earlier mutation finished and after
+  /// any load result that is being applied, and before any later one.
+  /// Subclasses wrap their mutation handlers (create / toggle / delete etc.)
+  /// in it. Loads fetch concurrently (a slow stale query never blocks a newer
+  /// one) but apply their result under the same lock and re-fetch if a
+  /// mutation ran meanwhile. Not re-entrant.
+  @protected
+  Future<R> serialized<R>(FutureOr<R> Function() body) =>
+      _serial.synchronized(() async {
+        _mutationEpoch++;
+        try {
+          return await body();
+        } finally {
+          _mutationEpoch++;
+        }
+      });
+
+  /// Fetches [request] for [query] and calls [apply] with the result under
+  /// the mutation lock. Returns without applying if [generation] was
+  /// superseded; re-fetches if a mutation ran since the fetch started.
+  Future<void> _fetchAndApply(
+    PageRequest request,
+    Q query,
+    int generation,
+    void Function(Either<Failure, PageResult<T>> result) apply,
+  ) async {
+    while (generation == _generation) {
+      final epoch = _mutationEpoch;
+      final result = await _fetchPage(request, query);
+      if (generation != _generation) {
+        return;
+      }
+      final applied = await _serial.synchronized(() {
+        if (generation != _generation) {
+          return true; // Superseded while queued: drop it.
+        }
+        if (epoch != _mutationEpoch) {
+          return false; // The result may predate a mutation.
+        }
+        apply(result);
+        return true;
+      });
+      if (applied) {
+        return;
+      }
+    }
+  }
 
   // Incremented by every first-page load; results of loads started under an
   // older generation are discarded.
@@ -105,19 +172,20 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     final generation = _generation;
     emit(state.copyWith(status: PagedStatus.loadingMore, failure: () => null));
 
-    final result = await _fetchPage(request, state.query);
-    if (generation != _generation) {
-      return; // Superseded by a refresh/query change.
-    }
-    emit(
-      result.fold(
-        (failure) =>
-            state.copyWith(status: PagedStatus.idle, failure: () => failure),
-        (page) => state.copyWith(
-          items: [...state.items, ...page.items],
-          hasMore: page.hasMore,
-          nextPage: () => request.next(page),
-          status: PagedStatus.idle,
+    await _fetchAndApply(
+      request,
+      state.query,
+      generation,
+      (result) => emit(
+        result.fold(
+          (failure) =>
+              state.copyWith(status: PagedStatus.idle, failure: () => failure),
+          (page) => state.copyWith(
+            items: [...state.items, ...page.items],
+            hasMore: page.hasMore,
+            nextPage: () => request.next(page),
+            status: PagedStatus.idle,
+          ),
         ),
       ),
     );
@@ -128,31 +196,45 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     required Q query,
   }) async {
     final generation = ++_generation;
+    // Items and paging position of another query must never survive into
+    // this one: on a failure nothing would replace them, and load-more would
+    // then request page 2 of the old query with the new query's filter.
+    final queryChanged = query != state.query;
     emit(
-      state.copyWith(
-        query: query,
-        status: state.items.isEmpty
-            ? PagedStatus.loadingFirst
-            : PagedStatus.refreshing,
-        failure: () => null,
-      ),
+      queryChanged
+          ? state.copyWith(
+              query: query,
+              items: const [],
+              hasMore: false,
+              nextPage: () => null,
+              hasLoaded: false,
+              status: PagedStatus.loadingFirst,
+              failure: () => null,
+            )
+          : state.copyWith(
+              status: state.items.isEmpty
+                  ? PagedStatus.loadingFirst
+                  : PagedStatus.refreshing,
+              failure: () => null,
+            ),
     );
 
     final request = PageRequest.first(limit: pageSize);
-    final result = await _fetchPage(request, query);
-    if (generation != _generation) {
-      return;
-    }
-    emit(
-      result.fold(
-        (failure) =>
-            state.copyWith(status: PagedStatus.idle, failure: () => failure),
-        (page) => state.copyWith(
-          items: page.items,
-          hasMore: page.hasMore,
-          nextPage: () => request.next(page),
-          status: PagedStatus.idle,
-          hasLoaded: true,
+    await _fetchAndApply(
+      request,
+      query,
+      generation,
+      (result) => emit(
+        result.fold(
+          (failure) =>
+              state.copyWith(status: PagedStatus.idle, failure: () => failure),
+          (page) => state.copyWith(
+            items: page.items,
+            hasMore: page.hasMore,
+            nextPage: () => request.next(page),
+            status: PagedStatus.idle,
+            hasLoaded: true,
+          ),
         ),
       ),
     );

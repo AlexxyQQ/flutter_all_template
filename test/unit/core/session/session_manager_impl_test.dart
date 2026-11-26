@@ -107,10 +107,10 @@ void main() {
       expect(logger.errors, 1);
     });
 
-    test('never throws even if clearing tokens fails', () async {
+    test('reports a failed durable logout', () async {
       when(tokenStore.clear).thenThrow(Exception('keystore'));
-      await expectLater(manager.signOut(), completes);
-      expect(manager.status, SessionStatus.unauthenticated);
+      await expectLater(manager.signOut(), throwsException);
+      expect(manager.status, SessionStatus.unknown);
     });
 
     test('concurrent calls share a single run', () async {

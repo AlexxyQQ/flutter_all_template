@@ -10,11 +10,14 @@ import '../network_constants.dart';
 @lazySingleton
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
+    required this.sessionManager,
     required TokenStore tokenStore,
     @Named(NetworkNames.apiBaseUrl) required String baseUrl,
   }) : _tokenStore = tokenStore,
        _hostMatcher = ApiHostMatcher(baseUrl: baseUrl);
 
+  static const identityKey = 'auth.sessionIdentity';
+  final SessionManager sessionManager;
   final TokenStore _tokenStore;
   final ApiHostMatcher _hostMatcher;
 
@@ -23,13 +26,20 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    options.extra.remove(identityKey);
     final skip = options.extra[RequestExtras.skipAuth] == true;
     if (!skip &&
         _hostMatcher.matches(options.uri) &&
         !options.headers.containsKey('Authorization')) {
       try {
+        final identity = sessionManager.identity;
         final tokens = await _tokenStore.read();
-        if (tokens != null && tokens.accessToken.isNotEmpty) {
+        if (tokens != null &&
+            tokens.accessToken.isNotEmpty &&
+            identical(identity, sessionManager.identity)) {
+          if (identity != null) {
+            options.extra[identityKey] = identity;
+          }
           options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
         }
       } catch (_) {

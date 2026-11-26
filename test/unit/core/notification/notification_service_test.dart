@@ -158,6 +158,25 @@ void main() {
   });
 
   group('logout hook', () {
+    test('concurrent callers share a failed setup and can retry', () async {
+      var attempts = 0;
+      when(
+        () => awesome.setListeners(
+          onActionReceivedMethod: any(named: 'onActionReceivedMethod'),
+        ),
+      ).thenAnswer((_) async => ++attempts > 1);
+
+      final first = service.initialize();
+      expect(service.initialize(), same(first));
+      await expectLater(first, throwsStateError);
+      await service.initialize();
+      expect(attempts, 2);
+      verify(
+        () => session.registerLogoutHook(hook: any(named: 'hook')),
+      ).called(1);
+      await service.dispose();
+    });
+
     test(
       'initialize registers a hook that unregisters + deletes the token',
       () async {

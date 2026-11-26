@@ -146,6 +146,23 @@ void main() {
     expect(destination.events.single.userId, 'user-7');
   });
 
+  test('a queue read retry merges the backlog with new events once', () async {
+    destination.failing = true;
+    final first = build()..trackAction(name: 'backlog');
+    await first.flush();
+    await first.dispose();
+
+    storage.failKeys = true;
+    final second = build()..trackAction(name: 'new_action');
+    await second.identify(userId: 'user-42'); // Wait for the enqueue.
+    expect(queuedKeys(), hasLength(2));
+    storage.failKeys = false;
+    destination.failing = false;
+    await second.flush();
+    expect(destination.events.map((e) => e.name), ['backlog', 'new_action']);
+    expect(queuedKeys(), isEmpty);
+  });
+
   test('undelivered events survive a restart and are delivered once', () async {
     destination.failing = true;
     final first = build()..trackAction(name: 'offline_action');

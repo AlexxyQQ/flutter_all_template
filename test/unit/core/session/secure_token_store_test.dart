@@ -32,13 +32,12 @@ void main() {
     store = SecureTokenStore(secureStore: secure);
   });
 
-  test('stores each token under its own key', () async {
+  test('persists the complete pair in one record', () async {
     await store.save(
       tokens: const AuthTokens(accessToken: 'a', refreshToken: 'r'),
     );
     expect(secure.values, {
-      SecureTokenStore.accessTokenKey: 'a',
-      SecureTokenStore.refreshTokenKey: 'r',
+      SecureTokenStore.pairKey: '{"access":"a","refresh":"r"}',
     });
   });
 
@@ -55,7 +54,8 @@ void main() {
 
     expect(tokens?.accessToken, 'a');
     expect(tokens?.refreshToken, 'r');
-    expect(secure.reads, 2); // one per key, then served from memory
+    expect(secure.reads, 3);
+    expect(secure.values.keys, [SecureTokenStore.pairKey]);
   });
 
   test('saving without refresh token removes the old one', () async {
