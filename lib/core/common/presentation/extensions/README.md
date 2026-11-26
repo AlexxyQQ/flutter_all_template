@@ -12,7 +12,7 @@ extensions/
 ├── size/              # Responsive sizing (screen %, ScreenUtil wrappers)
 ├── snackbar/          # Typed snackbar helpers
 ├── text/              # String manipulation helpers
-├── theme/             # context.colors, context.textStyles, context.appTheme
+├── theme/             # context.colors, context.textStyles, context.tokens
 └── validation/        # Form field validators
 ```
 
@@ -49,20 +49,26 @@ context.showStandardSnackBar(
 
 **File:** `theme/theme_extension.dart`
 
+Everything resolves from the nearest `Theme` (no bloc or global state):
+
 ```dart
-// Colour tokens (semantic, respects light/dark)
+// Material 3 ColorScheme (respects light/dark and local Theme overrides)
 context.colors.primary
-context.colors.surface
+context.colors.surfaceContainerHigh
 context.colors.error
 
-// Text styles
+// Text styles (non-null view over TextTheme)
 context.textStyles.titleLarge
 context.textStyles.bodyMedium
 
-// Custom component theme
-context.appTheme.button
-context.appTheme.chip
+// App-specific semantic colours (ThemeExtension<AppTokens>)
+context.tokens.success.color
+context.tokens.warning.onContainer
+
+context.isDarkMode
 ```
+
+See `lib/config/themes/README.md`.
 
 ---
 
@@ -169,5 +175,5 @@ TextFormField(
 
 1. Copy the entire `extensions/` folder.
 2. Ensure `flutter_screenutil` is in `pubspec.yaml` (required by `size/`).
-3. Make sure the theme resolution extensions (`theme/`) reference your own `AppMaterialColors` and text style resolver.
+3. Theme access lives in `theme/theme_extension.dart` and reads `Theme.of(context)`; customise colours in `lib/config/themes/`.
 4. Import individual extension files or create a barrel export.

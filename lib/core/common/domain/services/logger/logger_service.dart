@@ -1,156 +1,127 @@
-import 'dart:async';
-import 'dart:developer' as developer; // <-- Added dart:developer
-import 'dart:io';
-
-import 'package:dio/dio.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get_it/get_it.dart';
-import 'package:injectable/injectable.dart';
-import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 
-import '../../entities/failure.dart';
-import '../files/file_log_output_service.dart';
-import '../network/dio_service.dart';
+import 'log_redactor.dart';
+import 'log_sinks.dart';
 
-abstract class ILoggerService {
+export 'log_sinks.dart' show CrashReporter, LogLevel, NoopCrashReporter;
+
+/// Logging contract. Inject it where a logger is a real dependency; use the
+/// static [AppLogger] facade for incidental logging.
+abstract interface class ILoggerService {
   void d(String message, {String? name});
   void i(String message, {String? name});
-  void e(String message, {dynamic error, StackTrace? stackTrace, String? name});
-  Future<void> startPeriodicUpload();
-  Future<void> uploadLogs({bool force = false});
+  void w(String message, {Object? error, StackTrace? stackTrace, String? name});
+  void e(String message, {Object? error, StackTrace? stackTrace, String? name});
 }
 
-@LazySingleton(as: ILoggerService)
-class AppLogger implements ILoggerService {
-  AppLogger() {
-    _logger = Logger(
-      printer: PrettyPrinter(methodCount: 0),
-      output: MultiOutput([ConsoleOutput(), FileLogOutput()]),
+/// Default [ILoggerService]: redacts every message and fans it out to sinks.
+class LoggerService implements ILoggerService {
+  LoggerService({required List<LogSink> sinks, LogLevel minLevel = .debug})
+    : _sinks = List.unmodifiable(sinks),
+      _minLevel = minLevel;
+
+  /// Debug: everything to the console.
+  /// Release/profile: warnings & errors to [crashReporter] only.
+  factory LoggerService.platformDefault({CrashReporter? crashReporter}) {
+    if (kDebugMode) {
+      return LoggerService(sinks: [ConsoleLogSink()]);
+    }
+    return LoggerService(
+      sinks: [CrashReporterSink(crashReporter ?? const NoopCrashReporter())],
+      minLevel: .warning,
     );
   }
-  // 1. Static Getter for the instance from GetIt
-  static AppLogger get _instance => GetIt.I<ILoggerService>() as AppLogger;
 
-  // 2. Static Methods for direct access
-  static void debug(String message, {String? name}) =>
-      _instance.d(message, name: name);
-  static void info(String message, {String? name}) =>
-      _instance.i(message, name: name);
-  static void error(
+  final List<LogSink> _sinks;
+  final LogLevel _minLevel;
+
+  @override
+  void d(String message, {String? name}) => _log(.debug, message, name: name);
+
+  @override
+  void i(String message, {String? name}) => _log(.info, message, name: name);
+
+  @override
+  void w(
     String message, {
-    dynamic error,
+    Object? error,
     StackTrace? stackTrace,
     String? name,
-  }) => _instance.e(message, error: error, stackTrace: stackTrace, name: name);
-
-  late final Logger _logger;
-  Timer? _uploadTimer;
-
-  String _format(String message, String? name) {
-    return name != null ? '[$name] $message' : message;
-  }
-
-  // --- LOGGING METHODS ---
-
-  @override
-  void d(String message, {String? name}) {
-    // Uses dart:developer log for Debug logs.
-    // This will appear in console/DevTools but skip the file logger.
-    developer.log(message, name: name ?? 'DEBUG');
-  }
-
-  @override
-  void i(String message, {String? name}) {
-    // Uses the logger package for Info logs
-    _logger.i(_format(message, name));
-  }
+  }) =>
+      _log(.warning, message, name: name, error: error, stackTrace: stackTrace);
 
   @override
   void e(
     String message, {
-    dynamic error,
+    Object? error,
     StackTrace? stackTrace,
     String? name,
+  }) => _log(.error, message, name: name, error: error, stackTrace: stackTrace);
+
+  void _log(
+    LogLevel level,
+    String message, {
+    String? name,
+    Object? error,
+    StackTrace? stackTrace,
   }) {
-    // Uses the logger package for Error logs
-    _logger.e(_format(message, name), error: error, stackTrace: stackTrace);
-  }
-
-  // --- UPLOAD LOGIC ---
-
-  @override
-  Future<void> startPeriodicUpload() async {
-    _uploadTimer?.cancel();
-    _uploadTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
-      await _uploadLogs();
-    });
-    await _uploadLogs();
-  }
-
-  bool _isTodayFile(String path) {
-    final now = DateTime.now();
-    return path.contains(DateFormat('yyyy-MM-dd').format(now));
-  }
-
-  Future<void> _uploadSingleFile(File file) async {
-    try {
-      final String fileName = file.path.split('/').last;
-
-      final FormData formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path, filename: fileName),
-        'device_id': 'unique_device_id_here',
-        'platform': Platform.operatingSystem,
-      });
-
-      final response = await ApiHandler.post(
-        url: 'https://your-server.com/api/logs/upload',
-        data: formData,
-        onSuccess: (data) async {
-          await file.delete();
-          debugPrint('✅ Uploaded and deleted log: $fileName');
-        },
-        onError: (error) {
-          debugPrint('❌ Error uploading specific log file ($file): $error');
-          return const Failure(message: 'Failed to upload log');
-        },
-      );
-    } catch (e) {
-      debugPrint('❌ Error uploading specific log file ($file): $e');
+    if (level.index < _minLevel.index) {
+      return;
+    }
+    final entry = LogEntry(
+      level: level,
+      message: LogRedactor.redact(message),
+      time: DateTime.now(),
+      name: name,
+      error: error,
+      stackTrace: stackTrace,
+    );
+    for (final sink in _sinks) {
+      try {
+        sink.write(entry);
+      } catch (_) {
+        // A failing sink must never crash the app or block other sinks.
+      }
     }
   }
+}
 
-  @override
-  Future<void> uploadLogs({bool force = false}) async {
-    debugPrint('➡️ Starting log upload sequence (Force: $force)...');
-    await _uploadLogs(forceUpload: force);
-  }
+/// Static logging facade used across the codebase.
+///
+/// ```dart
+/// AppLogger.info('Loaded 12 items', name: 'TodoRepository');
+/// AppLogger.error('Sync failed', error: e, stackTrace: s);
+/// ```
+///
+/// Never log secrets (tokens, passwords, storage values, route arguments,
+/// push tokens). Messages are additionally passed through [LogRedactor].
+abstract final class AppLogger {
+  static ILoggerService _service = LoggerService.platformDefault();
 
-  Future<void> _uploadLogs({bool forceUpload = false}) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final logDir = Directory('${directory.path}/app_logs');
+  /// The active logger (also registered in DI as [ILoggerService]).
+  static ILoggerService get service => _service;
 
-      if (!await logDir.exists()) {
-        return;
-      }
+  /// Replaces the active logger, e.g. to add a crash reporter in bootstrap or
+  /// a recording logger in tests.
+  static void configure(ILoggerService service) => _service = service;
 
-      final files = logDir.listSync().whereType<File>().toList();
-      if (files.isEmpty) {
-        return;
-      }
+  static void debug(String message, {String? name}) =>
+      _service.d(message, name: name);
 
-      for (var file in files) {
-        final isToday = _isTodayFile(file.path);
-        if (isToday && !forceUpload) {
-          continue;
-        }
+  static void info(String message, {String? name}) =>
+      _service.i(message, name: name);
 
-        await _uploadSingleFile(file);
-      }
-    } catch (e) {
-      debugPrint('❌ Failed to process logs for upload: $e');
-    }
-  }
+  static void warning(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? name,
+  }) => _service.w(message, error: error, stackTrace: stackTrace, name: name);
+
+  static void error(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? name,
+  }) => _service.e(message, error: error, stackTrace: stackTrace, name: name);
 }

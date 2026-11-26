@@ -8,7 +8,6 @@ import '../../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../../config/constants/text/material/app_material_text_primitives.dart';
 import '../../../extensions/size/size_extension.dart';
 import '../../../extensions/theme/theme_extension.dart';
-import '../../../themes/styles/button_style.dart';
 import '../../widgets/system/app_button.dart';
 import '../../widgets/system/text/app_text_widget.dart';
 
@@ -48,7 +47,7 @@ class DeleteItemBottomSheet extends StatelessWidget {
             16.horizontalGap,
             Expanded(
               child: AppText(
-                '${LocaleKeys.common_words_delete.tr()} ${title}',
+                '${LocaleKeys.common_words_delete.tr()} $title',
                 style: context.textStyles.titleLarge.copyWith(
                   fontWeight: AppMaterialTextPrimitives.semibold,
                 ),
@@ -84,8 +83,7 @@ class DeleteItemBottomSheet extends StatelessWidget {
             ),
             16.horizontalGap,
             Expanded(
-              child: AppButton.custom(
-                theme: ButtonStyles.destructiveTheme,
+              child: AppButton.destructive(
                 onPressed: () {
                   onDelete();
                   Navigator.of(context).pop();

@@ -1,37 +1,70 @@
 part of 'permission_bloc.dart';
 
-@freezed
-abstract class PermissionState with _$PermissionState {
-  const PermissionState._();
-  const factory PermissionState({
-    @Default(false) bool isLoading,
-    Failure? error,
-    @Default(PermissionStatus.denied)
-    PermissionStatus notificationPermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus locationPermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus cameraPermissionStatus,
-    @Default(PermissionStatus.denied)
-    PermissionStatus microphonePermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus storagePermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus contactsPermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus calendarPermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus bluetoothPermissionStatus,
-    @Default(PermissionStatus.denied) PermissionStatus phonePermissionStatus,
-    @Default(PermissionStatus.denied)
-    PermissionStatus activityRecognitionPermissionStatus,
-    @Default(false) bool skippedNotificationPermissionGranted,
-    @Default(false) bool skippedLocationPermissionGranted,
-    @Default(false) bool skippedCameraPermissionGranted,
-    @Default(false) bool skippedMicrophonePermissionGranted,
-    @Default(false) bool skippedStoragePermissionGranted,
-    @Default(false) bool skippedContactsPermissionGranted,
-    @Default(false) bool skippedCalendarPermissionGranted,
-    @Default(false) bool skippedBluetoothPermissionGranted,
-    @Default(false) bool skippedPhonePermissionGranted,
-    @Default(false) bool skippedActivityRecognitionPermissionGranted,
-    @Default(false) bool fcmTokenSet,
-    PageRouteInfo<Object?>? navigateRoute,
-  }) = _PermissionState;
+final class PermissionState extends Equatable {
+  const PermissionState({
+    this.statuses = const {},
+    this.skipped = const {},
+    this.isLoading = false,
+    this.error,
+    this.lastRequested,
+    this.requestCount = 0,
+  });
 
-  factory PermissionState.initial() => const PermissionState();
+  /// Last known OS status per permission. Missing = not checked yet.
+  final Map<AppPermission, AppPermissionStatus> statuses;
+
+  /// Permissions the user skipped. Independent from [statuses].
+  final Set<AppPermission> skipped;
+
+  final bool isLoading;
+
+  /// Last failure (`Failure.message` is a localization key).
+  final Failure? error;
+
+  /// The permission of the most recently *completed* request, with
+  /// [requestCount] incremented each time so listeners can react to a
+  /// request finishing even when the status did not change
+  /// (e.g. permanently denied twice in a row).
+  final AppPermission? lastRequested;
+  final int requestCount;
+
+  AppPermissionStatus? statusOf(AppPermission permission) =>
+      statuses[permission];
+
+  bool isGranted(AppPermission permission) =>
+      statuses[permission]?.isGranted ?? false;
+
+  bool isSkipped(AppPermission permission) => skipped.contains(permission);
+
+  /// Granted or explicitly skipped: the flow may continue.
+  bool canProceed(AppPermission permission) =>
+      isGranted(permission) || isSkipped(permission);
+
+  PermissionState copyWith({
+    Map<AppPermission, AppPermissionStatus>? statuses,
+    Set<AppPermission>? skipped,
+    bool? isLoading,
+    Failure? Function()? error,
+    AppPermission? lastRequested,
+    int? requestCount,
+  }) {
+    return PermissionState(
+      statuses: statuses ?? this.statuses,
+      skipped: skipped ?? this.skipped,
+      isLoading: isLoading ?? this.isLoading,
+      error: error != null ? error() : this.error,
+      lastRequested: lastRequested ?? this.lastRequested,
+      requestCount: requestCount ?? this.requestCount,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    statuses,
+    skipped,
+    isLoading,
+    error,
+    lastRequested,
+    requestCount,
+  ];
 }

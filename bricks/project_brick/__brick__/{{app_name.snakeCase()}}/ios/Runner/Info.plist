@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Flutter All Template</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>flutter_all_template</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<!-- Push notifications: remote-notification lets FCM wake the app for
+	     data/silent messages. Nothing else runs in the background. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<!-- ============================================================
+	     Permission module — remove the ones your app doesn't use.
+	     App Review rejects purpose strings that are vague or unused.
+	     Rewrite each string to say exactly why YOUR app needs it.
+	     permission_handler also needs the matching PERMISSION_* macros
+	     in ios/Podfile (see docs/PLATFORM_SETUP.md).
+	     ============================================================ -->
+	<!-- Camera -->
+	<key>NSCameraUsageDescription</key>
+	<string>Allow camera access to take photos in the app.</string>
+	<!-- Microphone -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Allow microphone access to record audio in the app.</string>
+	<!-- Location (while in use only; add "Always" keys only if you truly need background location) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Allow location access to show content relevant to where you are.</string>
+	<!-- Photos -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow photo library access to choose images to upload.</string>
+	<!-- Contacts -->
+	<key>NSContactsUsageDescription</key>
+	<string>Allow contacts access to find people you know.</string>
+	<!-- Calendar (iOS 17+ full access, and pre-iOS 17) -->
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Allow calendar access to view and add your events.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Allow calendar access to view and add your events.</string>
+	<!-- Bluetooth -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Allow Bluetooth access to connect to nearby devices.</string>
+	<!-- Motion & fitness -->
+	<key>NSMotionUsageDescription</key>
+	<string>Allow motion access to show your activity.</string>
+	<!-- ===================== Permission module end ===================== -->
+</dict>
+</plist>

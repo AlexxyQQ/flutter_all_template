@@ -1,0 +1,17 @@
+# Gitleaks configuration: default rules + allowlist for template placeholders.
+title = "flutter_all_template gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Template placeholders and example files that contain no real secrets"
+regexes = [
+  '''YOUR_[A-Z0-9_]+''',
+  '''CHANGE_ME''',
+]
+paths = [
+  '''env/.*\.example\.json''',
+  '''android/key\.properties\.example''',
+  '''pubspec\.lock''',
+]

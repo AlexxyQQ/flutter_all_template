@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../config/constants/date_time/date_time_formatter_string_constant.dart';
-import '../../../locator/service_locator.dart';
 import '../../helpers/date_time_helper.dart';
+
+/// Stateless formatter shared by the extensions below.
+final DateTimeHelper _dateTimeHelper = DateTimeHelper();
 
 extension DateTimeExtension on DateTime {
   String formatDateTime({
     String formatter = DateTimeFormatterString.abbreviatedDayMonthDayFormat,
   }) {
-    return sl<DateTimeHelper>().formatDateTime(
+    return _dateTimeHelper.formatDateTime(
       dateTime: toLocal(),
       formatter: formatter.toString(),
     );
   }
 
   String agoDateTime() {
-    return sl<DateTimeHelper>().agoDateTime(dateTime: this);
+    return _dateTimeHelper.agoDateTime(dateTime: this);
   }
 
   String timeLeft({int? days, DateTime? endDate}) {
-    return sl<DateTimeHelper>().timeLeft(
+    return _dateTimeHelper.timeLeft(
       dateTime: this,
       days: days,
       endDate: endDate,
@@ -37,22 +39,32 @@ extension IntDateTimeCoveter on int {
 extension StringDateTimeConverter on String {
   /// Parses a date string in YYYY-MM-DD format
   static DateTime? toDateTime(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return null;
+    if (dateString == null || dateString.isEmpty) {
+      return null;
+    }
     return DateTime.tryParse(dateString);
   }
 
   /// Parses a time string in HH:MM format
   static TimeOfDay? toTimeOfDay(String? timeString) {
-    if (timeString == null || timeString.isEmpty) return null;
+    if (timeString == null || timeString.isEmpty) {
+      return null;
+    }
 
     final parts = timeString.split(':');
-    if (parts.length != 2) return null;
+    if (parts.length != 2) {
+      return null;
+    }
 
     final hour = int.tryParse(parts[0]);
     final minute = int.tryParse(parts[1]);
 
-    if (hour == null || minute == null) return null;
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    if (hour == null || minute == null) {
+      return null;
+    }
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
 
     return TimeOfDay(hour: hour, minute: minute);
   }
@@ -60,7 +72,7 @@ extension StringDateTimeConverter on String {
 
 extension TimeOfDayExtension on TimeOfDay {
   String formatTime() {
-    return sl<DateTimeHelper>().formatTimeOfDay(time: this);
+    return _dateTimeHelper.formatTimeOfDay(time: this);
   }
 }
 
@@ -68,7 +80,7 @@ extension DateTimeRangeExtension on DateTimeRange {
   String formatDateRange({
     String formatter = DateTimeFormatterString.fullYearMonthDate,
   }) {
-    return sl<DateTimeHelper>().formatDateTimeRange(
+    return _dateTimeHelper.formatDateTimeRange(
       dateTimeRange: this,
       formatter: formatter,
     );

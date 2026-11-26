@@ -1,509 +1,364 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:equatable/equatable.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../../config/constants/gen/locale_keys.g.dart';
 
+/// A failed validation, expressed as localization keys (never as translated
+/// text) so it can be asserted in tests and translated at the widget layer.
+class ValidationFailure extends Equatable {
+  const ValidationFailure(
+    this.key, {
+    this.fieldKey,
+    this.args = const <String, String>{},
+  });
+
+  /// Message key, e.g. [LocaleKeys.common_errors_validation_required].
+  final String key;
+
+  /// Localization key of the field title; injected as the `{field}` argument.
+  final String? fieldKey;
+
+  /// Extra literal named arguments (e.g. `{'minLength': '8'}`).
+  final Map<String, String> args;
+
+  /// Translates [key] with [fieldKey] (translated) and [args].
+  String translate() => key.tr(
+    namedArgs: <String, String>{
+      if (fieldKey != null) 'field': fieldKey!.tr(),
+      ...args,
+    },
+  );
+
+  @override
+  List<Object?> get props => [key, fieldKey, args];
+}
+
+/// Result of a validator: `Left(failure)` or `Right(unit)`.
+typedef ValidationResult = Either<ValidationFailure, Unit>;
+
+extension ValidationResultX on ValidationResult {
+  /// Translated error text for `TextFormField.validator`, or `null` if valid.
+  String? get errorText => fold((f) => f.translate(), (_) => null);
+
+  bool get isValid => isRight();
+}
+
+/// Pure validators. Every pattern is anchored and free of nested/overlapping
+/// quantifiers (no catastrophic backtracking), and inputs are length-capped
+/// before any regex runs.
 extension FormFieldValidator on String? {
-  // Validate email
-  Either<String, bool> validateEmail({
-    String fieldName =
-        LocaleKeys.common_form_field_titles_email, // Default to "Email"
-  }) {
-    final value = this;
-    final emailRegExp = RegExp(
-      r'^[a-zA-Z0-9]+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$',
-    );
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!emailRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-    return const Right(true);
+  static const int _maxInputLength = 256;
+
+  static final RegExp _email = RegExp(
+    r'^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,63}$',
+  );
+  static final RegExp _upper = RegExp(r'\p{Lu}', unicode: true);
+  static final RegExp _lower = RegExp(r'\p{Ll}', unicode: true);
+  static final RegExp _digit = RegExp(r'\p{Nd}', unicode: true);
+  static final RegExp _special = RegExp(r'[^\p{L}\p{N}\s]', unicode: true);
+  static final RegExp _phone = RegExp(r'^\+?[0-9]{7,15}$');
+  static final RegExp _phoneSeparators = RegExp(r'[\s\-().]');
+  static final RegExp _postal = RegExp(
+    r'^[A-Za-z0-9][A-Za-z0-9 \-]{2,8}[A-Za-z0-9]$',
+  );
+
+  /// Letters (any script) and combining marks, optionally separated by single
+  /// runs of space, apostrophe, hyphen or dot: "José", "राम बहादुर",
+  /// "O'Neil", "Anne-Marie", "J. R.".
+  static final RegExp _name = RegExp(
+    r"^[\p{L}\p{M}]+(?:[ '’\-.]+[\p{L}\p{M}]+)*\.?$",
+    unicode: true,
+  );
+  static final RegExp _nonDigit = RegExp(r'\D');
+  static final RegExp _alnum = RegExp(r'^[A-Za-z0-9]+$');
+  static final RegExp _money = RegExp(r'^[0-9]{1,15}(?:\.[0-9]{1,2})?$');
+  static final RegExp _handle = RegExp(r'^@?[A-Za-z0-9._]{1,30}$');
+  static final RegExp _username = RegExp(r'^[A-Za-z0-9_.]{3,20}$');
+
+  static ValidationResult _ok() => const Right(unit);
+
+  static ValidationResult _fail(
+    String key, {
+    String? field,
+    Map<String, String> args = const <String, String>{},
+  }) => Left(ValidationFailure(key, fieldKey: field, args: args));
+
+  static ValidationResult _required(String field) =>
+      _fail(LocaleKeys.common_errors_validation_required, field: field);
+
+  static ValidationResult _invalid(String field) =>
+      _fail(LocaleKeys.common_errors_validation_invalid, field: field);
+
+  /// Trimmed value, or `null` when missing/blank.
+  String? get _trimmed {
+    final value = this?.trim();
+    return (value == null || value.isEmpty) ? null : value;
   }
 
-  // Validate password
-  Either<String, bool> validatePassword({
+  bool get _tooLong => (this?.length ?? 0) > _maxInputLength;
+
+  ValidationResult validateNotEmpty({required String fieldName}) =>
+      _trimmed == null ? _required(fieldName) : _ok();
+
+  ValidationResult validateEmail({
+    String fieldName = LocaleKeys.common_form_field_titles_email,
+  }) {
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
+    }
+    if (value.length > 254 || !_email.hasMatch(value)) {
+      return _invalid(fieldName);
+    }
+    return _ok();
+  }
+
+  ValidationResult validatePassword({
     int minLength = 8,
-    String fieldName =
-        LocaleKeys.common_form_field_titles_password, // Default to "Password"
+    bool requireSpecialCharacter = false,
+    String fieldName = LocaleKeys.common_form_field_titles_password,
   }) {
     final value = this;
     if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+      return _required(fieldName);
     }
     if (value.length < minLength) {
-      return Left(
-        LocaleKeys.common_errors_validation_minLength.tr(
-          namedArgs: {
-            'field': fieldName.tr(),
-            'minLength': minLength.toString(),
-          },
-        ),
+      return _fail(
+        LocaleKeys.common_errors_validation_minLength,
+        field: fieldName,
+        args: {'minLength': '$minLength'},
       );
     }
-    final hasUppercase = value.contains(RegExp(r'[A-Z]'));
-    final hasDigits = value.contains(RegExp(r'[0-9]'));
-    final hasLowercase = value.contains(RegExp(r'[a-z]'));
-    // final hasSpecialCharacters = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-
-    if (!hasUppercase) {
-      return Left(
-        LocaleKeys.common_errors_validation_uppercaseRequired.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
+    if (_tooLong) {
+      return _invalid(fieldName);
+    }
+    if (!_upper.hasMatch(value)) {
+      return _fail(
+        LocaleKeys.common_errors_validation_uppercaseRequired,
+        field: fieldName,
       );
     }
-    if (!hasLowercase) {
-      return Left(
-        LocaleKeys.common_errors_validation_lowercaseRequired.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
+    if (!_lower.hasMatch(value)) {
+      return _fail(
+        LocaleKeys.common_errors_validation_lowercaseRequired,
+        field: fieldName,
       );
     }
-    if (!hasDigits) {
-      return Left(
-        LocaleKeys.common_errors_validation_numberRequired.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
+    if (!_digit.hasMatch(value)) {
+      return _fail(
+        LocaleKeys.common_errors_validation_numberRequired,
+        field: fieldName,
       );
     }
-    // if (!hasSpecialCharacters) {
-    //   return Left(
-    //     LocaleKeys.common_errors_validation_specialCharacterRequired
-    //         .tr(namedArgs: {'field': fieldName.tr()}),
-    //   );
-    // }
-
-    return const Right(true);
+    if (requireSpecialCharacter && !_special.hasMatch(value)) {
+      return _fail(
+        LocaleKeys.common_errors_validation_specialCharacterRequired,
+        field: fieldName,
+      );
+    }
+    return _ok();
   }
 
-  // Validate Confirm password
-  Either<String, bool> validateConfirmPassword(
+  ValidationResult validateConfirmPassword(
     String password, {
     String fieldName = LocaleKeys.common_form_field_titles_confirmPassword,
   }) {
     final value = this;
     if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+      return _required(fieldName);
     }
     if (value != password) {
-      return Left(
-        LocaleKeys.common_errors_validation_doesNotMatch.tr(
-          namedArgs: {
-            'newField': fieldName.tr(),
-            'oldField': LocaleKeys.common_form_field_titles_password.tr(),
-          },
-        ),
-      );
+      return _fail(LocaleKeys.common_errors_validation_passwordsDoNotMatch);
     }
-    return const Right(true);
+    return _ok();
   }
 
-  // Validate phone number
-  Either<String, bool> validatePhoneNumber({
-    String fieldName = LocaleKeys
-        .common_form_field_titles_phoneNumber, // Default to "Phone number"
+  /// Accepts an optional leading `+` and 7–15 digits; spaces, dashes, dots
+  /// and parentheses are ignored.
+  ValidationResult validatePhoneNumber({
+    String fieldName = LocaleKeys.common_form_field_titles_phoneNumber,
   }) {
-    final value = this;
-    final phoneRegExp = RegExp(r'^\+?[0-9]{7,15}$');
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!phoneRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    if (_tooLong || !_phone.hasMatch(value.replaceAll(_phoneSeparators, ''))) {
+      return _invalid(fieldName);
+    }
+    return _ok();
   }
 
-  // Validate if it's not empty
-  Either<String, bool> validateNotEmpty({required String fieldName}) {
-    final value = this;
-    if (value == null || value.trim().isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-    return const Right(true);
-  }
-
-  // Validate URL
-  Either<String, bool> validateUrl({
+  /// `http`, `https` or `ftp` URL with a host.
+  ValidationResult validateUrl({
     String fieldName = LocaleKeys.common_form_field_titles_url,
   }) {
-    final value = this;
-    // Basic URL regex
-    final urlRegExp = RegExp(
-      r'^(https?|ftp)://[^\s/$.?#].[^\s]*$',
-      caseSensitive: false,
-    );
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!urlRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    final uri = _tooLong || value.contains(' ') ? null : Uri.tryParse(value);
+    final valid =
+        uri != null &&
+        const {'http', 'https', 'ftp'}.contains(uri.scheme.toLowerCase()) &&
+        uri.host.isNotEmpty;
+    return valid ? _ok() : _invalid(fieldName);
   }
 
-  // Validate postal code
-  Either<String, bool> validatePostalCode({
+  ValidationResult validatePostalCode({
     String fieldName = LocaleKeys.common_form_field_titles_postalCode,
   }) {
-    final value = this;
-    // Numbers and letters(upper or lower) and spaces and hyphens
-    final postalRegExp = RegExp(r'^[a-zA-Z0-9\s\-]{4,10}$');
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!postalRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    return _postal.hasMatch(value) ? _ok() : _invalid(fieldName);
   }
 
-  // Validate name
-  Either<String, bool> validateName({
+  /// Unicode-aware person name (any script). See [_name].
+  ValidationResult validateName({
     String fieldName = LocaleKeys.common_form_field_titles_fullName,
+    int maxLength = 100,
   }) {
-    final value = this;
-    final nameRegExp = RegExp(r'^[a-zA-Z\s]+$');
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!nameRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    if (value.length > maxLength || !_name.hasMatch(value)) {
+      return _invalid(fieldName);
+    }
+    return _ok();
   }
 
-  // Validate credit card using Luhn Algorithm
-  Either<String, bool> validateCreditCard({
+  /// Alias of [validateName] kept for source compatibility.
+  ValidationResult validateFullName({
+    String fieldName = LocaleKeys.common_form_field_titles_fullName,
+  }) => validateName(fieldName: fieldName);
+
+  /// Luhn check on 13–19 digits (spaces/dashes ignored).
+  ValidationResult validateCreditCard({
     String fieldName = LocaleKeys.common_form_field_titles_creditCardNumber,
   }) {
-    final value = this;
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    final sanitized = value.replaceAll(RegExp(r'\D'), '');
-    if (sanitized.length < 13 || sanitized.length > 19) {
-      return Left(
-        LocaleKeys.common_errors_validation_minLength.tr(
-          namedArgs: {'field': fieldName.tr(), 'minLength': '13'},
-        ),
-      );
+    if (_tooLong) {
+      return _fail(LocaleKeys.common_errors_validation_invalidCreditCard);
     }
-
-    int sum = 0;
-    bool shouldDouble = false;
-    for (int i = sanitized.length - 1; i >= 0; i--) {
-      int digit = int.parse(sanitized[i]);
-
-      if (shouldDouble) {
+    final digits = value.replaceAll(_nonDigit, '');
+    if (digits.length < 13 || digits.length > 19) {
+      return _fail(LocaleKeys.common_errors_validation_invalidCreditCard);
+    }
+    var sum = 0;
+    var doubleIt = false;
+    for (var i = digits.length - 1; i >= 0; i--) {
+      var digit = digits.codeUnitAt(i) - 0x30;
+      if (doubleIt) {
         digit *= 2;
         if (digit > 9) {
           digit -= 9;
         }
       }
-
       sum += digit;
-      shouldDouble = !shouldDouble;
+      doubleIt = !doubleIt;
     }
-
-    if (sum % 10 != 0) {
-      return Left(LocaleKeys.common_errors_validation_invalidCreditCard.tr());
-    }
-
-    return const Right(true);
+    return sum % 10 == 0
+        ? _ok()
+        : _fail(LocaleKeys.common_errors_validation_invalidCreditCard);
   }
 
-  Either<String, bool> validateAccountNumber({
+  /// 8–20 alphanumerics (spaces ignored).
+  ValidationResult validateAccountNumber({
     String fieldName = LocaleKeys.common_form_field_titles_accountNumber,
   }) {
-    final value = this;
-    final accountNumberRegex = RegExp(r'^[A-Z0-9]+$');
-
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-
     final sanitized = value.replaceAll(' ', '');
-
-    if (sanitized.length < 8 || sanitized.length > 20) {
-      return Left(
-        LocaleKeys.common_errors_validation_minLength.tr(
-          namedArgs: {'field': fieldName.tr(), 'minLength': '8'},
-        ),
+    if (sanitized.length < 8) {
+      return _fail(
+        LocaleKeys.common_errors_validation_minLength,
+        field: fieldName,
+        args: const {'minLength': '8'},
       );
     }
-
-    if (!accountNumberRegex.hasMatch(sanitized)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    if (sanitized.length > 20 || !_alnum.hasMatch(sanitized)) {
+      return _invalid(fieldName);
     }
-
-    return const Right(true);
+    return _ok();
   }
 
-  // Validate OTP
-  /// Requires the OTP to be exactly 6 characters long
-  /// Requires the OTP to be numeric
-  /// Requires the OTP to be not empty
-
-  Either<String, bool> validateOtp({
-    String fieldName =
-        'LocaleKeys.common_commonErrors_otpFill', // FIXED: Removed quotes
+  /// Exactly [length] digits.
+  ValidationResult validateOtp({
+    String fieldName = LocaleKeys.common_form_field_titles_otp,
+    int length = 6,
   }) {
-    final value = this;
-    final otpRegExp = RegExp(r'^[0-9]{6}$');
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!otpRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    final valid =
+        value.length == length && value.codeUnits.every(_isAsciiDigit);
+    return valid ? _ok() : _invalid(fieldName);
   }
 
-  // Validate Money
-  Either<String, bool> validateMoney({required String fieldName}) {
-    final value = this;
-    final moneyRegExp = RegExp(r'^[0-9]+(\.[0-9]{1,2})?$');
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!moneyRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+  /// Non-negative amount with at most two decimals.
+  ValidationResult validateMoney({
+    String fieldName = LocaleKeys.common_form_field_titles_amount,
+  }) {
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    return _money.hasMatch(value) ? _ok() : _invalid(fieldName);
   }
 
-  // Social Media Handle
-  Either<String, bool> validateSocialMediaHandle({required String fieldName}) {
-    // FIXED: Typo
-    final value = this;
-    final socialMediaValidationRegExp = RegExp(
-      r'^(?:(?=.{1,30}$)[A-Za-z0-9._]+|(?=.{2,24}$)[A-Za-z0-9._]+|(?=.{1,15}$)[A-Za-z0-9_]+|@[A-Za-z0-9_]{3,15})$',
-    );
-    if (value == null || value.isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!socialMediaValidationRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+  ValidationResult validateSocialMediaHandle({
+    String fieldName = LocaleKeys.common_form_field_titles_socialMediaHandle,
+  }) {
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-    return const Right(true);
+    return _handle.hasMatch(value) ? _ok() : _invalid(fieldName);
   }
 
-  Either<String, bool> validateHours({
-    String fieldName =
-        'Hours', // Replace with LocaleKeys.common_form_field_titles_hours if available
+  ValidationResult validateHours({
+    String fieldName = LocaleKeys.common_form_field_titles_hours,
     int min = 0,
     int max = 23,
-  }) {
-    final value = this;
+  }) => _validateIntRange(fieldName, min, max);
 
-    // 1. Check if empty
-    if (value == null || value.trim().isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-
-    final intValue = int.tryParse(value);
-
-    // 2. Check if it is a valid number
-    if (intValue == null) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-
-    // 3. Check Range (Default 0 - 23)
-    if (intValue < min || intValue > max) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-
-    return const Right(true);
-  }
-
-  // Validate Minutes
-  /// Validates if the string is a valid minute (0-59)
-  Either<String, bool> validateMinutes({
-    String fieldName =
-        'Minutes', // Replace with LocaleKeys.common_form_field_titles_minutes if available
+  ValidationResult validateMinutes({
+    String fieldName = LocaleKeys.common_form_field_titles_minutes,
     int min = 0,
     int max = 59,
-  }) {
-    final value = this;
+  }) => _validateIntRange(fieldName, min, max);
 
-    // 1. Check if empty
-    if (value == null || value.trim().isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-
-    final intValue = int.tryParse(value);
-
-    // 2. Check if it is a valid number
-    if (intValue == null) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-
-    // 3. Check Range (Default 0 - 59)
-    if (intValue < min || intValue > max) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    }
-
-    return const Right(true);
-  }
-
-  // Username Validation
-  Either<String, bool> validateUsername({
+  /// 3–20 of `A-Z a-z 0-9 _ .`, no spaces.
+  ValidationResult validateUsername({
     String fieldName = LocaleKeys.common_form_field_titles_username,
   }) {
-    final value = this;
-
-    // Updated Regex: Allows lowercase/uppercase letters, numbers, underscores, and dots.
-    // Disallows spaces. Enforces a length between 3 and 20 characters.
-    final usernameRegExp = RegExp(r'^[a-zA-Z0-9_.]{3,20}$');
-
-    // Added .trim() to ensure a string of just spaces is caught as empty
-    if (value == null || value.trim().isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!usernameRegExp.hasMatch(value)) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-
-    return const Right(true);
+    return _username.hasMatch(value) ? _ok() : _invalid(fieldName);
   }
 
-  Either<String, bool> validateFullName({
-    // Assuming you have a locale key for full name, adjust if needed
-    String fieldName = LocaleKeys.common_form_field_titles_fullName,
-  }) {
-    final value = this;
-
-    // Regex: Allows upper/lowercase letters, spaces, hyphens, and apostrophes.
-    final fullNameRegExp = RegExp(r"^[a-zA-Z\s\-']+$");
-
-    if (value == null || value.trim().isEmpty) {
-      return Left(
-        LocaleKeys.common_errors_validation_required.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
-    } else if (!fullNameRegExp.hasMatch(value.trim())) {
-      return Left(
-        LocaleKeys.common_errors_validation_invalid.tr(
-          namedArgs: {'field': fieldName.tr()},
-        ),
-      );
+  ValidationResult _validateIntRange(String fieldName, int min, int max) {
+    final value = _trimmed;
+    if (value == null) {
+      return _required(fieldName);
     }
-
-    return const Right(true);
+    final parsed = value.length > 9 ? null : int.tryParse(value);
+    if (parsed == null || parsed < min || parsed > max) {
+      return _invalid(fieldName);
+    }
+    return _ok();
   }
+
+  static bool _isAsciiDigit(int c) => c >= 0x30 && c <= 0x39;
 }

@@ -17,24 +17,18 @@ Tick a box and move the item into `CHANGELOG.md` once shipped.
 
 ---
 
-## 0. Security (Action Required)
+## 0. Security — MANUAL owner actions (cannot be done in code)
 
-### 0.1 — Rotate Exposed Firebase Keys
+> Placeholders have replaced every Firebase value in the tree and secret scanning
+> (gitleaks) runs in CI. The items below must be done **by the repository/Firebase
+> owner** in the relevant consoles. No key material is (or may ever be) written here.
+> See [`SECURITY.md`](SECURITY.md) for the full procedure.
 
-> **IMPORTANT:** The Firebase API keys previously committed to this repo have been replaced
-> with placeholders, but the real values exist in git history. You must revoke and rotate them
-> from the Firebase console before this repo goes public.
-
-- [ ] **Rotate Android API key** — Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials), find the Android key for project `flutter-all-template`, and delete or restrict it. Run `flutterfire configure` to generate a fresh key.
-- [ ] **Rotate iOS API key** — Same as above for the iOS API key. The old key (`AIzaSyBtU1CXHdIpVqQaRUKvbHH9awbN4Dmf4Jc`) must be revoked.
-- [ ] **Purge keys from git history** — Use `git filter-repo` or BFG Repo Cleaner to remove the old commits containing real keys. Then force-push `main` and notify collaborators to re-clone. Command:
-  ```bash
-  # Install: pip install git-filter-repo
-  git filter-repo --replace-text <(echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX==>REMOVED_KEY')
-  git filter-repo --replace-text <(echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-  ```
-- [ ] **Set up Firebase App Check** — After rotating keys, enable [Firebase App Check](https://firebase.google.com/docs/app-check) (Play Integrity on Android, DeviceCheck on iOS) to prevent API abuse even if keys are ever leaked again.
-- [ ] **Restrict API keys by package name / bundle ID** — In Google Cloud Console, restrict both keys to only accept requests from your specific Android package name and iOS bundle ID. This limits damage if keys are leaked in the future.
+- [ ] **MANUAL — Revoke/rotate the previously exposed Google API keys** (Android + iOS) in Google Cloud Console → APIs & Services → Credentials, then run `flutterfire configure` to issue fresh config locally (do not commit the generated files).
+- [ ] **MANUAL — Restrict the new API keys** to the Android package name + SHA-1/SHA-256 and the iOS bundle ID, and to the APIs actually used.
+- [ ] **MANUAL — Enable Firebase App Check** (Play Integrity on Android, App Attest/DeviceCheck on iOS) and enforce it for the Firebase services in use.
+- [ ] **MANUAL — Rewrite git history** to purge old key values (`git filter-repo --replace-text <file-with-old-values>` run from a private machine, never committing that file), force-push, and ask collaborators to re-clone. Verify with `gitleaks detect` over the full history.
+- [ ] **MANUAL — Enable GitHub secret scanning + push protection** in the repository settings.
 
 ---
 
@@ -110,7 +104,7 @@ Tick a box and move the item into `CHANGELOG.md` once shipped.
 - [ ] **Audio recorder** — Using `record` package, expose a `RecorderService` behind `IRecorderService`. Display waveform amplitude using a `WaveformWidget` (animate a `CustomPainter` with amplitude values from the stream). Save recordings to the app documents directory via `path_provider`.
 
 ### 5.4 — Maps & Location
-- [ ] **Google Maps widget** — A `MapWidget` wrapping `google_maps_flutter` with: current-location button (reuses existing `geolocator`), custom marker support (`BitmapDescriptor` from SVG via `flutter_svg`), polyline/polygon drawing, and a `MapBloc` that manages camera position and marker state. Add the API key to `env/.env` and load it via `flutter_dotenv`.
+- [ ] **Google Maps widget** — A `MapWidget` wrapping `google_maps_flutter` with: current-location button (reuses existing `geolocator`), custom marker support (`BitmapDescriptor` from SVG via `flutter_svg`), polyline/polygon drawing, and a `MapBloc` that manages camera position and marker state. Pass the Maps key to the native side via a git-ignored Gradle property / xcconfig (restricted by package name / bundle ID) — never via `env/*.json`, which is compiled into the Dart binary.
 - [ ] **Geofencing** — Using `geofence_service`, define circular or polygon geofences as Isar-persisted `GeofenceEntity` objects. Fire `GeofenceEnteredEvent` / `GeofenceExitedEvent` into a `GeofenceBloc`. Run in background with `workmanager`.
 
 ### 5.5 — NFC
@@ -181,18 +175,18 @@ Tick a box and move the item into `CHANGELOG.md` once shipped.
 ## 9. App Distribution & CI/CD
 
 ### 9.1 — Build Flavors
-- [ ] **Flavor configuration** — Set up `dev`, `staging`, and `prod` flavors. Each flavor has its own `main_<flavor>.dart`, `.env.<flavor>` file, app name suffix (`MyApp Dev`), and bundle ID suffix (`.dev`). Firebase projects should be separate per flavor. Document flavor build commands in the root `README.md`.
+- [~] **Flavor configuration** — Done: `dev`/`staging`/`prod` compile-time config via `--dart-define-from-file=env/<flavor>.json`, rps scripts and VS Code launch configs (see `docs/FLAVORS.md`). Remaining: native Android `productFlavors` / iOS schemes with app-name and bundle-ID suffixes (`.dev`) and a separate Firebase project per flavor.
 
 ### 9.2 — CI/CD Pipelines
-- [ ] **GitHub Actions — PR checks** — A workflow (`.github/workflows/pr_checks.yml`) that runs on every PR: `flutter analyze`, `dart run custom_lint`, `flutter test --coverage`, and uploads the coverage report as an artifact.
+- [~] **GitHub Actions — PR checks** — Done in `.github/workflows/ci.yml`: codegen, format check, `flutter analyze`, `flutter test --coverage` (artifact), gitleaks, OSV-Scanner; Dependabot for pub/gradle/actions. Remaining: `dart run custom_lint`, coverage gate, Mason brick smoke test.
 - [ ] **GitHub Actions — Release build** — A workflow (`.github/workflows/release.yml`) triggered by a version tag (`v*.*.*`) that builds the APK + App Bundle (Android) and IPA (iOS) and uploads them to a GitHub Release draft. Secrets are stored as GitHub Actions secrets.
 - [ ] **Codemagic integration** — Alternatively, provide a `codemagic.yaml` that mirrors the above: test → build → sign → deploy to Firebase App Distribution (internal testers) on every `develop` push, and to Play Store / TestFlight on `main`.
 
 ### 9.3 — Code Signing
-- [ ] **Keystore setup documentation** — Add a `docs/CODE_SIGNING.md` explaining how to generate an Android keystore, store the `.jks` in a GitHub secret (base64 encoded), decode it in CI, and reference it in `android/app/build.gradle`. Mirror for iOS with a Fastlane `match` or manual profile export explanation.
+- [x] **Keystore setup documentation** — `docs/CODE_SIGNING.md` explaining how to generate an Android keystore, store the `.jks` in a GitHub secret (base64 encoded), decode it in CI, and reference it in `android/app/build.gradle`. Mirror for iOS with a Fastlane `match` or manual profile export explanation.
 
 ### 9.4 — OTA Updates
-- [ ] **Shorebird patch workflow** — The `pubspec.yaml` already has Shorebird scripts commented out. Add a GitHub Actions workflow that creates a Shorebird patch on demand (workflow-dispatch trigger), reads the `--release-version` from the tag, and runs both Android and iOS patch commands. Add a guard that only runs this workflow for the `prod` flavor.
+- [ ] **Shorebird patch workflow** — `pubspec.yaml` has `rps shorebird release android|ios` (pinned to the `.fvmrc` Flutter version); patches are run manually. Add a GitHub Actions workflow that creates a Shorebird patch on demand (workflow-dispatch trigger), reads the `--release-version` from the tag, and runs both Android and iOS patch commands. Add a guard that only runs this workflow for the `prod` flavor.
 
 ---
 
@@ -226,7 +220,7 @@ Tick a box and move the item into `CHANGELOG.md` once shipped.
 
 ### 12.1 — Code Generation Scripts
 - [ ] **Feature scaffold script** — A `scripts/new_feature.dart` CLI that takes a feature name and generates the full `lib/features/<name>/` tree (data/domain/presentation folders, stub files, `@injectable` registration, an `auto_route` `@RoutePage`, and a stub BLoC extending `BaseCrudBloc`) in one command. Add a `rps feature` script alias.
-- [ ] **Export barrel generator** — The `scripts/generate_exports.dart` already exists. Extend it to also detect circular imports and print a warning rather than silently generating a bad barrel file.
+- [ ] **Export barrel generator** — Add a `tool/generate_exports.dart` (the old `rps exports` script referenced a non-existent `scripts/` folder and was removed) that also detects circular imports.
 
 ### 12.2 — Debugging Tools
 - [ ] **Network inspector overlay** — In debug mode only, mount `alice` (or `dio_inspector`) so developers can inspect all HTTP traffic in-app without needing a proxy. The overlay should be unreachable in release builds (guard with `kDebugMode`).
@@ -279,4 +273,4 @@ Tick a box and move the item into `CHANGELOG.md` once shipped.
 
 ---
 
-*Last updated: 2026-03-09*
+*Last updated: 2026-11-25*

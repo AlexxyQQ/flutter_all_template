@@ -1,8 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../../features/gallery/presentation/routes/gallery_route.dart';
+import '../../../../features/home/presentation/routes/home_route.dart';
 import '../../../../features/splash/presentation/routes/splash_route.dart';
+// brick:if use_permissions
 import '../../features/permission/presentation/routes/permission_route.dart';
+// brick:end
 import '../views/routes/dialog/bottom_sheet_route.dart';
 import '../views/routes/dialog/dialog_route.dart';
 export 'app_router.gr.dart';
@@ -16,17 +20,12 @@ class AppRouter extends RootStackRouter {
   @override
   List<AutoRoute> get routes => <AutoRoute>[
     SplashRoute.routes,
+    HomeRoutes.route,
+    ...GalleryRoutes.routes,
+    // brick:if use_permissions
     PermissionRoute.routes,
-    ..._OverlayRoutes.all,
-  ];
-}
-
-class _OverlayRoutes {
-  static final List<AutoRoute> all = [
+    // brick:end
     ...DialogRoutes.all,
     ...BottomSheetRoute.all,
-    // ...TimeOffRoutes.bottomSheet,
-    // ...WorkLogRoutes.bottomSheet,
-    // ...CalendarRoutes.bottomSheet,
   ];
 }

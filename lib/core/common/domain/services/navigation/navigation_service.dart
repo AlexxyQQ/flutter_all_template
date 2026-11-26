@@ -1,112 +1,73 @@
 import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../presentation/routes/app_router.dart';
-import '../logger/logger_service.dart';
 
-typedef RouteFailure = void Function(NavigationFailure)?;
-
-@injectable
+/// Router access for code that has no `BuildContext` (services, dialogs
+/// helpers). Widgets should prefer `context.router`.
+@lazySingleton
 class NavigationService {
-  factory NavigationService(AppRouter appRouter) {
-    _instance ??= NavigationService._internal(appRouter);
-    return _instance!;
-  }
-  const NavigationService._(this._appRouter);
+  const NavigationService(this._appRouter);
 
-  factory NavigationService._internal(AppRouter appRouter) =>
-      NavigationService._(appRouter);
   final AppRouter _appRouter;
-  static NavigationService? _instance;
 
-  Future<dynamic> push(PageRouteInfo route, {OnNavigationFailure? onFailure}) {
-    return _appRouter.push(route, onFailure: onFailure);
-  }
-
-  Future<void> replace(PageRouteInfo route, {OnNavigationFailure? onFailure}) {
-    return _appRouter.replace(route, onFailure: onFailure);
-  }
-
-  Future<void> pushNamed(String routeName, {Object? arguments}) {
-    return _appRouter.pushPath(routeName);
-  }
-
-  Future<void> replaceNamed(
-    String routeName, {
+  Future<T?> push<T extends Object?>(
+    PageRouteInfo<Object?> route, {
     OnNavigationFailure? onFailure,
-  }) {
-    return _appRouter.replacePath(routeName, onFailure: onFailure);
-  }
+  }) => _appRouter.push<T>(route, onFailure: onFailure);
 
-  void popForced<T extends Object?>([T? result]) {
-    _appRouter.pop(result);
-  }
+  Future<void> replace(
+    PageRouteInfo<Object?> route, {
+    OnNavigationFailure? onFailure,
+  }) => _appRouter.replace(route, onFailure: onFailure);
 
-  Future<bool> maybePop([dynamic data]) {
-    return _appRouter.maybePopTop(data);
-  }
+  /// Pushes an app path (e.g. an `AppPaths` constant). Never pass untrusted
+  /// input (push payloads, deep-link params) here without an allowlist.
+  Future<void> pushNamed(String path, {OnNavigationFailure? onFailure}) =>
+      _appRouter.pushPath(path, onFailure: onFailure);
+
+  Future<void> replaceNamed(String path, {OnNavigationFailure? onFailure}) =>
+      _appRouter.replacePath(path, onFailure: onFailure);
+
+  void popForced<T extends Object?>([T? result]) => _appRouter.pop<T>(result);
+
+  Future<bool> maybePop<T extends Object?>([T? result]) =>
+      _appRouter.maybePopTop<T>(result);
 
   Future<void> replaceAll(
-    List<PageRouteInfo<dynamic>> routes, {
-    RouteFailure onFailure,
+    List<PageRouteInfo<Object?>> routes, {
+    OnNavigationFailure? onFailure,
     bool updateExistingRoutes = true,
-  }) {
-    return _appRouter.replaceAll(
-      routes,
-      onFailure: onFailure,
-      updateExistingRoutes: updateExistingRoutes,
-    );
-  }
+  }) => _appRouter.replaceAll(
+    routes,
+    onFailure: onFailure,
+    updateExistingRoutes: updateExistingRoutes,
+  );
 
-  void popUntil(RoutePredicate predicate, {bool scoped = true}) {
-    return _appRouter.popUntil(predicate, scoped: scoped);
-  }
+  void popUntil(RoutePredicate predicate, {bool scoped = true}) =>
+      _appRouter.popUntil(predicate, scoped: scoped);
 
-  /// **MODIFIED METHOD**
-  /// Pushes a widget as a new page and returns a result of type [T] when it's popped.
-  Future<T?> pushWidget<T extends Object?>({
-    required BuildContext context,
-    required Widget widget,
-  }) async {
-    return Navigator.of(
-      context,
-    ).push<T>(MaterialPageRoute(builder: (context) => widget));
-  }
+  void popUntilRoot() => _appRouter.popUntilRoot();
 
-  void popUntilRoot() {
-    _appRouter.popUntilRoot();
-  }
+  bool canPop() => _appRouter.canPop();
 
-  bool canPop() {
-    return _appRouter.canPop();
-  }
+  bool removeWhere(RouteDataPredicate predicate, {bool notify = true}) =>
+      _appRouter.removeWhere(predicate, notify: notify);
 
-  bool removeWhere(RouteDataPredicate predicate, {bool notify = true}) {
-    return _appRouter.removeWhere(predicate, notify: notify);
-  }
-
+  /// Pops the route named [name] if it is on top, otherwise removes it from
+  /// the stack.
   FutureOr<bool> closeSpecificRoute({required String name}) {
-    final routeName = _appRouter.current.name;
-    AppLogger.info('${routeName} vs $name');
-    if (routeName == name) {
+    if (_appRouter.current.name == name) {
       return _appRouter.maybePop();
-    } else {
-      return _appRouter.removeWhere((route) => route.name == name);
     }
+    return _appRouter.removeWhere((route) => route.name == name);
   }
 
-  bool checkIfAlreadyOpened({required String name}) {
-    final routeName = _appRouter.current.name;
-    AppLogger.info(routeName);
-    if (routeName == name) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  bool checkIfAlreadyOpened({required String name}) =>
+      _appRouter.current.name == name;
 
-  RouteData get current => _appRouter.current;
+  RouteData<Object?> get current => _appRouter.current;
 }

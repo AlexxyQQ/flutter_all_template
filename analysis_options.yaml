@@ -3,20 +3,25 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   plugins:
     - custom_lint
+  language:
+    strict-casts: true # No implicit downcasts from dynamic.
+    strict-inference: true # Require types where inference would fall back to dynamic.
+    strict-raw-types: true # No raw generic types (List instead of List<T>).
   errors:
-    invalid_annotation_target: ignore # Ignores annotation misuse warnings.
+    # Freezed/json_serializable put @JsonKey on factory params; this is the
+    # officially recommended suppression and only affects that pattern.
+    invalid_annotation_target: ignore
     missing_required_param: true # Reports error if required params are missing.
     invalid_assignment: true # Reports error when assigning wrong types.
   exclude:
     - packages/** # Exclude external package code.
-    - "**/*.g.dart" # Exclude json_serializable generated files.
-    # - lib/**.freezed.dart # Exclude Freezed-generated files.
-    # - lib/**.gr.dart # Exclude auto_route generated routes.
-    - lib/localization/generated/ # Exclude localization generated files.
-    - lib/**/__generated__/ # Exclude auto-generated directories.
-    - lib/**/example_env.dart # Exclude example environment files.
-    - lib/localization/** # Exclude all localization-related files.
-    - bricks/** # Exclude Mason/brick templates.
+    - "**/*.g.dart" # json_serializable / easy_localization keys
+    - "**/*.freezed.dart" # Freezed
+    - "**/*.gr.dart" # auto_route
+    - "**/*.config.dart" # injectable
+    - "**/*.mocks.dart" # mockito
+    - lib/config/constants/gen/** # flutter_gen + locale keys
+    - bricks/** # Mason templates (contain mustache syntax)
 
 linter:
   # The lint rules applied to this project. These enforce code style,
@@ -43,7 +48,7 @@ linter:
     require_trailing_commas: true # Require trailing commas in multi-line params.
     lines_longer_than_80_chars: false # Allow long lines.
     public_member_api_docs: false # No enforced docs on public APIs.
-    sort_pub_dependencies: ignore # Don't enforce pubspec deps ordering.
+    sort_pub_dependencies: false # Don't enforce pubspec deps ordering.
     use_enums: true # Encourage enums instead of constants/strings.
     cascade_invocations: true # Use cascades (..) for chained calls.
     always_declare_return_types: true # Explicit return types on functions.
@@ -62,6 +67,17 @@ linter:
     no_literal_bool_comparisons: true # Don’t compare directly with true/false.
     unnecessary_to_list_in_spreads: true # Avoid redundant .toList() in spread operators.
     unnecessary_null_aware_operator_on_extension_on_nullable: true # Prevent redundant `?.` on extension calls.
+
+    # === ASYNC SAFETY ===
+    avoid_void_async: true # `void f() async` hides errors; return Future<void>.
+    unawaited_futures: true # Await or explicitly `unawaited(...)` futures.
+    discarded_futures: true # Don't call async functions from sync code silently.
+    avoid_slow_async_io: true
+
+    # === TYPE SAFETY ===
+    avoid_dynamic_calls: true
+    depend_on_referenced_packages: true # Every imported package must be in pubspec.
+    only_throw_errors: true
 
     # === RESOURCE HANDLING ===
     cancel_subscriptions: true # Ensure StreamSubscriptions are canceled.

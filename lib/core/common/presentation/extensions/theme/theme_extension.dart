@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../abstract/presentation/abstract_material_app_text_style.dart';
-import '../../../../abstract/presentation/abstract_material_color_semantic.dart';
-import '../../blocs/theme/theme_cubit.dart';
+import '../../../../../config/themes/app_tokens.dart';
+import '../../themes/text/app_text_styles.dart';
 
+/// Theme access for widgets. Everything resolves from the nearest [Theme], so
+/// light/dark switches and `Theme(...)` overrides work without any global or
+/// bloc state.
 extension ThemeContext on BuildContext {
-  // ---------------------------------------------------------------------------
-  // EXISTING (Keep these for use inside build() methods)
-  // ---------------------------------------------------------------------------
-  // This uses context.watch() or context.select() implicitly
-  MaterialSemanticColors get colors => watch<ThemeCubit>().state.colors;
-  IAppMaterialTextStyles get textStyles => watch<ThemeCubit>().state.textStyles;
+  ThemeData get theme => Theme.of(this);
 
-  // ---------------------------------------------------------------------------
-  // NEW (Add these for use in Snackbars, Dialogs, and Functions)
-  // ---------------------------------------------------------------------------
-  /// Reads the current colors ONE TIME without listening for changes.
-  MaterialSemanticColors get readColors => read<ThemeCubit>().state.colors;
+  /// Material 3 colour roles (`primary`, `onSurface`, `surfaceContainerHigh`…).
+  ColorScheme get colors => Theme.of(this).colorScheme;
 
-  /// Reads the current text styles ONE TIME without listening for changes.
-  IAppMaterialTextStyles get readTextStyles =>
-      read<ThemeCubit>().state.textStyles;
+  /// Type scale with non-nullable getters.
+  AppTextStyles get textStyles => AppTextStyles(Theme.of(this).textTheme);
+
+  /// App-specific semantic colours (success, warning, info, …).
+  ///
+  /// Falls back to [AppTokens.light]/[AppTokens.dark] if the current theme was
+  /// not built by `AppTheme` (e.g. a bare `MaterialApp` in a test).
+  AppTokens get tokens {
+    final theme = Theme.of(this);
+    return theme.extension<AppTokens>() ??
+        (theme.brightness == Brightness.dark
+            ? AppTokens.dark
+            : AppTokens.light);
+  }
+
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
 }

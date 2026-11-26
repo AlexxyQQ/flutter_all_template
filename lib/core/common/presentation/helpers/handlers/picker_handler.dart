@@ -1,11 +1,10 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../config/constants/date_time/date_time_formatter_string_constant.dart';
-import '../../../../../config/constants/enums/text_form_filed_enum.dart';
+import '../../../../../config/constants/enums/text_form_field_enum.dart';
 import '../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../config/themes/components_theme/app_text_form_field_theme.dart';
-import '../../../domain/services/navigation/navigation_service.dart';
-import '../../../locator/service_locator.dart';
 import '../../extensions/date_time/date_time_extension.dart';
 import '../../routes/app_router.gr.dart';
 
@@ -57,7 +56,7 @@ class PickerHandler {
   ) async {
     final DateTime? initialDate = DateTime.tryParse(initialValue ?? '');
 
-    final DateTime? pickedDate = await sl<NavigationService>().push(
+    final DateTime? pickedDate = await context.router.root.push<DateTime>(
       DateSelectorBottomSheet(
         title: LocaleKeys.common_form_field_titles_selectDate,
         seed: initialDate ?? DateTime.now(),
@@ -94,8 +93,8 @@ class PickerHandler {
         }).toList() ??
         [];
 
-    final DateTimeRange<DateTime>? pickedDate = await sl<NavigationService>()
-        .push(
+    final DateTimeRange<DateTime>? pickedDate = await context.router.root
+        .push<DateTimeRange<DateTime>>(
           DateRangeSelectorBottomSheet(
             title: LocaleKeys.common_form_field_titles_selectDate,
             seed: [parsedDates[0], parsedDates[1]],
@@ -127,7 +126,9 @@ class PickerHandler {
       },
     );
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
 
     if (pickedTime != null) {
       controller.text = pickedTime.formatTime();

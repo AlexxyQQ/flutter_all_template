@@ -2,56 +2,112 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:get_it/get_it.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../config/constants/locales/app_locales.dart';
+import '../config/observers/app_bloc_observer.dart';
+import 'common/domain/services/logger/logger_service.dart';
+// brick:if use_notifications
 import 'common/domain/services/notification/notification_service.dart';
+// brick:end
+import 'common/features/app_settings/domain/repositories/app_preferences_repository.dart';
 import 'common/locator/service_locator.dart';
+import 'common/presentation/blocs/locale/locale_cubit.dart';
+import 'error/guard.dart';
+import 'session/session.dart';
 
-FutureOr<void> bootstrap({
+/// Orientations the app supports. Remove this lock (or add landscape) if your
+/// app should rotate; tablets/foldables usually should.
+const List<DeviceOrientation> kSupportedOrientations = [
+  DeviceOrientation.portraitUp,
+];
+
+/// Composition root: error handling, DI, session restore, then `runApp`.
+///
+/// [initializers] runs before DI (e.g. `Firebase.initializeApp`).
+/// To report errors to Crashlytics/Sentry in release builds, configure the
+/// logger at the top of [initializers] (or here) with
+/// `AppLogger.configure(LoggerService.platformDefault(crashReporter: …))`.
+Future<void> bootstrap({
   required FutureOr<Widget> Function() builder,
-  required Future<Null> Function() initializers,
+  Future<void> Function()? initializers,
 }) async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      _installErrorHandlers();
+
       await EasyLocalization.ensureInitialized();
-      BindingBase.debugZoneErrorsAreFatal = true;
+      await SystemChrome.setPreferredOrientations(kSupportedOrientations);
 
-      // To make the app orientation in portrait mode
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-      ]);
+      await initializers?.call();
 
-      // Service Locator initialization
       await configureInjection();
-      await GetIt.instance.allReady();
+      await sl<SessionManager>().restore();
+      // brick:if use_notifications
+      await sl<NotificationService>().initialize();
+      // brick:end
 
-      await initializers();
-
-      // Notification
-      await NotificationService.instance.initialize();
-
-      // Run the app
-      final app = await EasyLocalization(
+      final startLocale = LocaleCubit.resolveStartLocale(
+        savedTag: sl<IAppPreferencesRepository>().read().localeTag,
+        deviceLocale: PlatformDispatcher.instance.locale,
         supportedLocales: AppLocales.appLocales,
-        // ignore: avoid_hardcoded_strings_in_widgets
-        path: 'assets/translations',
-        fallbackLocale: AppLocales.en,
-        saveLocale: false,
-        useFallbackTranslations: true,
-        child: await builder(),
       );
 
-      runApp(app);
+      runApp(
+        EasyLocalization(
+          supportedLocales: AppLocales.appLocales,
+          // ignore: avoid_hardcoded_strings_in_widgets
+          path: 'assets/translations',
+          fallbackLocale: AppLocales.en,
+          startLocale: startLocale,
+          // LocaleCubit + PreferencesStore persist the locale.
+          saveLocale: false,
+          useFallbackTranslations: true,
+          child: await builder(),
+        ),
+      );
     },
-    (error, stackTrace) {
-      if (kDebugMode) {
-        print('Error: ${error.toString()}, stackTrace: $stackTrace');
-      }
-    },
+    (error, stackTrace) => AppLogger.error(
+      'Uncaught zone error',
+      error: error,
+      stackTrace: stackTrace,
+      name: 'bootstrap',
+    ),
+  );
+}
+
+void _installErrorHandlers() {
+  FlutterError.onError = (details) {
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
+    AppLogger.error(
+      'Flutter framework error',
+      error: details.exception,
+      stackTrace: details.stack,
+      name: 'FlutterError',
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    AppLogger.error(
+      'Uncaught platform error',
+      error: error,
+      stackTrace: stackTrace,
+      name: 'PlatformDispatcher',
+    );
+    return true;
+  };
+
+  Bloc.observer = const AppBlocObserver();
+
+  guardErrorReporter = (error, stackTrace) => AppLogger.error(
+    'Unexpected error caught by guard()',
+    error: error,
+    stackTrace: stackTrace,
+    name: 'guard',
   );
 }
