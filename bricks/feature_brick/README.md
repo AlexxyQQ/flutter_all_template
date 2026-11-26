@@ -27,7 +27,7 @@ Non-interactive: `mason make flutter_feature -c config.json` with
 
 ```
 lib/features/note/
-├── domain/        entities/note.dart, params/note_params.dart (use_params), repositories/
+├── domain/        entities/note.dart, params/note_params.dart (use_params), usecases/ (list, get, create, update, delete), repositories/
 ├── data/          models/, data_sources/remote/, data_sources/local/ (use_local_datasource), repositories/
 └── presentation/bloc/   note_list_bloc.dart, note_list_event.dart
 ```

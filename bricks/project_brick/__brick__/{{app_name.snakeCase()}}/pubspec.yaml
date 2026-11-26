@@ -141,24 +141,24 @@ scripts:
   # 🧹 Maintenance & Code Quality
   #============================================================
   get: flutter pub get
-  reset: flutter clean && flutter pub get && rps gen
+  reset: flutter clean ; flutter pub get ; rps gen
   fix: dart fix --apply
   format: dart format lib test
-  analyze: flutter analyze && dart run custom_lint
+  analyze: flutter analyze ; dart run custom_lint
   test: flutter test --coverage
   # Everything CI checks, in the same order (run before pushing).
-  check: rps gen && dart format --output=none --set-exit-if-changed lib test && flutter analyze && flutter test
+  check: rps gen ; dart format --output=none --set-exit-if-changed lib test ; flutter analyze ; flutter test
 
   #============================================================
   # 🧬 Code Generation (generated files are git-ignored)
   #============================================================
   # build_runner (Freezed, JSON, injectable, auto_route, flutter_gen) + locale keys
-  gen: dart run build_runner build --delete-conflicting-outputs && rps gen:keys
+  gen: dart run build_runner build --delete-conflicting-outputs ; rps gen:keys
   # Create the git-ignored Firebase config from the tracked *.example files (never overwrites)
   firebase:init: bash scripts/firebase_init.sh
   gen:keys: dart run easy_localization:generate -S assets/translations -f keys -O lib/config/constants/gen -o locale_keys.g.dart
-  watch: rps gen:keys && dart run build_runner watch --delete-conflicting-outputs
-  icons: dart run splash_master create && dart run icons_launcher:create
+  watch: rps gen:keys ; dart run build_runner watch --delete-conflicting-outputs
+  icons: dart run splash_master create ; dart run icons_launcher:create
 
   #============================================================
   # ▶️ Run (per flavor)
