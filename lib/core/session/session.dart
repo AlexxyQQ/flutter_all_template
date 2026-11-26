@@ -13,7 +13,7 @@ final class AuthTokens {
 /// Secure persistence of [AuthTokens]. Backed by `SecureStore`.
 abstract interface class TokenStore {
   Future<AuthTokens?> read();
-  Future<void> save(AuthTokens tokens);
+  Future<void> save({required AuthTokens tokens});
   Future<void> clear();
 }
 
@@ -32,12 +32,12 @@ abstract interface class SessionManager {
   /// Restores the session from [TokenStore] at app start.
   Future<void> restore();
 
-  Future<void> signIn(AuthTokens tokens);
+  Future<void> signIn({required AuthTokens tokens});
 
   /// Clears tokens and runs every registered [LogoutHook]. Never throws.
   Future<void> signOut();
 
-  void registerLogoutHook(LogoutHook hook);
+  void registerLogoutHook({required LogoutHook hook});
 
   /// Releases resources (e.g. stream controllers). Called by GetIt on teardown.
   Future<void> dispose();

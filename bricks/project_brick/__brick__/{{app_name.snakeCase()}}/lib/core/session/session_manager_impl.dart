@@ -16,7 +16,8 @@ import 'session.dart';
 /// Concurrent `signOut()` calls (e.g. several 401s at once) share one run.
 @LazySingleton(as: SessionManager)
 class SessionManagerImpl implements SessionManager {
-  SessionManagerImpl(this._tokenStore);
+  SessionManagerImpl({required TokenStore tokenStore})
+    : _tokenStore = tokenStore;
 
   static const Duration hookTimeout = Duration(seconds: 5);
   static const String _name = 'SessionManager';
@@ -56,8 +57,8 @@ class SessionManagerImpl implements SessionManager {
   }
 
   @override
-  Future<void> signIn(AuthTokens tokens) async {
-    await _tokenStore.save(tokens);
+  Future<void> signIn({required AuthTokens tokens}) async {
+    await _tokenStore.save(tokens: tokens);
     _setStatus(SessionStatus.authenticated);
   }
 
@@ -92,7 +93,7 @@ class SessionManagerImpl implements SessionManager {
   }
 
   @override
-  void registerLogoutHook(LogoutHook hook) => _logoutHooks.add(hook);
+  void registerLogoutHook({required LogoutHook hook}) => _logoutHooks.add(hook);
 
   void _setStatus(SessionStatus status) {
     if (_status.value != status) {

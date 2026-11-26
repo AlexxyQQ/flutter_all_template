@@ -5,7 +5,10 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/generic/presentation/bloc/paged_list_bloc.dart';
 import '../../domain/entities/todo.dart';
 import '../../domain/params/todo_params.dart';
-import '../../domain/repositories/todo_repository.dart';
+import '../../domain/usecases/create_todo_use_case.dart';
+import '../../domain/usecases/delete_todo_use_case.dart';
+import '../../domain/usecases/get_todos_use_case.dart';
+import '../../domain/usecases/update_todo_use_case.dart';
 
 part 'todo_list_event.dart';
 
@@ -20,25 +23,34 @@ typedef TodoListState = PagedState<Todo, TodoQuery>;
 /// touching the loaded items (toggle is optimistic and rolled back on error).
 @injectable
 class TodoListBloc extends PagedListBloc<Todo, TodoQuery> {
-  TodoListBloc(this._repository, {@ignoreParam super.queryDebounce})
-    : super(
-        initialQuery: const TodoQuery(),
-        fetchPage: (page, query) =>
-            _repository.getTodos(page: page, query: query),
-      ) {
+  TodoListBloc({
+    required GetTodosUseCase getTodos,
+    required CreateTodoUseCase createTodo,
+    required UpdateTodoUseCase updateTodo,
+    required DeleteTodoUseCase deleteTodo,
+    @ignoreParam super.queryDebounce,
+  }) : _createTodo = createTodo,
+       _updateTodo = updateTodo,
+       _deleteTodo = deleteTodo,
+       super(
+         initialQuery: const TodoQuery(),
+         fetchPage: (page, query) => getTodos(page: page, query: query),
+       ) {
     on<TodoCreated>(_onCreated, transformer: sequential());
     on<TodoToggled>(_onToggled, transformer: sequential());
     on<TodoDeleted>(_onDeleted, transformer: sequential());
   }
 
-  final ITodoRepository _repository;
+  final CreateTodoUseCase _createTodo;
+  final UpdateTodoUseCase _updateTodo;
+  final DeleteTodoUseCase _deleteTodo;
 
   Future<void> _onCreated(
     TodoCreated event,
     Emitter<TodoListState> emit,
   ) async {
-    final result = await _repository.createTodo(
-      CreateTodoParams(title: event.title.trim()),
+    final result = await _createTodo(
+      params: CreateTodoParams(title: event.title),
     );
     emit(
       result.fold(
@@ -60,8 +72,8 @@ class TodoListBloc extends PagedListBloc<Todo, TodoQuery> {
     final toggled = original.copyWith(isDone: !original.isDone);
     emit(state.copyWith(items: _replace(toggled), failure: () => null));
 
-    final result = await _repository.updateTodo(
-      UpdateTodoParams(id: original.id, isDone: toggled.isDone),
+    final result = await _updateTodo(
+      params: UpdateTodoParams(id: original.id, isDone: toggled.isDone),
     );
     emit(
       result.fold(
@@ -76,7 +88,7 @@ class TodoListBloc extends PagedListBloc<Todo, TodoQuery> {
     TodoDeleted event,
     Emitter<TodoListState> emit,
   ) async {
-    final result = await _repository.deleteTodo(event.id);
+    final result = await _deleteTodo(id: event.id);
     emit(
       result.fold(
         (failure) => state.copyWith(failure: () => failure),

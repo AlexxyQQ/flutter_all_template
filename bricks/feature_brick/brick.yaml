@@ -1,6 +1,6 @@
 name: flutter_feature
 description: Generates a clean-architecture feature slice (paged list + CRUD) for flutter_all_template
-version: 0.2.0+1
+version: 3.0.0+1
 environment:
   mason: ">=0.1.0 <0.2.0"
 

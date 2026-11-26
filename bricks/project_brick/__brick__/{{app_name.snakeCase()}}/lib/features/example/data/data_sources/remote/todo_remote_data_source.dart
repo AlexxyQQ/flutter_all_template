@@ -13,13 +13,13 @@ abstract interface class ITodoRemoteDataSource {
     required TodoQuery query,
   });
 
-  Future<TodoModel> getTodo(String id);
+  Future<TodoModel> getTodo({required String id});
 
-  Future<TodoModel> createTodo(CreateTodoParams params);
+  Future<TodoModel> createTodo({required CreateTodoParams params});
 
-  Future<TodoModel> updateTodo(UpdateTodoParams params);
+  Future<TodoModel> updateTodo({required UpdateTodoParams params});
 
-  Future<void> deleteTodo(String id);
+  Future<void> deleteTodo({required String id});
 }
 
 /// API contract (adapt to your backend):
@@ -33,7 +33,7 @@ abstract interface class ITodoRemoteDataSource {
 /// | delete | `DELETE /todos/{id}` | empty (204) |
 @LazySingleton(as: ITodoRemoteDataSource)
 class TodoRemoteDataSource implements ITodoRemoteDataSource {
-  TodoRemoteDataSource(this._client);
+  TodoRemoteDataSource({required ApiClient client}) : _client = client;
 
   final ApiClient _client;
 
@@ -71,28 +71,26 @@ class TodoRemoteDataSource implements ITodoRemoteDataSource {
   }
 
   @override
-  Future<TodoModel> getTodo(String id) =>
+  Future<TodoModel> getTodo({required String id}) =>
       _client.get(_item(id), decode: _decodeTodo);
 
   @override
-  Future<TodoModel> createTodo(CreateTodoParams params) => _client.post(
-    ApiPaths.todos,
-    body: {'title': params.title},
-    decode: _decodeTodo,
-  );
+  Future<TodoModel> createTodo({required CreateTodoParams params}) => _client
+      .post(ApiPaths.todos, body: {'title': params.title}, decode: _decodeTodo);
 
   @override
-  Future<TodoModel> updateTodo(UpdateTodoParams params) => _client.patch(
-    _item(params.id),
-    body: {
-      if (params.title != null) 'title': params.title,
-      if (params.isDone != null) 'is_done': params.isDone,
-    },
-    decode: _decodeTodo,
-  );
+  Future<TodoModel> updateTodo({required UpdateTodoParams params}) =>
+      _client.patch(
+        _item(params.id),
+        body: {
+          if (params.title != null) 'title': params.title,
+          if (params.isDone != null) 'is_done': params.isDone,
+        },
+        decode: _decodeTodo,
+      );
 
   @override
-  Future<void> deleteTodo(String id) =>
+  Future<void> deleteTodo({required String id}) =>
       _client.delete(_item(id), decode: Decoders.ignore);
 
   static TodoModel _decodeTodo(Object? json) =>

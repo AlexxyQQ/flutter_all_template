@@ -18,7 +18,6 @@ class PermissionSpec {
     required this.messageKey,
     required this.reAskTitleKey,
     required this.reAskMessageKey,
-    this.imageAsset,
   });
 
   final AppPermission permission;
@@ -26,11 +25,8 @@ class PermissionSpec {
   /// The `permission_handler` permission. Data layer only.
   final Permission platformPermission;
 
-  /// Icon shown on the permission screen when [imageAsset] is null.
+  /// Icon shown on the permission screen.
   final IconData icon;
-
-  /// Optional illustration (asset path) that replaces [icon].
-  final String? imageAsset;
 
   final String titleKey;
   final String messageKey;

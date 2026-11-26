@@ -19,13 +19,17 @@ import '../token_refresher.dart';
 ///    [UnauthorizedException].
 @lazySingleton
 class RefreshTokenInterceptor extends QueuedInterceptor {
-  RefreshTokenInterceptor(
-    this._tokenStore,
-    this._sessionManager,
-    this._refresher,
-    @Named(NetworkNames.refreshDio) this._retryDio,
-    @Named(NetworkNames.apiBaseUrl) String baseUrl,
-  ) : _hostMatcher = ApiHostMatcher(baseUrl);
+  RefreshTokenInterceptor({
+    required TokenStore tokenStore,
+    required SessionManager sessionManager,
+    required TokenRefresher refresher,
+    @Named(NetworkNames.refreshDio) required Dio retryDio,
+    @Named(NetworkNames.apiBaseUrl) required String baseUrl,
+  }) : _tokenStore = tokenStore,
+       _sessionManager = sessionManager,
+       _refresher = refresher,
+       _retryDio = retryDio,
+       _hostMatcher = ApiHostMatcher(baseUrl: baseUrl);
 
   final TokenStore _tokenStore;
   final SessionManager _sessionManager;
@@ -110,8 +114,8 @@ class RefreshTokenInterceptor extends QueuedInterceptor {
       return null;
     }
     try {
-      final tokens = await _refresher.refresh(refreshToken);
-      await _tokenStore.save(tokens);
+      final tokens = await _refresher.refresh(refreshToken: refreshToken);
+      await _tokenStore.save(tokens: tokens);
       return tokens;
     } catch (e) {
       AppLogger.warning(

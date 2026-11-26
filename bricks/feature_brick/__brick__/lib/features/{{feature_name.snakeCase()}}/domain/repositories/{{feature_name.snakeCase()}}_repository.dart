@@ -10,11 +10,11 @@ abstract interface class I{{feature_name.pascalCase()}}Repository {
     {{#use_params}}{{feature_name.pascalCase()}}Query{{/use_params}}{{^use_params}}String{{/use_params}} query = {{#use_params}}const {{feature_name.pascalCase()}}Query(){{/use_params}}{{^use_params}}''{{/use_params}},
   });
 
-  ResultFuture<{{feature_name.pascalCase()}}> get{{feature_name.pascalCase()}}(String id);
+  ResultFuture<{{feature_name.pascalCase()}}> get{{feature_name.pascalCase()}}({required String id});
 
-  ResultFuture<{{feature_name.pascalCase()}}> create{{feature_name.pascalCase()}}({{#use_params}}Create{{feature_name.pascalCase()}}Params params{{/use_params}}{{^use_params}}{required String title}{{/use_params}});
+  ResultFuture<{{feature_name.pascalCase()}}> create{{feature_name.pascalCase()}}({{#use_params}}{required Create{{feature_name.pascalCase()}}Params params}{{/use_params}}{{^use_params}}{required String title}{{/use_params}});
 
-  ResultFuture<{{feature_name.pascalCase()}}> update{{feature_name.pascalCase()}}({{#use_params}}Update{{feature_name.pascalCase()}}Params params{{/use_params}}{{^use_params}}{{feature_name.pascalCase()}} item{{/use_params}});
+  ResultFuture<{{feature_name.pascalCase()}}> update{{feature_name.pascalCase()}}({{#use_params}}{required Update{{feature_name.pascalCase()}}Params params}{{/use_params}}{{^use_params}}{required {{feature_name.pascalCase()}} item}{{/use_params}});
 
-  ResultFuture<void> delete{{feature_name.pascalCase()}}(String id);
+  ResultFuture<void> delete{{feature_name.pascalCase()}}({required String id});
 }

@@ -10,7 +10,8 @@ import '../../../presentation/routes/app_router.dart';
 /// helpers). Widgets should prefer `context.router`.
 @lazySingleton
 class NavigationService {
-  const NavigationService(this._appRouter);
+  const NavigationService({required AppRouter appRouter})
+    : _appRouter = appRouter;
 
   final AppRouter _appRouter;
 

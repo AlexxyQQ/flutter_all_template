@@ -1,0 +1,17 @@
+# To-dos happy path against the stub API (needs the stub + adb reverse;
+# `rps maestro` sets both up). Seed data: one todo named "Stub todo".
+appId: com.alexxy.flutter_all_template
+tags: [todos]
+---
+- runFlow: _shared/launch.yaml
+- tapOn:
+    id: home_open_todos_button
+- assertVisible: 'Stub todo'
+- tapOn:
+    id: todo_add_button
+- tapOn:
+    id: todo_title_field
+- inputText: 'Buy milk'
+- tapOn:
+    id: todo_save_button
+- assertVisible: 'Buy milk'

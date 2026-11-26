@@ -1,15 +1,13 @@
 import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../../../../config/constants/paths/app_path.dart';
 import '../../../../../locator/service_locator.dart';
-import '../../../../../presentation/extensions/dialog/dialog_extension.dart';
-import '../../../../../presentation/views/widgets/system/default_app_bar.dart';
-import '../../../../../presentation/views/widgets/system/text/app_text_widget.dart';
 import '../../../domain/entities/app_permission.dart';
 import '../../../permission_spec.dart';
 import '../../bloc/permission_bloc.dart';
@@ -98,10 +96,28 @@ class _PermissionScreenState extends State<PermissionScreen> {
 
   void _showReAskDialog(PermissionSpec spec) {
     final bloc = context.read<PermissionBloc>();
-    context.showConfirmationDialog(
-      title: spec.reAskTitleKey,
-      message: spec.reAskMessageKey,
-      onConfirm: () => bloc.add(const PermissionSettingsOpened()),
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(spec.reAskTitleKey.tr()),
+          content: Text(spec.reAskMessageKey.tr()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(LocaleKeys.common_words_cancel.tr()),
+            ),
+            TextButton(
+              key: const Key('permission_open_settings_button'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                bloc.add(const PermissionSettingsOpened());
+              },
+              child: Text(LocaleKeys.common_words_confirm.tr()),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -117,10 +133,10 @@ class _PermissionScreenState extends State<PermissionScreen> {
   Widget build(BuildContext context) {
     final permission = _permission;
     if (permission == null) {
-      return const Scaffold(
-        appBar: DefaultAppBar(),
+      return Scaffold(
+        appBar: AppBar(),
         body: Center(
-          child: AppText(LocaleKeys.common_errors_somethingWentWrong),
+          child: Text(LocaleKeys.common_errors_somethingWentWrong.tr()),
         ),
       );
     }
@@ -152,7 +168,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
         builder: (context, state) {
           final bloc = context.read<PermissionBloc>();
           return Scaffold(
-            appBar: const DefaultAppBar(),
+            appBar: AppBar(),
             body: PermissionPromptView(
               spec: spec,
               isLoading: state.isLoading,

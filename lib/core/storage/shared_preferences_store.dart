@@ -8,7 +8,8 @@ import 'key_value_stores.dart';
 /// loaded once at startup, so reads are synchronous).
 @LazySingleton(as: PreferencesStore)
 class SharedPreferencesStore implements PreferencesStore {
-  SharedPreferencesStore(this._prefs);
+  SharedPreferencesStore({required SharedPreferencesWithCache prefs})
+    : _prefs = prefs;
 
   final SharedPreferencesWithCache _prefs;
 

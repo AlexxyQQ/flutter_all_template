@@ -23,7 +23,7 @@ abstract final class RequestExtras {
 /// scheme, host and port all match the base URL (fixes token leakage to
 /// third-party hosts).
 final class ApiHostMatcher {
-  ApiHostMatcher(String baseUrl)
+  ApiHostMatcher({required String baseUrl})
     : _base = baseUrl.trim().isEmpty ? null : Uri.tryParse(baseUrl.trim());
 
   final Uri? _base;

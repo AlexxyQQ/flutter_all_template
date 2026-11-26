@@ -4,9 +4,11 @@ import '../entities/app_permission_status.dart';
 
 /// Pure OS-permission access: check, request, open settings.
 abstract interface class IPermissionRepository {
-  ResultFuture<AppPermissionStatus> check(AppPermission permission);
+  ResultFuture<AppPermissionStatus> check({required AppPermission permission});
 
-  ResultFuture<AppPermissionStatus> request(AppPermission permission);
+  ResultFuture<AppPermissionStatus> request({
+    required AppPermission permission,
+  });
 
   /// Opens the app's page in the system settings. Right(true) if it opened.
   ResultFuture<bool> openSettings();
@@ -18,9 +20,9 @@ abstract interface class IPermissionRepository {
 /// before using the guarded feature.
 abstract interface class IPermissionSkipRepository {
   /// Synchronous read (backed by pre-loaded preferences).
-  bool isSkipped(AppPermission permission);
+  bool isSkipped({required AppPermission permission});
 
-  ResultFuture<void> markSkipped(AppPermission permission);
+  ResultFuture<void> markSkipped({required AppPermission permission});
 
-  ResultFuture<void> clearSkipped(AppPermission permission);
+  ResultFuture<void> clearSkipped({required AppPermission permission});
 }

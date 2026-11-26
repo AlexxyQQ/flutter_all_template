@@ -13,7 +13,7 @@ void main() {
 
   setUp(() {
     storage = _MockStorage();
-    store = FlutterSecureStore(storage);
+    store = FlutterSecureStore(storage: storage);
   });
 
   test('read/write/delete delegate to the plugin', () async {

@@ -22,7 +22,10 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'https://api.example.com/v1/'))
       ..httpClientAdapter = adapter
       ..interceptors.add(
-        AuthInterceptor(tokenStore, 'https://api.example.com/v1/'),
+        AuthInterceptor(
+          tokenStore: tokenStore,
+          baseUrl: 'https://api.example.com/v1/',
+        ),
       );
   });
 
@@ -61,7 +64,7 @@ void main() {
 
   test('never attaches a token when no base URL is configured', () {
     expect(
-      ApiHostMatcher('').matches(Uri.parse('https://api.example.com')),
+      ApiHostMatcher(baseUrl: '').matches(Uri.parse('https://api.example.com')),
       isFalse,
     );
   });

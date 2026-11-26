@@ -42,7 +42,7 @@ void main() {
     AppLogger.configure(logger);
     tokenStore = _MockTokenStore();
     when(tokenStore.clear).thenAnswer((_) async {});
-    manager = SessionManagerImpl(tokenStore);
+    manager = SessionManagerImpl(tokenStore: tokenStore);
   });
 
   tearDown(() => manager.dispose());
@@ -71,21 +71,21 @@ void main() {
 
   test('signIn saves tokens and emits authenticated', () async {
     const tokens = AuthTokens(accessToken: 'a');
-    when(() => tokenStore.save(tokens)).thenAnswer((_) async {});
+    when(() => tokenStore.save(tokens: tokens)).thenAnswer((_) async {});
 
     final emitted = manager.statusStream.take(2).toList();
-    await manager.signIn(tokens);
+    await manager.signIn(tokens: tokens);
 
     expect(await emitted, [SessionStatus.unknown, SessionStatus.authenticated]);
-    verify(() => tokenStore.save(tokens)).called(1);
+    verify(() => tokenStore.save(tokens: tokens)).called(1);
   });
 
   group('signOut', () {
     test('runs every hook, then clears tokens', () async {
       final calls = <String>[];
       manager
-        ..registerLogoutHook(() async => calls.add('push'))
-        ..registerLogoutHook(() async => calls.add('cache'));
+        ..registerLogoutHook(hook: () async => calls.add('push'))
+        ..registerLogoutHook(hook: () async => calls.add('cache'));
       when(tokenStore.clear).thenAnswer((_) async => calls.add('tokens'));
 
       await manager.signOut();
@@ -97,8 +97,8 @@ void main() {
     test('a throwing hook does not stop the others and never throws', () async {
       var secondRan = false;
       manager
-        ..registerLogoutHook(() async => throw StateError('hook failed'))
-        ..registerLogoutHook(() async => secondRan = true);
+        ..registerLogoutHook(hook: () async => throw StateError('hook failed'))
+        ..registerLogoutHook(hook: () async => secondRan = true);
 
       await expectLater(manager.signOut(), completes);
 
@@ -115,7 +115,7 @@ void main() {
 
     test('concurrent calls share a single run', () async {
       var hookRuns = 0;
-      manager.registerLogoutHook(() async => hookRuns++);
+      manager.registerLogoutHook(hook: () async => hookRuns++);
 
       await Future.wait([manager.signOut(), manager.signOut()]);
 

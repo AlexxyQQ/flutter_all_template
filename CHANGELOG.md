@@ -5,13 +5,55 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [3.0.0] — 2026-11-26
+
+Barebones release. **Breaking** for anything generated from 2.x.
+
+### Removed
+- The custom UI component library and the custom theme system (`lib/config/themes`, colour/text
+  constants, `ThemeCubit`, text-field/dialog/bottom-sheet widgets, form controllers and
+  validation extensions). The app is plain Material 3 with the default `ThemeData`.
+- The `gallery` feature and its route; fonts (SF Pro, Anton), Lottie, video and onboarding
+  assets; and unused dependencies (`nested`, `connectivity_plus`,
+  `jwt_decoder`, `app_settings`, `collection`, `intl`, `path_provider`, `cupertino_icons`).
+- Internal planning docs (`TODO.md`, `docs/TEMPLATE_AUDIT_AND_PLAN.md`,
+  `docs/REFACTOR_CONTRACTS.md`), `devtools_options.yaml`, unused translation namespaces
+  (form fields, calendar, currencies) and the GitHub `security` job with gitleaks.
+
+### Added
+- Dependencies are injected through named, `required` constructor parameters everywhere (repositories, data sources, use cases, blocs/cubits, services, interceptors, stores, clients); `RULES.md` §2 documents the rule and the feature brick generates the same style.
+- Real Firebase config (`google-services.json`, `GoogleService-Info.plist`, `firebase.json`,
+  `firebase_options.dart`) is now git-ignored; `*.example` placeholders are tracked instead.
+  `rps firebase:init` / `scripts/firebase_init.sh` creates the real files without overwriting,
+  CI and Codemagic run it (Codemagic also decodes optional `FIREBASE_*_BASE64` secrets),
+  `scripts/release.sh` refuses a placeholder `google-services.json`, and generated projects
+  ship the examples. `.gitignore` also covers signing keys/certificates, service-account JSON,
+  `.firebaserc` and local tool state.
+- Screens are now splash, home and a Todo list (`features/example`) built with plain
+  Material widgets; the permission feature is kept.
+- CI/CD redesign (free-tier safe): lean Linux-only PR CI, weekly OSV scan,
+  `scripts/release.sh` (local Android build uploaded to a GitHub Release), `codemagic.yaml`
+  for manual iOS builds, and `docs/CI_CD.md`.
+- Maestro end-to-end flows (`.maestro/`, `scripts/maestro.sh`, `rps maestro`,
+  `docs/MAESTRO.md`).
+
+### Changed
+- Mason bricks are minimal: the project brick asks for `app_name`, `app_org` and the
+  optional `use_firebase`, `use_notifications`, `use_permissions` modules, and ships the CI,
+  Codemagic, release script, Maestro flows and docs with the app name and bundle ids
+  rewritten. Brick tooling, the changelog and the brick-sync CI step are not shipped. Hook
+  `pubspec.lock` files are no longer tracked.
+- `flutter_feature` documentation and hook output no longer reference removed widgets.
+- README, FOLDER_STRUCTURE and SECURITY rewritten to match the code and CI.
+
+---
+
 ## [2.0.0] — 2026-11-26
 
 A security- and architecture-focused rewrite. **Breaking** for anything generated from 1.x: see the migration notes.
-Findings and rationale: [docs/TEMPLATE_AUDIT_AND_PLAN.md](docs/TEMPLATE_AUDIT_AND_PLAN.md).
 
 ### Security
-- Removed the committed Google API key text from `TODO.md` (**the key must still be revoked/rotated and git history rewritten — see `TODO.md` §0**).
+- Removed the committed Google API key text from `TODO.md` (**the key must still be revoked/rotated and git history rewritten — see `SECURITY.md`**).
 - Deleted the trust-all-certificates `MyHttpOverrides`; debug-only proxy/self-signed trust is now scoped to the API host and ignored in release builds.
 - Bearer tokens are attached only to requests for the API host; added single-flight token refresh that signs the user out when refresh fails.
 - Tokens moved out of the settings blob into a dedicated `TokenStore` on secure storage; preferences live in `PreferencesStore`.

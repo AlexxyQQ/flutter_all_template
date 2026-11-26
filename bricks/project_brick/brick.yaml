@@ -1,6 +1,6 @@
 name: flutter_all_template
-description: Production-ready Flutter template — pick only the modules you need
-version: 0.1.0+1
+description: Barebones Flutter starter (Clean Architecture, BLoC, Material 3) with optional Firebase, notifications and permissions
+version: 3.0.0+1
 environment:
   mason: ">=0.1.0-dev.52 <0.2.0"
 

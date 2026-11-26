@@ -5,12 +5,16 @@ import 'package:flutter_all_template/core/common/features/permission/presentatio
 {{/use_permissions}}
 import 'package:flutter_all_template/core/common/locator/service_locator.dart';
 import 'package:flutter_all_template/core/common/presentation/blocs/locale/locale_cubit.dart';
-import 'package:flutter_all_template/core/common/presentation/blocs/theme/theme_cubit.dart';
 import 'package:flutter_all_template/core/common/presentation/routes/app_router.dart';
 import 'package:flutter_all_template/core/network/api_client.dart';
 import 'package:flutter_all_template/core/session/session.dart';
 import 'package:flutter_all_template/core/storage/key_value_stores.dart';
 import 'package:flutter_all_template/features/example/domain/repositories/todo_repository.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/create_todo_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/delete_todo_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/get_todo_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/get_todos_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/update_todo_use_case.dart';
 import 'package:flutter_all_template/features/example/presentation/bloc/todo_list_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -40,6 +44,11 @@ void main() {
 
   test('features resolve through their interfaces', () {
     expect(sl<ITodoRepository>(), isNotNull);
+    expect(sl<GetTodosUseCase>(), isNotNull);
+    expect(sl<GetTodoUseCase>(), isNotNull);
+    expect(sl<CreateTodoUseCase>(), isNotNull);
+    expect(sl<UpdateTodoUseCase>(), isNotNull);
+    expect(sl<DeleteTodoUseCase>(), isNotNull);
     expect(sl<TodoListBloc>(), isNotNull);
   });
 
@@ -53,7 +62,6 @@ void main() {
 
   test('presentation roots resolve', () {
     expect(sl<AppRouter>(), isNotNull);
-    expect(sl<ThemeCubit>(), isNotNull);
     expect(sl<LocaleCubit>(), isNotNull);
   });
 }

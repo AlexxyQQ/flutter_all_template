@@ -23,6 +23,16 @@ analyzer:
     - lib/config/constants/gen/** # flutter_gen + locale keys
     - bricks/** # Mason templates (contain mustache syntax)
 
+# The spacing rules push `flutter_screenutil` extensions (`16.allPadding`,
+# `8.verticalGap`), which the barebones template no longer ships.
+custom_lint:
+  rules:
+    - avoid_edge_insets_all: false
+    - avoid_edge_insets_only: false
+    - avoid_edge_insets_symmetric: false
+    - avoid_sized_box_height: false
+    - avoid_sized_box_width: false
+
 linter:
   # The lint rules applied to this project. These enforce code style,
   # readability, and safety. Rules can be disabled per-file using

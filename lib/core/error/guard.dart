@@ -19,8 +19,8 @@ GuardErrorReporter guardErrorReporter = (_, _) {};
 ///
 /// ```dart
 /// @override
-/// ResultFuture<Todo> getTodo(String id) =>
-///     guard(() async => (await _remote.getTodo(id)).toEntity());
+/// ResultFuture<Todo> getTodo({required String id}) =>
+///     guard(() async => (await _remote.getTodo(id: id)).toEntity());
 /// ```
 ResultFuture<T> guard<T>(Future<T> Function() body) async {
   try {

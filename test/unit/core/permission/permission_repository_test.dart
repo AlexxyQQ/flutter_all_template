@@ -31,7 +31,10 @@ void main() {
     setUp(() {
       platform = _MockPlatform();
       notifications = _MockNotifications();
-      repository = PermissionRepositoryImpl(platform, notifications);
+      repository = PermissionRepositoryImpl(
+        platform: platform,
+        notifications: notifications,
+      );
     });
 
     test('maps every platform status to the domain enum', () {
@@ -43,10 +46,10 @@ void main() {
 
     test('check uses the spec platform permission', () async {
       when(
-        () => platform.status(Permission.camera),
+        () => platform.status(permission: Permission.camera),
       ).thenAnswer((_) async => PermissionStatus.permanentlyDenied);
 
-      final result = await repository.check(AppPermission.camera);
+      final result = await repository.check(permission: AppPermission.camera);
 
       expect(
         result,
@@ -59,28 +62,32 @@ void main() {
     test('notification request delegates to the notification module', () async {
       when(notifications.requestPermission).thenAnswer((_) async => true);
 
-      final result = await repository.request(AppPermission.notification);
+      final result = await repository.request(
+        permission: AppPermission.notification,
+      );
 
       expect(result.getRight().toNullable(), AppPermissionStatus.granted);
       verify(notifications.requestPermission).called(1);
-      verifyNever(() => platform.request(any()));
+      verifyNever(() => platform.request(permission: any(named: 'permission')));
     });
 
     test('location check is denied while location services are off', () async {
       when(platform.isLocationServiceEnabled).thenAnswer((_) async => false);
 
-      final result = await repository.check(AppPermission.location);
+      final result = await repository.check(permission: AppPermission.location);
 
       expect(result.getRight().toNullable(), AppPermissionStatus.denied);
-      verifyNever(() => platform.status(any()));
+      verifyNever(() => platform.status(permission: any(named: 'permission')));
     });
 
     test('platform errors become a Failure', () async {
       when(
-        () => platform.request(Permission.microphone),
+        () => platform.request(permission: Permission.microphone),
       ).thenThrow(PlatformException(code: 'boom'));
 
-      final result = await repository.request(AppPermission.microphone);
+      final result = await repository.request(
+        permission: AppPermission.microphone,
+      );
 
       expect(result.isLeft(), isTrue);
     });
@@ -92,15 +99,15 @@ void main() {
 
     setUp(() {
       prefs = _MockPrefs();
-      repository = PermissionSkipRepositoryImpl(prefs);
+      repository = PermissionSkipRepositoryImpl(prefs: prefs);
     });
 
     test('reads the per-permission flag', () {
       when(() => prefs.getBool('permission.skipped.camera')).thenReturn(true);
       when(() => prefs.getBool('permission.skipped.phone')).thenReturn(null);
 
-      expect(repository.isSkipped(AppPermission.camera), isTrue);
-      expect(repository.isSkipped(AppPermission.phone), isFalse);
+      expect(repository.isSkipped(permission: AppPermission.camera), isTrue);
+      expect(repository.isSkipped(permission: AppPermission.phone), isFalse);
     });
 
     test('markSkipped persists in preferences', () async {
@@ -108,7 +115,9 @@ void main() {
         () => prefs.setBool('permission.skipped.camera', value: true),
       ).thenAnswer((_) async {});
 
-      final result = await repository.markSkipped(AppPermission.camera);
+      final result = await repository.markSkipped(
+        permission: AppPermission.camera,
+      );
 
       expect(result.isRight(), isTrue);
     });
@@ -118,7 +127,9 @@ void main() {
         () => prefs.setBool(any(), value: any(named: 'value')),
       ).thenThrow(const StorageException());
 
-      final result = await repository.markSkipped(AppPermission.camera);
+      final result = await repository.markSkipped(
+        permission: AppPermission.camera,
+      );
 
       expect(result.getLeft().toNullable()?.type, FailureType.storage);
     });

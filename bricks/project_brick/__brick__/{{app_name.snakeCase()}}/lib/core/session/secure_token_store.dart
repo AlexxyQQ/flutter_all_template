@@ -9,7 +9,8 @@ import 'session.dart';
 /// not hit the Keychain/Keystore on every request.
 @LazySingleton(as: TokenStore)
 class SecureTokenStore implements TokenStore {
-  SecureTokenStore(this._secureStore);
+  SecureTokenStore({required SecureStore secureStore})
+    : _secureStore = secureStore;
 
   static const String accessTokenKey = 'auth.access_token';
   static const String refreshTokenKey = 'auth.refresh_token';
@@ -34,7 +35,7 @@ class SecureTokenStore implements TokenStore {
   }
 
   @override
-  Future<void> save(AuthTokens tokens) async {
+  Future<void> save({required AuthTokens tokens}) async {
     // Invalidate first so a failed write never leaves a stale cache.
     _loaded = false;
     await _secureStore.write(accessTokenKey, tokens.accessToken);

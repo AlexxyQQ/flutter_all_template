@@ -35,21 +35,25 @@ bundle ID, Firebase protected with **App Check** and security rules.
 | What | Where it lives | Tracked? |
 |---|---|---|
 | Per-flavor public config | `env/<flavor>.json` (from `env/*.example.json`) | ❌ ignored (`*.example.json` tracked with placeholders) |
-| Firebase client config | `google-services.json`, `GoogleService-Info.plist`, `firebase.json`, `firebase_options.dart` | ✅ placeholders only — real values come from `flutterfire configure` locally/CI and must not be committed |
+| Firebase client config | `google-services.json`, `GoogleService-Info.plist`, `firebase.json`, `firebase_options.dart` | ✅ git-ignored; only `*.example` placeholders are tracked. Create the real files with `rps firebase:init` + `flutterfire configure`; CI/Codemagic use placeholders or base64 secrets |
 | Android signing | `android/key.properties`, `*.jks` | ❌ ignored — see [`docs/CODE_SIGNING.md`](docs/CODE_SIGNING.md) |
 | CI secrets | GitHub Actions secrets / environments | n/a |
 
 Guards:
 
-- **gitleaks** runs in CI over the full git history (`.gitleaks.toml` allowlists only the
-  `YOUR_*` / `CHANGE_ME` placeholders). Run it locally before pushing:
-  `gitleaks detect --config .gitleaks.toml` or `gitleaks protect --staged`.
-- **OSV-Scanner** checks `pubspec.lock` for known-vulnerable dependencies; Dependabot keeps
-  pub, Gradle and Actions dependencies current. GitHub Actions are pinned to commit SHAs.
+- **gitleaks** is run locally, not in CI (the GitHub action needs a paid licence for
+  organisation repos). `.gitleaks.toml` allowlists only the `YOUR_*` / `CHANGE_ME`
+  placeholders. Before pushing: `gitleaks detect --config .gitleaks.toml`, or install it as
+  a pre-commit hook with `gitleaks protect --staged --config .gitleaks.toml`.
+- **OSV-Scanner** checks `pubspec.lock` for known-vulnerable dependencies in a weekly
+  GitHub workflow (`.github/workflows/security.yml`); Dependabot keeps pub, Gradle and
+  Actions dependencies current. GitHub Actions are pinned to commit SHAs.
 - Enable GitHub **secret scanning** and **push protection** in repository settings.
 
-To keep local Firebase files from showing up as changes after `flutterfire configure`:
-`git update-index --skip-worktree android/app/google-services.json ios/Runner/GoogleService-Info.plist lib/config/firebase/firebase_options.dart firebase.json`.
+Firebase client config is git-ignored (also `.firebaserc`, service-account/admin-SDK JSON,
+signing certificates and keys). Run `rps firebase:init` to copy each `*.example` placeholder to
+the real name (never overwrites), then `flutterfire configure`. Nothing to un-track or
+`skip-worktree`; `git status` stays clean.
 
 ---
 
@@ -70,8 +74,10 @@ even if the commit was "deleted".
 5. **Verify:** `gitleaks detect --log-opts="--all"` reports nothing.
 6. Record the incident (what, when, who rotated) outside the repo.
 
-Owner actions still outstanding for this repository are tracked as **MANUAL** items in
-[`TODO.md`](TODO.md) §0.
+Owner actions still outstanding for this repository (cannot be done in code): revoke
+the Google API keys that were committed before the placeholders replaced them, restrict
+the replacement keys to the app's package/bundle ID and the APIs in use, enable Firebase
+App Check, and purge the old values from git history as described above.
 
 ---
 

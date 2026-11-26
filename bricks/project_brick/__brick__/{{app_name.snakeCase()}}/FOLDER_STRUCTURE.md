@@ -1,528 +1,117 @@
-# Folder Structure Guide
+# Folder Structure
 
-A detailed reference for where every file type belongs in this template.
-Use this as the single source of truth when adding new code.
+Where things live and the rules for adding code. This matches the current `lib/` tree.
+Coding conventions with do/don't examples live in [RULES.md](RULES.md).
 
----
-
-## Top-Level Layout
+## Repository layout
 
 ```
-flutter_all_template/
-├── lib/                   # All Dart / Flutter source code
-├── assets/                # Static resources (images, fonts, translations, lottie, videos)
-├── android/               # Android native project — edit only when needed
-├── ios/                   # iOS native project — edit only when needed
-├── env/                   # Per-flavor compile-time config (*.example.json tracked, real *.json ignored)
-├── test/                  # All automated tests
-├── bricks/                # Mason bricks (project_brick, feature_brick)
-├── docs/                  # Guides: flavors, code signing, platform setup, audit/plan
-├── .github/               # CI workflow, Dependabot
-├── .fvm/                  # Flutter Version Manager cache (git-ignored)
-├── .vscode/               # VS Code launch configs per flavor
-├── .fvmrc                 # Pinned Flutter version — single source of truth (CI reads it)
-├── .gitleaks.toml         # Secret-scanning config (CI)
-├── pubspec.yaml           # Dependencies, assets declarations, and rps scripts
-├── analysis_options.yaml  # Lint rules
-├── firebase.json          # FlutterFire config (placeholders — see SECURITY.md)
-├── mason.yaml             # Local brick registry (mason-lock.json is git-ignored)
-├── CHANGELOG.md           # Human-readable version history
-├── SECURITY.md            # Secret handling, key rotation, reporting, logging policy
-└── README.md              # Project overview and quick-start
+.
+├── lib/            Dart source (below)
+├── test/           unit/ and widget/ tests, mirroring lib/
+├── assets/         app-icons/ (source for `rps icons`), images/, translations/ (*.json)
+├── android/ ios/   native projects; edit only when needed
+├── env/            per-flavor compile-time config (*.example.json tracked, real *.json ignored)
+├── docs/           CI_CD, MAESTRO, FLAVORS, CODE_SIGNING, PLATFORM_SETUP
+├── scripts/        release.sh (local Android release), maestro.sh (E2E runner)
+├── .maestro/       Maestro flows and the stub API server
+├── .github/        PR CI, weekly OSV scan, Dependabot
+├── codemagic.yaml  manual iOS builds
+├── bricks/         Mason bricks: project_brick (generated), feature_brick
+├── tool/           sync_brick.dart (regenerates the project brick)
+└── pubspec.yaml    dependencies, `rps` scripts, icon/splash config
 ```
 
-> `build/`, `.dart_tool/`, and `.fvm/` are tooling-managed — do not edit manually.
+`build/`, `.dart_tool/` and `.fvm/` are tooling-managed. Generated Dart files
+(`*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `*.config.dart`, `lib/config/constants/gen/`)
+are git-ignored; create them with `rps gen`.
 
----
-
-## `lib/` — Source Code
-
-The entire Dart codebase lives here, split into three top-level concerns:
+## `lib/`
 
 ```
 lib/
-├── config/        # Static configuration — no business logic
-├── core/          # Shared infrastructure and cross-cutting concerns
-├── features/      # Self-contained product features
-├── main.dart      # Entry point only — keep it thin
+├── main.dart          entry point: optional Firebase init, then bootstrap
+├── config/            static configuration, no business logic
+├── core/              shared infrastructure and cross-cutting concerns
+└── features/          product features (data / domain / presentation)
 ```
 
-### Entry Points
+### `config/`
 
-| File | Purpose |
-|------|---------|
-| `main.dart` | Bootstrap only: Firebase init, `runApp(bootstrap())`. Config comes from `AppEnv` (compile-time), not dotenv |
-| `core/bootstrap.dart` | DI setup, orientation lock, global error handler, `runApp` |
-| `core/app.dart` | `MaterialApp.router` with global BLoC providers and theme |
+| Path | Purpose |
+|---|---|
+| `env/app_env.dart` | `AppEnv`: compile-time config from `--dart-define-from-file=env/<flavor>.json` |
+| `constants/api/` | base URL helpers (`api_constants.dart`), endpoint paths (`api_paths.dart`) |
+| `constants/locales/` | supported locales |
+| `constants/paths/app_path.dart` | route path constants |
+| `constants/type_defs/` | `ResultFuture`, `ResultVoid` and friends |
+| `constants/gen/` | generated `assets.gen.dart` (flutter_gen) and `locale_keys.g.dart` (git-ignored) |
+| `firebase/firebase_options.dart` | FlutterFire config, git-ignored; tracked as `.example` (only with the Firebase module) |
+| `observers/` | `AppBlocObserver`, route observer |
 
-**Rule:** Keep `main.dart` to under 20 lines. All initialisation logic belongs in `bootstrap.dart`.
+### `core/`
 
----
+| Path | Purpose |
+|---|---|
+| `bootstrap.dart`, `app.dart` | DI setup, global error handling, `MaterialApp.router` with the global providers |
+| `error/` | `AppException` (thrown by data sources) and `guard()` which turns it into a `Failure` |
+| `network/` | `ApiClient` interface, Dio implementation, auth / refresh-token / logging interceptors |
+| `storage/` | `SecureStore` (secrets) and `PreferencesStore` (non-secret) behind small interfaces |
+| `session/` | `TokenStore` on secure storage and `SessionManager` (sign-in / sign-out) |
+| `generic/` | `PagedListBloc`, `LoadCubit`, `SelectionCubit`, `PageRequest`/`PageResult`, `JsonCollectionStore`, `AsyncLock`, `SingleFlightCache` (see its README) |
+| `common/data/models/helpers/` | JSON and entity conversion helpers |
+| `common/domain/entities/failure.dart` | `Failure`; its `message` is a localization key |
+| `common/domain/services/logger/` | redacting logger with pluggable sinks |
+| `common/domain/services/navigation/` | `NavigationService` over `AppRouter` |
+| `common/domain/services/notification/` | FCM + local notifications (optional module) |
+| `common/features/app_settings/` | locale preference (non-secret) |
+| `common/features/permission/` | one enum, one spec table, one bloc, one screen, one guard (optional module) |
+| `common/locator/` | get_it + injectable setup (`sl`) |
+| `common/presentation/blocs/` | `LocaleCubit`, global bloc providers |
+| `common/presentation/routes/` | `AppRouter` (auto_route) |
 
-## `lib/config/` — Static App Configuration
+### `features/`
 
-No business logic here. Pure constants, theming, and code-gen output.
-
-```
-lib/config/
-├── env/
-│   └── app_env.dart       # AppEnv — compile-time config from --dart-define-from-file=env/<flavor>.json
-├── constants/
-│   ├── api/               # Base URLs, endpoint path segments
-│   ├── colors/
-│   │   ├── custom/        # Your brand colour primitives and semantic tokens
-│   │   └── material/      # Material 3 colour primitives and semantic tokens
-│   ├── enums/             # App-wide enum types (ImageType, Permission, TextFieldType…)
-│   ├── text/
-│   │   ├── custom/        # Brand-specific typography primitives and styles
-│   │   └── material/      # Material 3 typography primitives and styles
-│   ├── gen/               # AUTO-GENERATED — do not edit by hand
-│   │   ├── assets.gen.dart       # flutter_gen asset references
-│   │   └── locale_keys.g.dart    # easy_localization translation keys
-│   ├── images/            # Typed image path constants (wraps assets.gen.dart)
-│   ├── locales/           # Supported Locale list
-│   ├── paths/             # File-system or deep-link path string constants
-│   ├── date_time/         # Date/time format string constants
-│   └── type_defs/         # Project-wide `typedef` aliases
-├── firebase/
-│   └── firebase_options.dart    # Generated by `flutterfire configure` — do not edit
-├── observers/
-│   └── route_observer.dart      # NavigatorObserver for analytics
-└── themes/
-    ├── components_theme/  # Per-component ThemeData extensions (Button, Chip, Icon…)
-    ├── custom_app_theme.dart     # Custom (non-Material) theme data class
-    └── material_app_theme.dart   # Builds the final ThemeData passed to MaterialApp
-```
-
-### What goes where in `config/`
-
-| You are adding… | Put it in |
-|-----------------|-----------|
-| A new per-flavor setting (URL, flag) | `env/app_env.dart` + every `env/*.example.json` (see `docs/FLAVORS.md`) |
-| A new API path segment | `constants/api/` |
-| A new brand or semantic colour token | `constants/colors/custom/` or `constants/colors/material/` |
-| A new app-wide enum | `constants/enums/` |
-| A new typography style | `constants/text/custom/` |
-| A named image path used across multiple features | `constants/images/` |
-| A new supported locale | `constants/locales/app_locales.dart` |
-| A new Material component theme override | `themes/components_theme/` |
-
-> **Never** add business logic, BLoC/Cubit, or network calls to `config/`.
-
----
-
-## `lib/core/` — Shared Infrastructure
-
-Everything that multiple features share.
+Each feature is self-contained:
 
 ```
-lib/core/
-├── error/             # AppException (thrown by data layer) + guard() → Failure
-├── network/           # ApiClient interface (+ implementation) used by remote data sources
-├── storage/           # SecureStore (secrets) and PreferencesStore (non-secret settings)
-├── session/           # AuthTokens, TokenStore, SessionManager (login/logout orchestration)
-├── abstract/          # Pure abstract classes (interfaces) for theme contracts
-├── common/            # Concrete shared services, models, and features
-│   ├── data/
-│   ├── domain/
-│   ├── features/
-│   ├── locator/
-│   └── presentation/
-└── generic/           # Generic base classes and mixins features extend
-    ├── data/
-    ├── domain/
-    └── presentation/
+features/<name>/
+├── data/            models, data_sources/{remote,local}, repositories (impl)
+├── domain/          entities, params, repository interfaces, usecases (pure Dart)
+└── presentation/    bloc/, routes/ (@RoutePage wrappers), views/screens/
 ```
 
----
-
-### Core infrastructure: `error/`, `network/`, `storage/`, `session/`
-
-Introduced by the template refactor (see `docs/REFACTOR_CONTRACTS.md`). They replace the
-older `core/common/domain/services/{network,storage}` code step by step, so exact file
-names inside them may still change; the responsibilities below are stable.
-
-| Folder | Responsibility | Rule of thumb |
-|--------|----------------|---------------|
-| `core/error/` | Sealed `AppException` hierarchy and `guard()` that converts exceptions into domain `Failure`s | Data sources **throw** `AppException`; repositories `return guard(() => …)` |
-| `core/network/` | `ApiClient` abstraction (+ decoders); Dio lives behind it | Remote data sources receive `ApiClient` via the constructor — never Dio or a static helper |
-| `core/storage/` | `SecureStore` for secrets, `PreferencesStore` for non-secret settings | Tokens/credentials → `SecureStore` only; theme/locale/flags → `PreferencesStore` |
-| `core/session/` | Tokens, session status and `SessionManager` (+ logout hooks) | Logout clears tokens, push token, caches through hooks registered here |
-
----
-
-### `lib/core/abstract/`
-
-Abstract class contracts that decouple presentation from implementation.
-
-```
-core/abstract/
-└── presentation/
-    ├── abstract_custom_app_text_style.dart     # Contract for brand text styles
-    ├── abstract_custom_color_semantic.dart     # Contract for brand semantic colours
-    ├── abstract_material_app_text_style.dart   # Contract for Material text styles
-    └── abstract_material_color_semantic.dart   # Contract for Material semantic colours
-```
-
-**Rule:** Only `abstract class` definitions here — no concrete code.
-
----
-
-### `lib/core/common/data/`
-
-Shared data-layer helpers used across feature data layers.
-
-```
-core/common/data/
-└── models/
-    └── helpers/
-        ├── model_annotation_helper.dart    # Common @JsonSerializable setup
-        ├── model_conversion_helper.dart    # toJson/fromJson utilities
-        └── model_generation_helper.dart    # Freezed model base helpers
-```
-
-**Rule:** Put a helper here only if two or more features use it. Feature-specific model helpers stay inside the feature.
-
----
-
-### `lib/core/common/domain/`
-
-Shared domain entities and all singleton application services.
-
-```
-core/common/domain/
-├── controllers/
-│   └── text_form_field/
-│       └── text_field_controller.dart   # Factory for TextEditingController
-├── entities/
-│   └── failure.dart                     # Pure-Dart Failure(message key, type, statusCode)
-└── services/
-    ├── logger/                           # AppLogger facade, redaction, sinks — see README inside
-    ├── navigation/                       # NavigationService — see README inside
-    └── notification/                     # FCM + local notifications — see README inside
-        ├── helpers/
-        └── docs/
-```
-
-**What goes where in `core/common/domain/`:**
-
-| You are adding… | Put it in |
-|-----------------|-----------|
-| A domain entity shared by 2+ features | `entities/` |
-| A singleton infrastructure service (logging, notifications…) | `services/<service-name>/` (HTTP, storage and session live in `core/network`, `core/storage`, `core/session`) |
-| A reusable Dio interceptor | `lib/core/network/interceptors/` |
-| A new text-field controller pattern | `controllers/text_form_field/` |
-
----
-
-### `lib/core/common/features/`
-
-Cross-cutting product features that every app needs (not tied to one screen).
-
-```
-core/common/features/
-├── app_settings/      # Language + theme persistence — see README inside
-│   ├── data/
-│   │   ├── data_sources/local/
-│   │   ├── models/
-│   │   └── repositories/
-│   ├── domain/
-│   │   ├── repositories/
-│   │   └── services/cache/
-│   └── presentation/
-│       └── bloc/
-└── permission/        # Runtime permission requests — see README inside
-    ├── data/repository/
-    ├── domain/
-    │   ├── entities/
-    │   ├── repository/
-    │   └── services/
-    └── presentation/
-        ├── bloc/
-        ├── routes/
-        │   └── guard/
-        └── view/
-            ├── screens/
-            ├── widgets/
-            └── wrapper/
-```
-
-**Rule:** A feature belongs here (not in `lib/features/`) when it has no dedicated screen of its own and is used by every other feature (e.g. permissions, settings).
-
----
-
-### `lib/core/common/locator/`
-
-Dependency injection wiring.
-
-```
-core/common/locator/
-├── service_locator.dart          # GetIt instance + init() call
-└── service_locator.config.dart   # AUTO-GENERATED by injectable — do not edit
-```
-
-**Rule:** Register every service/repository/BLoC with `@injectable`, `@singleton`, or `@lazySingleton`. Never call `GetIt.instance.registerFactory(...)` by hand.
-
----
-
-### `lib/core/common/presentation/`
-
-Shared UI code used across all features.
-
-```
-core/common/presentation/
-├── blocs/
-│   ├── locale/        # LocaleCubit — drives easy_localization
-│   ├── theme/         # ThemeCubit — drives dark/light mode
-│   └── global_bloc_providers.dart   # MultiBlocProvider wrapping MaterialApp
-├── extensions/        # BuildContext extension methods — see README inside
-│   ├── currency/
-│   ├── date_time/
-│   ├── dialog/
-│   ├── size/          # context.screenWidth, context.screenHeight
-│   ├── snackbar/
-│   ├── text/
-│   ├── theme/         # context.appColors, context.appTextStyles
-│   └── validation/
-├── helpers/
-│   ├── file_picker_helper.dart     # Wraps file_picker package
-│   └── handlers/                   # Request/response result handlers
-├── routes/
-│   ├── app_router.dart             # @AutoRouterConfig — add new routes here
-│   └── app_router.gr.dart          # AUTO-GENERATED — do not edit
-├── themes/
-│   ├── colors/        # Runtime colour resolvers (light vs dark)
-│   ├── styles/        # Runtime style resolvers
-│   └── text/          # Runtime text style resolvers
-└── views/
-    ├── components/    # Larger composed components (cards, list tiles)
-    ├── pages/
-    │   ├── dialogs/         # Shared dialog pages (confirm, alert)
-    │   └── bottom_sheets/   # Shared bottom sheet pages
-    ├── routes/
-    │   └── dialog/
-    │       ├── dialog_route.dart          # Overlay route for dialogs
-    │       └── bottom_sheet_route.dart    # Overlay route for sheets
-    └── widgets/
-        ├── common/          # Error widget, empty-state widget
-        └── system/          # Base design-system widgets — see README inside
-            ├── icon/            # AppIcon widget
-            ├── images/          # AppImage widget (network, asset, svg…)
-            ├── loaders/         # AppLoader, shimmer placeholders
-            ├── text/            # AppText widget
-            └── text_fields/     # AppTextField and variants
-                └── base/
-```
-
-**What goes where in `core/common/presentation/`:**
-
-| You are adding… | Put it in |
-|-----------------|-----------|
-| A `BuildContext` extension method | `extensions/<category>/` |
-| A global BLoC/Cubit (app-wide state) | `blocs/` |
-| A new primitive design-system widget | `views/widgets/system/<category>/` |
-| A composed reusable component | `views/components/` |
-| A reusable dialog page | `views/pages/dialogs/` |
-| A reusable bottom sheet page | `views/pages/bottom_sheets/` |
-| A new route in the router | `routes/app_router.dart` (add `@RoutePage` to the screen, then register here) |
-
----
-
-### `lib/core/generic/`
-
-Base classes and mixins that features subclass — no feature-specific logic.
-
-```
-core/generic/
-├── data/
-│   ├── async_lock.dart              # Tiny Future-chain mutex
-│   ├── json_collection_store.dart   # Id-keyed offline cache on PreferencesStore
-│   └── single_flight_cache.dart     # One TTL'd value, concurrent callers share one fetch
-├── domain/
-│   └── entities/page.dart           # PageRequest / PageResult<T> (page or cursor)
-└── presentation/
-    ├── bloc/                        # LoadState/LoadCubit, PagedListBloc, SelectionCubit
-    └── views/widgets/               # PaginationListView<T>
-```
-
-**Rule:** Only generic building blocks here — no feature-specific logic, no `@injectable` annotations.
-
----
-
-## `lib/features/` — Product Features
-
-Each screen-group is its own self-contained module.
-
-```
-lib/features/
-├── splash/          # Splash screen + design component showcase
-└── example/         # Reference feature — copy this as a starting point
-```
-
-### Feature Anatomy
-
-Every feature follows the same clean-architecture layout:
-
-```
-lib/features/<feature_name>/
-├── data/
-│   ├── data_sources/
-│   │   ├── local/          # JsonCollectionStore-backed offline cache (optional)
-│   │   └── remote/         # ApiClient-based API data sources (throw AppException)
-│   ├── models/             # JSON-serialisable Freezed data models
-│   └── repositories/       # RepositoryImpl — implements the domain interface
-├── domain/
-│   ├── entities/           # Pure Dart domain objects (no JSON annotations)
-│   ├── params/             # Typed request params (Freezed; optional)
-│   └── repositories/       # Abstract repository interface
-└── presentation/
-    ├── bloc/               # Feature BLoC / Cubit
-    ├── routes/
-    │   ├── <feature>_route.dart     # @RoutePage screen registrations
-    │   └── guard/                   # AutoRouteGuard for access control
-    └── views/
-        ├── screens/        # Full-screen widgets decorated with @RoutePage
-        ├── wrappers/       # BlocProvider + BlocListener wrappers around screens
-        └── widgets/        # Feature-specific widgets (not reused elsewhere)
-```
-
-> **Use cases dropped:** This template does not use a `use_cases/` layer. Business logic that would have lived in a use case belongs directly in the BLoC / Cubit. This keeps the call chain flat (`BLoC → Repository → DataSource`) and avoids boilerplate for the typical CRUD operations this template targets. If your feature grows to need complex orchestration across multiple repositories, you may introduce use cases at your discretion — place them in `domain/use_cases/`.
-
-### Example Feature Structure
-
-The `lib/features/example/` directory is the reference implementation. Its actual layout:
-
-```
-lib/features/example/            # Todo reference slice (copy via `mason make flutter_feature`)
-├── data/
-│   ├── data_sources/
-│   │   ├── local/todo_local_data_source.dart    # JsonCollectionStore offline cache
-│   │   └── remote/todo_remote_data_source.dart  # ApiClient, throws AppException
-│   ├── models/todo_model.dart                   # Freezed + JSON, toEntity()
-│   └── repositories/todo_repository_impl.dart   # remote-first, local fallback, guard()
-├── domain/
-│   ├── entities/todo.dart
-│   ├── params/todo_params.dart
-│   └── repositories/todo_repository.dart        # ITodoRepository
-└── presentation/
-    └── bloc/
-        ├── todo_list_bloc.dart                  # built on PagedListBloc
-        └── todo_list_event.dart
-```
-
-### Adding a New Feature — Checklist
-
-1. Create `lib/features/<feature_name>/` with the layout above.
-2. Define domain entities and the repository interface in `domain/`.
-3. Implement the repository in `data/repositories/`.
-4. Build the BLoC on `PagedListBloc` (lists) or `LoadCubit` (single value) in `presentation/bloc/`.
-5. Annotate services/repos/BLoC with `@injectable` or `@lazySingleton`.
-6. Create screen widgets annotated with `@RoutePage()`.
-7. Register the route(s) in `lib/core/common/presentation/routes/app_router.dart`.
-8. Run `rps gen` to regenerate DI and route code.
-
-### What stays inside the feature vs. what goes to `core/`
-
-| Belongs inside the feature | Belongs in `core/` |
-|----------------------------|--------------------|
-| Feature-specific BLoC events/states | Global app state (theme, locale) |
-| Feature API data source (uses `ApiClient`) | `ApiClient`, interceptors, token refresh |
-| Feature-only widgets | Design-system primitives |
-| Feature route definition | AppRouter registration |
-| Feature-only model helpers | Shared model annotation helpers |
-
----
-
-## `assets/` — Static Resources
-
-```
-assets/
-├── app-icons/          # Launcher icons (used by flutter_launcher_icons)
-│   └── ic_*.png
-├── fonts/              # OTF / TTF font files declared in pubspec.yaml
-│   ├── anton/
-│   └── sf_pro/
-├── icons/              # SVG and PNG icon assets
-├── images/             # Raster images (PNG, JPG, WebP)
-│   └── onboarding/     # Sub-folder per usage context
-├── lottie/             # Lottie JSON animation files
-├── videos/             # Video assets
-└── translations/       # i18n JSON files — see README inside
-    ├── en-GB.json      # Default locale (source of truth for keys)
-    └── ne-NP.json      # Additional locales
-```
-
-**Rules:**
-- Declare every new asset folder in `pubspec.yaml` under `flutter: assets:`.
-- After adding or renaming assets, run `rps gen` to update `assets.gen.dart`.
-- Translation keys must mirror the feature folder path:
-  `features → splash → screens → title` maps to `LocaleKeys.features_splash_screens_title`.
-
----
-
-## `env/` — Compile-time configuration
-
-```
-env/
-├── README.md
-├── dev.example.json       # Tracked templates (placeholders only)
-├── staging.example.json
-├── prod.example.json
-└── <flavor>.json          # Your real copies — git-ignored
-```
-
-Passed with `--dart-define-from-file=env/<flavor>.json` and read via
-`lib/config/env/app_env.dart`. Keys: `FLAVOR`, `BASE_URL`, `ENABLE_LOG_UPLOAD`,
-`LOG_UPLOAD_URL`, `DEV_PROXY`, `DEV_TRUST_SELF_SIGNED_CERTS`. **Values ship inside the app —
-no secrets.** `env/` is not a Flutter asset. See `docs/FLAVORS.md`.
-
----
-
-## `test/` — Automated Tests
-
-Split by test type, then mirror the `lib/` structure:
-
-```
-test/
-├── unit/
-│   ├── core/              # e.g. core/network, core/session, core/generic, …
-│   └── features/
-│       └── <feature_name>/
-└── widget/                # Widget tests for design-system widgets and screens
-```
-
-| Test type | Tools |
-|-----------|-------|
-| Unit (domain/data) | `flutter_test`, `mocktail` (preferred, no codegen), `mockito` (legacy) |
-| BLoC | `bloc_test` |
-| Widget | `flutter_test`, `network_image_mock` |
-
----
-
-## File Naming Conventions
-
-| File type | Convention | Example |
-|-----------|------------|---------|
-| Dart file | `snake_case.dart` | `user_profile_bloc.dart` |
-| Class name | `PascalCase` | `UserProfileBloc` |
-| Constant | `camelCase` | `kDefaultPadding` |
-| Generated file | ends with `.g.dart` or `.gr.dart` | `app_router.gr.dart` |
-| Freezed file | ends with `.freezed.dart` | `failure.freezed.dart` |
-| Feature folder | `snake_case/` | `user_profile/` |
-
-> Generated files (`.g.dart`, `.gr.dart`, `.freezed.dart`, `*.config.dart`, `*.mocks.dart`, `lib/config/constants/gen/`) are **git-ignored**. Run `rps gen` after cloning/pulling; CI generates them before analyzing and testing.
-
----
-
-## Auto-Generated Files — Do Not Edit
-
-| File | Generator |
-|------|-----------|
-| `lib/config/constants/gen/assets.gen.dart` | `flutter_gen` |
-| `lib/config/constants/gen/locale_keys.g.dart` | `easy_localization:generate` |
-| `lib/core/common/locator/service_locator.config.dart` | `injectable_generator` |
-| `lib/core/common/presentation/routes/app_router.gr.dart` | `auto_route_generator` |
-| `*.freezed.dart` | `freezed` |
-| `*.g.dart` (models) | `json_serializable` |
-
-Run `rps gen` to regenerate all of the above after any annotation, asset or translation change.
+Current features: `splash` and `home` (presentation only) and `example` (a complete Todo slice
+with paging, search and an offline cache). Generate new slices with `mason make flutter_feature`.
+
+## Layering rules
+
+- `domain` imports nothing from `data` or `presentation` and no Flutter or Dio types.
+- Presentation → use cases → repository interface. A use case is one class per business
+  action in `domain/usecases/<action>_use_case.dart` with a named-parameter `call(...)`;
+  blocs depend on use cases, never on repositories or data sources.
+- Data sources throw `AppException`; repositories wrap calls in `guard()` and return
+  `ResultFuture<T>` (`Either<Failure, T>`).
+- Blocs never call `.tr()`: they expose `Failure.message` (a key) and widgets translate it.
+- Resolve dependencies through constructor injection; `sl` is only used at composition
+  points (route wrappers, `bootstrap`).
+- No `Map<String, dynamic>` crosses the domain boundary; ids are `String`.
+- Secrets never go into `env/`, preferences or logs.
+- Conventions: use-case, repository and data-source methods take named parameters only; classes receive their dependencies through named, `required` constructor parameters (private fields set in the initializer list).
+
+## Adding things
+
+| Task | Do |
+|---|---|
+| New feature | `mason make flutter_feature`, add a route, run `rps gen` |
+| New route | `@RoutePage` screen, `*Route` class, register it in `app_router.dart` |
+| New translation | add the key to every `assets/translations/*.json`, run `rps gen:keys` |
+| New permission | see `lib/core/common/features/permission/README.md` |
+| New endpoint | add a constant to `ApiPaths`, call it through `ApiClient` in a remote data source |
+| New flavor value | add it to `env/*.example.json` and read it in `AppEnv` |
+
+## Tests
+
+`test/unit/` mirrors `lib/core` and `lib/features`; `test/widget/` holds screen tests
+(`helpers/test_app.dart` builds a minimal app). Prefer `mocktail` fakes over generated mocks.
+End-to-end flows live in `.maestro/` (see `docs/MAESTRO.md`).

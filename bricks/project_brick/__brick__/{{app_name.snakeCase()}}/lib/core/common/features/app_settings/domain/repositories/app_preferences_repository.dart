@@ -7,10 +7,8 @@ abstract interface class IAppPreferencesRepository {
   /// returns defaults for missing or unreadable values.
   AppPreferences read();
 
-  ResultVoid setTheme(AppThemePreference theme);
-
   /// [localeTag] is a BCP-47 tag with country code, e.g. `en-GB`.
-  ResultVoid setLocaleTag(String localeTag);
+  ResultVoid setLocaleTag({required String localeTag});
 
   ResultVoid setHasOnboarded({required bool value});
 }

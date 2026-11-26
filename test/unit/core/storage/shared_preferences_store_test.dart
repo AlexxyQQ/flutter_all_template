@@ -12,7 +12,7 @@ void main() {
 
   setUp(() {
     prefs = _MockPrefs();
-    store = SharedPreferencesStore(prefs);
+    store = SharedPreferencesStore(prefs: prefs);
   });
 
   test('synchronous reads delegate to the cache', () {

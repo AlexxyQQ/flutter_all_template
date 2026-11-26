@@ -13,7 +13,11 @@ typedef NotificationErrorReporter =
 ///
 /// Has no DI dependencies so it can be used from the FCM background isolate.
 class NotificationDisplayHelper {
-  const NotificationDisplayHelper(this._awesomeNotifications, this._onError);
+  const NotificationDisplayHelper({
+    required AwesomeNotifications awesomeNotifications,
+    required NotificationErrorReporter onError,
+  }) : _awesomeNotifications = awesomeNotifications,
+       _onError = onError;
 
   final AwesomeNotifications _awesomeNotifications;
   final NotificationErrorReporter _onError;

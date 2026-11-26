@@ -43,8 +43,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       debug: kDebugMode,
     );
     await NotificationDisplayHelper(
-      awesome,
-      _report,
+      awesomeNotifications: awesome,
+      onError: _report,
     ).showRemoteMessage(message);
   } catch (e, s) {
     _report('Background message handling failed', e, s);

@@ -1,0 +1,9 @@
+# Cold-start the app and wait for the Home screen (splash is ~1.2s).
+appId: com.alexxy.flutter_all_template
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: home_title
+    timeout: 15000

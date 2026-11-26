@@ -18,6 +18,8 @@ dependencies:
 
 You must configure your app with Firebase using the FlutterFire CLI. This generates the `firebase_options.dart` file needed for initialization.
 
+The generated files (`firebase_options.dart`, `google-services.json`, `GoogleService-Info.plist`, `firebase.json`) are git-ignored; only `*.example` placeholders are tracked. Run `rps firebase:init` first to create placeholders so the app compiles; `flutterfire configure` then overwrites them. Never commit the real files.
+
 **Prerequisites:**
 
 - Node.js installed.

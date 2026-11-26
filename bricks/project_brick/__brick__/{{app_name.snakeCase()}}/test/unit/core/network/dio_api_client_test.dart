@@ -15,7 +15,7 @@ void main() {
     adapter = FakeHttpAdapter((_) async => jsonBody({'ok': true}, 200));
     final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com/'))
       ..httpClientAdapter = adapter;
-    client = DioApiClient(dio);
+    client = DioApiClient(dio: dio);
   });
 
   group('success statuses', () {

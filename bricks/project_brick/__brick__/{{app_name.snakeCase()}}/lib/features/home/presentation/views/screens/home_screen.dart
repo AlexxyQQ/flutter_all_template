@@ -1,14 +1,11 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../../../core/common/presentation/extensions/size/size_extension.dart';
-import '../../../../../core/common/presentation/extensions/theme/theme_extension.dart';
 import '../../../../../core/common/presentation/routes/app_router.gr.dart';
-import '../../../../../core/common/presentation/views/widgets/system/app_button.dart';
-import '../../../../../core/common/presentation/views/widgets/system/default_app_bar.dart';
-import '../../../../../core/common/presentation/views/widgets/system/text/app_text_widget.dart';
-import '../../../../gallery/presentation/routes/gallery_route.dart';
 
 /// Minimal landing page. Replace with the app's real home.
 @RoutePage(name: 'HomeRoute')
@@ -17,39 +14,51 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: const DefaultAppBar(
-        title: LocaleKeys
-            .features_home_presentation_views_screens_home_screen_title,
+      appBar: AppBar(
+        title: Semantics(
+          identifier: 'home_title',
+          child: Text(
+            LocaleKeys.features_home_presentation_screens_home_screen_title
+                .tr(),
+            key: const Key('home_title'),
+          ),
+        ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: 24.allPadding,
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppText(
+              Text(
                 LocaleKeys
-                    .features_home_presentation_views_screens_home_screen_welcome,
-                style: context.textStyles.headlineMedium,
+                    .features_home_presentation_screens_home_screen_welcome
+                    .tr(),
+                style: theme.textTheme.headlineMedium,
               ),
-              12.verticalGap,
-              AppText(
+              const SizedBox(height: 12),
+              Text(
                 LocaleKeys
-                    .features_home_presentation_views_screens_home_screen_subtitle,
-                style: context.textStyles.bodyLarge.copyWith(
-                  color: context.colors.onSurfaceVariant,
+                    .features_home_presentation_screens_home_screen_subtitle
+                    .tr(),
+                style: theme.textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 32),
+              Semantics(
+                identifier: 'home_open_todos_button',
+                child: ElevatedButton(
+                  key: const Key('home_open_todos_button'),
+                  onPressed: () =>
+                      unawaited(context.router.push(const TodoRoute())),
+                  child: Text(
+                    LocaleKeys
+                        .features_home_presentation_screens_home_screen_openTodos
+                        .tr(),
+                  ),
                 ),
               ),
-              if (GalleryRoutes.isEnabled) ...[
-                32.verticalGap,
-                AppButton.stroke(
-                  onPressed: () => context.router.push(GalleryRoute()),
-                  label: LocaleKeys
-                      .features_home_presentation_views_screens_home_screen_openGallery,
-                  isExpanded: true,
-                ),
-              ],
             ],
           ),
         ),

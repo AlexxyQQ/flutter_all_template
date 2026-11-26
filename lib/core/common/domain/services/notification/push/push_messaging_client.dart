@@ -17,7 +17,7 @@ abstract interface class PushMessagingClient {
   Stream<String> get onTokenRefresh;
 
   /// [handler] must be a top-level `@pragma('vm:entry-point')` function.
-  void registerBackgroundHandler(BackgroundMessageHandler handler);
+  void registerBackgroundHandler({required BackgroundMessageHandler handler});
 }
 
 @LazySingleton(as: PushMessagingClient)
@@ -44,6 +44,6 @@ class FirebasePushMessagingClient implements PushMessagingClient {
   Stream<String> get onTokenRefresh => _messaging.onTokenRefresh;
 
   @override
-  void registerBackgroundHandler(BackgroundMessageHandler handler) =>
+  void registerBackgroundHandler({required BackgroundMessageHandler handler}) =>
       FirebaseMessaging.onBackgroundMessage(handler);
 }

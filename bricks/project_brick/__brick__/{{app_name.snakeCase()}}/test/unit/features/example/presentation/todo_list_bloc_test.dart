@@ -3,13 +3,22 @@ import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
 import 'package:flutter_all_template/core/generic/presentation/bloc/paged_list_bloc.dart';
 import 'package:flutter_all_template/features/example/domain/entities/todo.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
-import 'package:flutter_all_template/features/example/domain/repositories/todo_repository.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/create_todo_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/delete_todo_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/get_todos_use_case.dart';
+import 'package:flutter_all_template/features/example/domain/usecases/update_todo_use_case.dart';
 import 'package:flutter_all_template/features/example/presentation/bloc/todo_list_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockTodoRepository extends Mock implements ITodoRepository {}
+class MockGetTodos extends Mock implements GetTodosUseCase {}
+
+class MockCreateTodo extends Mock implements CreateTodoUseCase {}
+
+class MockUpdateTodo extends Mock implements UpdateTodoUseCase {}
+
+class MockDeleteTodo extends Mock implements DeleteTodoUseCase {}
 
 Todo _todo(String id, {bool isDone = false}) =>
     Todo(id: id, title: 'Todo $id', isDone: isDone, updatedAt: DateTime(2026));
@@ -17,7 +26,10 @@ Todo _todo(String id, {bool isDone = false}) =>
 const _failure = Failure(message: 'error.key', type: FailureType.network);
 
 void main() {
-  late MockTodoRepository repository;
+  late MockGetTodos getTodos;
+  late MockCreateTodo createTodo;
+  late MockUpdateTodo updateTodo;
+  late MockDeleteTodo deleteTodo;
 
   setUpAll(() {
     registerFallbackValue(const PageRequest.first(limit: 1));
@@ -27,9 +39,12 @@ void main() {
   });
 
   setUp(() {
-    repository = MockTodoRepository();
+    getTodos = MockGetTodos();
+    createTodo = MockCreateTodo();
+    updateTodo = MockUpdateTodo();
+    deleteTodo = MockDeleteTodo();
     when(
-      () => repository.getTodos(
+      () => getTodos(
         page: any(named: 'page'),
         query: any(named: 'query'),
       ),
@@ -39,8 +54,13 @@ void main() {
     );
   });
 
-  TodoListBloc build() =>
-      TodoListBloc(repository, queryDebounce: Duration.zero);
+  TodoListBloc build() => TodoListBloc(
+    getTodos: getTodos,
+    createTodo: createTodo,
+    updateTodo: updateTodo,
+    deleteTodo: deleteTodo,
+    queryDebounce: Duration.zero,
+  );
 
   TodoListState loaded(List<Todo> items) => TodoListState(
     query: const TodoQuery(),
@@ -51,19 +71,19 @@ void main() {
   );
 
   blocTest<TodoListBloc, TodoListState>(
-    'loads the first page through the repository',
+    'loads the first page through the use case',
     build: build,
     act: (bloc) => bloc.add(const PagedListStarted()),
     verify: (bloc) {
       expect(bloc.state.items.map((t) => t.id), ['1', '2']);
       verify(
-        () => repository.getTodos(page: const PageRequest.first(limit: 20)),
+        () => getTodos(page: const PageRequest.first(limit: 20)),
       ).called(1);
     },
   );
 
   blocTest<TodoListBloc, TodoListState>(
-    'query changes reach the repository',
+    'query changes reach the use case',
     build: build,
     act: (bloc) =>
         bloc.add(const PagedListQueryChanged(TodoQuery(search: 'milk'))),
@@ -71,7 +91,7 @@ void main() {
     verify: (bloc) {
       expect(bloc.state.query, const TodoQuery(search: 'milk'));
       verify(
-        () => repository.getTodos(
+        () => getTodos(
           page: any(named: 'page'),
           query: const TodoQuery(search: 'milk'),
         ),
@@ -82,7 +102,7 @@ void main() {
   blocTest<TodoListBloc, TodoListState>(
     'toggle is optimistic and keeps the server version',
     setUp: () => when(
-      () => repository.updateTodo(any()),
+      () => updateTodo(params: any(named: 'params')),
     ).thenAnswer((_) async => Right(_todo('1', isDone: true))),
     build: build,
     seed: () => loaded([_todo('1'), _todo('2')]),
@@ -91,15 +111,14 @@ void main() {
       loaded([_todo('1', isDone: true), _todo('2')]),
     ],
     verify: (_) => verify(
-      () =>
-          repository.updateTodo(const UpdateTodoParams(id: '1', isDone: true)),
+      () => updateTodo(params: const UpdateTodoParams(id: '1', isDone: true)),
     ).called(1),
   );
 
   blocTest<TodoListBloc, TodoListState>(
     'a failed toggle is rolled back and reported',
     setUp: () => when(
-      () => repository.updateTodo(any()),
+      () => updateTodo(params: any(named: 'params')),
     ).thenAnswer((_) async => const Left(_failure)),
     build: build,
     seed: () => loaded([_todo('1')]),
@@ -113,7 +132,7 @@ void main() {
   blocTest<TodoListBloc, TodoListState>(
     'create prepends the new item',
     setUp: () => when(
-      () => repository.createTodo(const CreateTodoParams(title: 'New')),
+      () => createTodo(params: const CreateTodoParams(title: '  New ')),
     ).thenAnswer((_) async => Right(_todo('3'))),
     build: build,
     seed: () => loaded([_todo('1')]),
@@ -126,7 +145,7 @@ void main() {
   blocTest<TodoListBloc, TodoListState>(
     'delete removes only the matching item',
     setUp: () => when(
-      () => repository.deleteTodo('2'),
+      () => deleteTodo(id: '2'),
     ).thenAnswer((_) async => const Right(null)),
     build: build,
     seed: () => loaded([_todo('1'), _todo('2'), _todo('3')]),
@@ -139,7 +158,7 @@ void main() {
   blocTest<TodoListBloc, TodoListState>(
     'a failed delete keeps the item and reports the failure',
     setUp: () => when(
-      () => repository.deleteTodo('1'),
+      () => deleteTodo(id: '1'),
     ).thenAnswer((_) async => const Left(_failure)),
     build: build,
     seed: () => loaded([_todo('1')]),

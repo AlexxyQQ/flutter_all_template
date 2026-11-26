@@ -19,7 +19,11 @@ import '../models/todo_model.dart';
 /// * a failing cache write never fails an otherwise successful call.
 @LazySingleton(as: ITodoRepository)
 class TodoRepositoryImpl implements ITodoRepository {
-  TodoRepositoryImpl(this._remote, this._local);
+  TodoRepositoryImpl({
+    required ITodoRemoteDataSource remote,
+    required ITodoLocalDataSource local,
+  }) : _remote = remote,
+       _local = local;
 
   final ITodoRemoteDataSource _remote;
   final ITodoLocalDataSource _local;
@@ -31,7 +35,7 @@ class TodoRepositoryImpl implements ITodoRepository {
   }) => guard(() async {
     try {
       final result = await _remote.getTodos(page: page, query: query);
-      await _cache(() => _local.saveTodos(result.items));
+      await _cache(() => _local.saveTodos(todos: result.items));
       return result.map((model) => model.toEntity());
     } on AppException catch (e) {
       if (!_isOffline(e)) {
@@ -46,17 +50,17 @@ class TodoRepositoryImpl implements ITodoRepository {
   });
 
   @override
-  ResultFuture<Todo> getTodo(String id) => guard(() async {
+  ResultFuture<Todo> getTodo({required String id}) => guard(() async {
     try {
-      final model = await _remote.getTodo(id);
-      await _cache(() => _local.saveTodo(model));
+      final model = await _remote.getTodo(id: id);
+      await _cache(() => _local.saveTodo(todo: model));
       return model.toEntity();
     } on AppException catch (e) {
       if (!_isOffline(e)) {
         rethrow;
       }
       try {
-        return (await _local.getTodo(id)).toEntity();
+        return (await _local.getTodo(id: id)).toEntity();
       } on CacheMissException {
         throw e; // Report the network problem, not the cache miss.
       }
@@ -64,23 +68,25 @@ class TodoRepositoryImpl implements ITodoRepository {
   });
 
   @override
-  ResultFuture<Todo> createTodo(CreateTodoParams params) => guard(() async {
-    final model = await _remote.createTodo(params);
-    await _cache(() => _local.saveTodo(model));
-    return model.toEntity();
-  });
+  ResultFuture<Todo> createTodo({required CreateTodoParams params}) =>
+      guard(() async {
+        final model = await _remote.createTodo(params: params);
+        await _cache(() => _local.saveTodo(todo: model));
+        return model.toEntity();
+      });
 
   @override
-  ResultFuture<Todo> updateTodo(UpdateTodoParams params) => guard(() async {
-    final model = await _remote.updateTodo(params);
-    await _cache(() => _local.saveTodo(model));
-    return model.toEntity();
-  });
+  ResultFuture<Todo> updateTodo({required UpdateTodoParams params}) =>
+      guard(() async {
+        final model = await _remote.updateTodo(params: params);
+        await _cache(() => _local.saveTodo(todo: model));
+        return model.toEntity();
+      });
 
   @override
-  ResultFuture<void> deleteTodo(String id) => guard(() async {
-    await _remote.deleteTodo(id);
-    await _cache(() => _local.deleteTodo(id));
+  ResultFuture<void> deleteTodo({required String id}) => guard(() async {
+    await _remote.deleteTodo(id: id);
+    await _cache(() => _local.deleteTodo(id: id));
   });
 
   static bool _isOffline(AppException e) =>

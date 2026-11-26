@@ -1,0 +1,133 @@
+# Codemagic: iOS builds only (no Mac needed). Android is built locally with
+# scripts/release.sh. See docs/CI_CD.md for one-time setup.
+#
+# Both workflows are MANUAL / API-triggered only: there is no `triggering:` block,
+# so pushes and pull requests never start a build and never use free macOS minutes.
+#
+# Required in the Codemagic UI (names are documented in docs/CI_CD.md):
+#   - Integration  : App Store Connect API key, named "codemagic" (Teams > Integrations)
+#   - Env group    : "ios_release" with ENV_JSON_DEV / ENV_JSON_STAGING / ENV_JSON_PROD
+#                    (full contents of env/<flavor>.json), plus optional
+#                    GITHUB_TOKEN (secret) and GITHUB_REPO ("owner/name") for uploads.
+#
+# Per-build overrides (UI "Start new build" or API `environment.variables`):
+#   FLAVOR       dev | staging | prod   (default prod)
+#   BUILD_NUMBER_OFFSET                 added to Codemagic's build counter (default 0)
+
+definitions:
+  # Template-specific values: change when you rename the app (see docs/CODE_SIGNING.md).
+  bundle_id: &bundle_id com.alexxy.flutterAllTemplate
+
+  environment: &ios_environment
+    flutter: 3.44.1 # keep equal to .fvmrc
+    xcode: latest # or pin, e.g. 26.0
+    cocoapods: default
+    groups:
+      - ios_release
+    vars:
+      FLAVOR: prod
+      BUNDLE_ID: *bundle_id
+    ios_signing:
+      distribution_type: app_store
+      bundle_identifier: *bundle_id
+
+  scripts: &ios_scripts
+    - name: Install dependencies
+      script: flutter pub get
+    # Firebase client config is git-ignored. Real files come from optional
+    # base64 secrets (FIREBASE_IOS_PLIST_BASE64, FIREBASE_ANDROID_JSON_BASE64,
+    # FIREBASE_OPTIONS_DART_BASE64 in group ios_release); anything not provided
+    # falls back to the placeholder *.example files (scripts/firebase_init.sh).
+    - name: Firebase config
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+        decode() { [ -z "${1:-}" ] || { mkdir -p "$(dirname "$2")"; printf '%s' "$1" | base64 --decode > "$2"; }; }
+        decode "${FIREBASE_IOS_PLIST_BASE64:-}" ios/Runner/GoogleService-Info.plist
+        decode "${FIREBASE_ANDROID_JSON_BASE64:-}" android/app/google-services.json
+        decode "${FIREBASE_OPTIONS_DART_BASE64:-}" lib/config/firebase/firebase_options.dart
+        bash scripts/firebase_init.sh
+    - name: Code generation
+      script: |
+        dart run build_runner build --delete-conflicting-outputs
+        dart run easy_localization:generate -S assets/translations -f keys \
+          -O lib/config/constants/gen -o locale_keys.g.dart
+    - name: Write env file from secret
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+        VAR="ENV_JSON_$(echo "$FLAVOR" | tr '[:lower:]' '[:upper:]')"
+        VALUE="$(printenv "$VAR" || true)"
+        if [ -z "$VALUE" ]; then echo "Missing secret $VAR in group ios_release" >&2; exit 1; fi
+        mkdir -p env
+        printf '%s' "$VALUE" > "env/$FLAVOR.json"
+    - name: Apply code signing profiles
+      script: |
+        keychain initialize
+        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+        keychain add-certificates
+        xcode-project use-profiles
+    - name: Install pods
+      script: |
+        find . -name "Podfile" -execdir pod install \;
+    - name: Build IPA
+      script: |
+        flutter build ipa --release \
+          --obfuscate --split-debug-info=build/symbols/"$FLAVOR" \
+          --build-number=$((PROJECT_BUILD_NUMBER + ${BUILD_NUMBER_OFFSET:-0})) \
+          --export-options-plist=/Users/builder/export_options.plist \
+          --dart-define-from-file=env/"$FLAVOR".json
+
+  artifacts: &ios_artifacts
+    - build/ios/ipa/*.ipa
+    - /tmp/xcodebuild_logs/*.log
+    - build/ios/**/*.dSYM.zip
+    - build/symbols/**
+
+  upload_to_github: &upload_to_github
+    name: Upload IPA to GitHub Release (optional)
+    script: |
+      #!/usr/bin/env bash
+      set -eu
+      if [ -z "${GITHUB_TOKEN:-}" ] || [ -z "${GITHUB_REPO:-}" ]; then
+        echo "GITHUB_TOKEN/GITHUB_REPO not set; skipping GitHub upload."; exit 0
+      fi
+      VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1 | cut -d+ -f1)"
+      TAG="v$VERSION"; [ "$FLAVOR" = "prod" ] || TAG="$TAG-$FLAVOR"
+      IPA="$(ls build/ios/ipa/*.ipa | head -n1)"
+      export GH_TOKEN="$GITHUB_TOKEN"
+      # Same release as the Android assets (created by scripts/release.sh).
+      gh release view "$TAG" --repo "$GITHUB_REPO" >/dev/null
+      gh release upload "$TAG" "$IPA" --repo "$GITHUB_REPO" --clobber
+
+workflows:
+  # Build the IPA and keep it as a Codemagic artifact (download from the build page).
+  ios-release:
+    name: iOS release (artifact only)
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: codemagic
+    environment: *ios_environment
+    scripts: *ios_scripts
+    artifacts: *ios_artifacts
+    publishing:
+      scripts:
+        - *upload_to_github
+
+  # Same build, then submit to TestFlight. Start this one only when you want that.
+  ios-testflight:
+    name: iOS release (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: codemagic
+    environment: *ios_environment
+    scripts: *ios_scripts
+    artifacts: *ios_artifacts
+    publishing:
+      scripts:
+        - *upload_to_github
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

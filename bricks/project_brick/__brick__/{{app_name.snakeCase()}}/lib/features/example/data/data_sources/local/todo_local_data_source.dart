@@ -9,20 +9,20 @@ abstract interface class ITodoLocalDataSource {
   Future<List<TodoModel>> getTodos();
 
   /// Throws `CacheMissException` if [id] isn't cached.
-  Future<TodoModel> getTodo(String id);
+  Future<TodoModel> getTodo({required String id});
 
-  Future<void> saveTodos(Iterable<TodoModel> todos);
+  Future<void> saveTodos({required Iterable<TodoModel> todos});
 
-  Future<void> saveTodo(TodoModel todo);
+  Future<void> saveTodo({required TodoModel todo});
 
-  Future<void> deleteTodo(String id);
+  Future<void> deleteTodo({required String id});
 
   Future<void> clear();
 }
 
 @LazySingleton(as: ITodoLocalDataSource)
 class TodoLocalDataSource implements ITodoLocalDataSource {
-  TodoLocalDataSource(PreferencesStore store)
+  TodoLocalDataSource({required PreferencesStore store})
     : _todos = JsonCollectionStore<TodoModel>(
         store: store,
         key: storageKey,
@@ -39,16 +39,17 @@ class TodoLocalDataSource implements ITodoLocalDataSource {
   Future<List<TodoModel>> getTodos() => _todos.readAll();
 
   @override
-  Future<TodoModel> getTodo(String id) => _todos.read(id);
+  Future<TodoModel> getTodo({required String id}) => _todos.read(id);
 
   @override
-  Future<void> saveTodos(Iterable<TodoModel> todos) => _todos.upsertAll(todos);
+  Future<void> saveTodos({required Iterable<TodoModel> todos}) =>
+      _todos.upsertAll(todos);
 
   @override
-  Future<void> saveTodo(TodoModel todo) => _todos.upsert(todo);
+  Future<void> saveTodo({required TodoModel todo}) => _todos.upsert(todo);
 
   @override
-  Future<void> deleteTodo(String id) => _todos.delete(id);
+  Future<void> deleteTodo({required String id}) => _todos.delete(id);
 
   @override
   Future<void> clear() => _todos.clear();

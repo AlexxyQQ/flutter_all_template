@@ -11,11 +11,11 @@ abstract interface class ITodoRepository {
     TodoQuery query = const TodoQuery(),
   });
 
-  ResultFuture<Todo> getTodo(String id);
+  ResultFuture<Todo> getTodo({required String id});
 
-  ResultFuture<Todo> createTodo(CreateTodoParams params);
+  ResultFuture<Todo> createTodo({required CreateTodoParams params});
 
-  ResultFuture<Todo> updateTodo(UpdateTodoParams params);
+  ResultFuture<Todo> updateTodo({required UpdateTodoParams params});
 
-  ResultFuture<void> deleteTodo(String id);
+  ResultFuture<void> deleteTodo({required String id});
 }

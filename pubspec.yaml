@@ -15,11 +15,6 @@ dependencies:
   # ============================================================
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8 # iOS style icons
-  flutter_screenutil: ^5.9.3 # Screen adaptation & responsive UI
-  flutter_svg: ^2.2.3 # SVG rendering support
-  upgrader: ^12.3.0 # Prompt users to upgrade app version
-  google_fonts: ^8.0.0
 
   # ============================================================
   # 🏗️ Architecture & State Management
@@ -28,7 +23,6 @@ dependencies:
   get_it: ^9.2.0 # Service Locator for DI
   injectable: ^2.7.1+4 # Code generator for GetIt
   equatable: ^2.0.8 # Value equality comparisons (helps Bloc)
-  nested: ^1.0.0 # Simplifies nested builder widgets
   bloc: ^9.2.0
   bloc_concurrency: ^0.3.0 # droppable/restartable/sequential event transformers
   fpdart: ^1.2.0 # Functional programming (Either, Option)
@@ -42,14 +36,12 @@ dependencies:
   # 🌐 Networking & Connectivity
   # ============================================================
   dio: ^5.9.0 # Powerful HTTP client
-  connectivity_plus: ^7.0.0 # Check internet connection status
 
   # ============================================================
   # 💾 Data, Storage & Serialization
   # ============================================================
   flutter_secure_storage: ^10.0.0 # Secure storage for keys/tokens
   json_annotation: ^4.9.0 # Annotations for JSON serialization
-  jwt_decoder: ^2.0.1 # Decode JWT tokens
 
   # ============================================================
   # 📱 Device Features & Permissions
@@ -58,9 +50,6 @@ dependencies:
   permission_handler: ^12.0.1 # Handle OS permissions
   geolocator: ^14.0.2 # Access GPS/Location services
   # brick:end
-  app_settings: ^7.0.0 # Open device settings from app
-  file_picker: ^10.3.8 # Native file explorer picker
-  image_picker: ^1.2.1 # Pick images from gallery/camera
 
   # ============================================================
   # 🔔 Notifications & Firebase
@@ -79,20 +68,11 @@ dependencies:
   easy_localization: ^3.0.8 # Internationalization (i18n) wrapper
 
   # ============================================================
-  # 🧩 UI Components & Widgets
-  # ============================================================
-  calendar_date_picker2: ^2.0.1 # Advanced calendar widget
-
-  # ============================================================
   # 🛠️ Utilities & Helpers
   # ============================================================
   logger: ^2.6.2 # Pretty console logging
   rxdart: ^0.28.0 # Reactive extensions (Streams)
-  cached_network_image: ^3.4.1
-  collection: ^1.19.1
   freezed_annotation: ^3.1.0
-  intl: ^0.20.2
-  path_provider: ^2.1.5
   shared_preferences: ^2.5.4
 
 dev_dependencies:
@@ -101,11 +81,9 @@ dev_dependencies:
   # ============================================================
   flutter_test:
     sdk: flutter
-  mockito: ^5.6.3 # Mocking library for unit tests
   mocktail: ^1.0.4 # Codegen-free mocks (preferred for new tests)
   shared_preferences_platform_interface: ^2.4.1 # In-memory prefs for DI/storage tests
   bloc_test: ^10.0.0 # Testing helpers for BLoC
-  network_image_mock: ^2.1.1 # Mock network images in widget tests
 
   # ============================================================
   # 🏗️ Code Generation (Build Runner)
@@ -115,7 +93,7 @@ dev_dependencies:
   json_serializable: ^6.11.1 # Generates JSON serialization logic
   freezed: ^3.2.3 # Generates unions/data classes
   auto_route_generator: ^10.2.4 # Generates routing code
-  flutter_gen_runner: ^5.12.0 # Generates assets/fonts references
+  flutter_gen_runner: ^5.12.0 # Generates typed asset references (Assets.images.logo)
 
   # ============================================================
   # 🧹 Linting & Quality Control
@@ -146,12 +124,8 @@ flutter:
   # NOTE: `env/` is intentionally NOT an asset. Configuration is compiled in with
   # `--dart-define-from-file=env/<flavor>.json` (see docs/FLAVORS.md).
   assets:
-    - assets/icons/
     - assets/images/
-    - assets/images/onboarding/
-    - assets/videos/
     - assets/translations/
-    - assets/lottie/
 
 #============================================================
 # 📜 Custom Scripts (via `rps`)
@@ -181,6 +155,8 @@ scripts:
   # build_runner (Freezed, JSON, injectable, auto_route, flutter_gen) + locale keys
   gen: dart run build_runner build --delete-conflicting-outputs && rps gen:keys
   brick: dart run tool/sync_brick.dart
+  # Create the git-ignored Firebase config from the tracked *.example files (never overwrites)
+  firebase:init: bash scripts/firebase_init.sh
   gen:keys: dart run easy_localization:generate -S assets/translations -f keys -O lib/config/constants/gen -o locale_keys.g.dart
   watch: rps gen:keys && dart run build_runner watch --delete-conflicting-outputs
   icons: dart run splash_master create && dart run icons_launcher:create
@@ -207,6 +183,13 @@ scripts:
     ipa:
       staging: flutter build ipa --release --obfuscate --split-debug-info=build/symbols/staging --dart-define-from-file=env/staging.json
       prod: flutter build ipa --release --obfuscate --split-debug-info=build/symbols/prod --dart-define-from-file=env/prod.json
+
+  #============================================================
+  # 🎭 Maestro E2E (local only; see docs/MAESTRO.md)
+  #============================================================
+  maestro: bash scripts/maestro.sh
+  maestro:fast: bash scripts/maestro.sh --no-build
+  maestro:studio: maestro studio
 
   #============================================================
   # 🐦 Shorebird (optional OTA) — `--flutter-version` MUST match .fvmrc

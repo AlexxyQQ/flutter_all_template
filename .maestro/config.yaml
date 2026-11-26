@@ -1,0 +1,9 @@
+# Maestro workspace config. Run: `rps maestro` (or `maestro test .maestro/flows`).
+# Flows run in filename order; files starting with `_` (in _shared/) are
+# helpers and are not run on their own.
+flows:
+  - flows/*.yaml
+# Android + iOS share the same flows: ids come from Semantics(identifier:),
+# exposed as resource-id on Android and accessibilityIdentifier on iOS.
+# Flows 01-02 need no backend. Flow 03 needs `node .maestro/stub_server.mjs`
+# (see docs/MAESTRO.md); `rps maestro` starts it for you.

@@ -13,17 +13,18 @@ import 'network_constants.dart';
 /// differs (e.g. cookie-based refresh, different field names).
 abstract interface class TokenRefresher {
   /// Throws an `AppException` when the refresh is rejected or fails.
-  Future<AuthTokens> refresh(String refreshToken);
+  Future<AuthTokens> refresh({required String refreshToken});
 }
 
 @LazySingleton(as: TokenRefresher)
 class DioTokenRefresher implements TokenRefresher {
-  DioTokenRefresher(@Named(NetworkNames.refreshDio) this._dio);
+  DioTokenRefresher({@Named(NetworkNames.refreshDio) required Dio dio})
+    : _dio = dio;
 
   final Dio _dio;
 
   @override
-  Future<AuthTokens> refresh(String refreshToken) async {
+  Future<AuthTokens> refresh({required String refreshToken}) async {
     final Response<Object?> response;
     try {
       response = await _dio.post<Object?>(

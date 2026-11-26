@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
-import '../presentation/helpers/file_picker_helper.dart';
 import 'service_locator.config.dart';
 
 /// The service locator. Only the composition root (`bootstrap.dart`,
@@ -13,6 +12,5 @@ final GetIt sl = GetIt.instance;
 /// logging) generated into `service_locator.config.dart`.
 @InjectableInit(initializerName: 'initGetIt')
 Future<void> configureInjection() async {
-  sl.registerLazySingleton<IFileSelectorHelper>(FileSelectorHelperImpl.new);
   await sl.initGetIt();
 }

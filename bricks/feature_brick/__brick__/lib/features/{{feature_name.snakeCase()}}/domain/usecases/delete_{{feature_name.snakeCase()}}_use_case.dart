@@ -1,0 +1,15 @@
+import 'package:injectable/injectable.dart';
+
+import '../../../../config/constants/type_defs/typedef.dart';
+import '../repositories/{{feature_name.snakeCase()}}_repository.dart';
+
+/// Deletes a {{feature_name.pascalCase()}} by id.
+@lazySingleton
+class Delete{{feature_name.pascalCase()}}UseCase {
+  const Delete{{feature_name.pascalCase()}}UseCase({required I{{feature_name.pascalCase()}}Repository repository}) : _repository = repository;
+
+  final I{{feature_name.pascalCase()}}Repository _repository;
+
+  ResultFuture<void> call({required String id}) =>
+      _repository.delete{{feature_name.pascalCase()}}(id: id);
+}

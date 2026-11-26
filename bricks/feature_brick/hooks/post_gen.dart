@@ -42,13 +42,15 @@ Future<void> run(HookContext context) async {
         '${useParams ? ' and the params in domain/params/' : ''}.')
     ..info('  2. dart run build_runner build --delete-conflicting-outputs')
     ..info('     (generates Freezed/JSON code and registers the data sources,')
-    ..info(
-        '     ${pascal}RepositoryImpl and ${pascal}ListBloc with injectable).')
+    ..info('     ${pascal}RepositoryImpl, the use cases in domain/usecases/')
+    ..info('     and ${pascal}ListBloc with injectable).')
     ..info('  3. Adapt the API contract documented in '
         '${snake}_remote_data_source.dart to your backend.')
     ..info(
-        '  4. Build a page: BlocProvider(create: (_) => sl<${pascal}ListBloc>())'
-        ' + PaginationListView<$pascal>, and add its route.')
+        '  4. Build a page: BlocProvider(create: (_) => sl<${pascal}ListBloc>())')
+    ..info('     + a ListView over state.items, and add its route. See')
+    ..info('     lib/features/example/presentation/views/screens/')
+    ..info('     todo_list_screen.dart for a complete example.')
     ..info('');
 }
 

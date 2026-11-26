@@ -1,0 +1,9 @@
+# Smoke: app launches, splash hands over to Home.
+appId: com.alexxy.flutter_all_template
+tags: [smoke]
+---
+- runFlow: _shared/launch.yaml
+- assertVisible:
+    id: home_title
+- assertVisible:
+    id: home_open_todos_button

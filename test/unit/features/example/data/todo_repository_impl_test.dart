@@ -38,10 +38,14 @@ void main() {
   setUp(() {
     remote = MockRemote();
     local = MockLocal();
-    repository = TodoRepositoryImpl(remote, local);
-    when(() => local.saveTodos(any())).thenAnswer((_) async {});
-    when(() => local.saveTodo(any())).thenAnswer((_) async {});
-    when(() => local.deleteTodo(any())).thenAnswer((_) async {});
+    repository = TodoRepositoryImpl(remote: remote, local: local);
+    when(
+      () => local.saveTodos(todos: any(named: 'todos')),
+    ).thenAnswer((_) async {});
+    when(
+      () => local.saveTodo(todo: any(named: 'todo')),
+    ).thenAnswer((_) async {});
+    when(() => local.deleteTodo(id: any(named: 'id'))).thenAnswer((_) async {});
   });
 
   void remoteListThrows(AppException e) => when(
@@ -65,7 +69,7 @@ void main() {
       final page = result.getRight().toNullable()!;
       expect(page.items.map((t) => t.id), ['1', '2']);
       expect(page.nextCursor, 'c');
-      verify(() => local.saveTodos(models)).called(1);
+      verify(() => local.saveTodos(todos: models)).called(1);
     });
 
     test('a failing cache write does not fail the call', () async {
@@ -77,7 +81,9 @@ void main() {
       ).thenAnswer(
         (_) async => PageResult(items: [_todo('1')], hasMore: false),
       );
-      when(() => local.saveTodos(any())).thenThrow(const StorageException());
+      when(
+        () => local.saveTodos(todos: any(named: 'todos')),
+      ).thenThrow(const StorageException());
 
       final result = await repository.getTodos(page: _firstPage);
 
@@ -141,20 +147,20 @@ void main() {
   group('getTodo', () {
     test('falls back to the cached item when offline', () async {
       when(
-        () => remote.getTodo('1'),
+        () => remote.getTodo(id: '1'),
       ).thenThrow(const RequestTimeoutException());
-      when(() => local.getTodo('1')).thenAnswer((_) async => _todo('1'));
+      when(() => local.getTodo(id: '1')).thenAnswer((_) async => _todo('1'));
 
-      final result = await repository.getTodo('1');
+      final result = await repository.getTodo(id: '1');
 
       expect(result.getRight().toNullable()?.id, '1');
     });
 
     test('offline and not cached reports the network problem', () async {
-      when(() => remote.getTodo('1')).thenThrow(const NetworkException());
-      when(() => local.getTodo('1')).thenThrow(const CacheMissException());
+      when(() => remote.getTodo(id: '1')).thenThrow(const NetworkException());
+      when(() => local.getTodo(id: '1')).thenThrow(const CacheMissException());
 
-      final result = await repository.getTodo('1');
+      final result = await repository.getTodo(id: '1');
 
       expect(result.getLeft().toNullable()?.type, FailureType.network);
     });
@@ -163,44 +169,46 @@ void main() {
   group('writes', () {
     test('create calls the API and caches the result', () async {
       const params = CreateTodoParams(title: 'New');
-      when(() => remote.createTodo(params)).thenAnswer((_) async => _todo('9'));
+      when(
+        () => remote.createTodo(params: params),
+      ).thenAnswer((_) async => _todo('9'));
 
-      final result = await repository.createTodo(params);
+      final result = await repository.createTodo(params: params);
 
       expect(result.getRight().toNullable()?.id, '9');
-      verify(() => local.saveTodo(_todo('9'))).called(1);
+      verify(() => local.saveTodo(todo: _todo('9'))).called(1);
     });
 
     test('update failure is mapped and the cache is untouched', () async {
       const params = UpdateTodoParams(id: '1', isDone: true);
       when(
-        () => remote.updateTodo(params),
+        () => remote.updateTodo(params: params),
       ).thenThrow(const ValidationException(fieldErrors: {'title': 'x'}));
 
-      final result = await repository.updateTodo(params);
+      final result = await repository.updateTodo(params: params);
 
       final failure = result.getLeft().toNullable()!;
       expect(failure.type, FailureType.validation);
       expect(failure.fieldErrors, {'title': 'x'});
-      verifyNever(() => local.saveTodo(any()));
+      verifyNever(() => local.saveTodo(todo: any(named: 'todo')));
     });
 
     test('delete removes the item remotely, then from the cache', () async {
-      when(() => remote.deleteTodo('1')).thenAnswer((_) async {});
+      when(() => remote.deleteTodo(id: '1')).thenAnswer((_) async {});
 
-      final result = await repository.deleteTodo('1');
+      final result = await repository.deleteTodo(id: '1');
 
       expect(result, const Right<Failure, void>(null));
       verifyInOrder([
-        () => remote.deleteTodo('1'),
-        () => local.deleteTodo('1'),
+        () => remote.deleteTodo(id: '1'),
+        () => local.deleteTodo(id: '1'),
       ]);
     });
 
     test('unexpected errors become an unknown Failure', () async {
-      when(() => remote.deleteTodo('1')).thenThrow(StateError('bug'));
+      when(() => remote.deleteTodo(id: '1')).thenThrow(StateError('bug'));
 
-      final result = await repository.deleteTodo('1');
+      final result = await repository.deleteTodo(id: '1');
 
       expect(result.getLeft().toNullable(), const Failure.unknown());
     });

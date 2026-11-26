@@ -14,12 +14,12 @@ import 'permission_gate.dart';
 /// ```dart
 /// AutoRoute(
 ///   page: CameraRoute.page,
-///   guards: [PermissionGuard(AppPermission.camera, gate: sl())],
+///   guards: [PermissionGuard(permission: AppPermission.camera, gate: sl())],
 /// )
 /// ```
 class PermissionGuard extends AutoRouteGuard {
-  PermissionGuard(
-    this.permission, {
+  PermissionGuard({
+    required this.permission,
     required PermissionGate gate,
     this.allowIfSkipped = true,
   }) : _gate = gate;

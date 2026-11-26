@@ -3,6 +3,11 @@ import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
 import 'package:flutter_all_template/core/common/features/permission/domain/entities/app_permission.dart';
 import 'package:flutter_all_template/core/common/features/permission/domain/entities/app_permission_status.dart';
 import 'package:flutter_all_template/core/common/features/permission/domain/repository/permission_repository.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/check_permission_use_case.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/is_permission_skipped_use_case.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/mark_permission_skipped_use_case.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/open_permission_settings_use_case.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/request_permission_use_case.dart';
 import 'package:flutter_all_template/core/common/features/permission/presentation/bloc/permission_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -23,16 +28,24 @@ void main() {
   setUp(() {
     permissions = _MockPermissionRepository();
     skips = _MockSkipRepository();
-    when(() => skips.isSkipped(any())).thenReturn(false);
+    when(
+      () => skips.isSkipped(permission: any(named: 'permission')),
+    ).thenReturn(false);
   });
 
-  PermissionBloc build() => PermissionBloc(permissions, skips);
+  PermissionBloc build() => PermissionBloc(
+    check: CheckPermissionUseCase(repository: permissions),
+    request: RequestPermissionUseCase(repository: permissions),
+    openSettings: OpenPermissionSettingsUseCase(repository: permissions),
+    isSkipped: IsPermissionSkippedUseCase(repository: skips),
+    markSkipped: MarkPermissionSkippedUseCase(repository: skips),
+  );
 
   group('PermissionChecked', () {
     blocTest<PermissionBloc, PermissionState>(
       'stores the OS status',
       setUp: () => when(
-        () => permissions.check(AppPermission.camera),
+        () => permissions.check(permission: AppPermission.camera),
       ).thenAnswer((_) async => const Right(AppPermissionStatus.granted)),
       build: build,
       act: (bloc) => bloc.add(const PermissionChecked(AppPermission.camera)),
@@ -49,9 +62,11 @@ void main() {
     blocTest<PermissionBloc, PermissionState>(
       'loads the persisted skipped flag without granting',
       setUp: () {
-        when(() => skips.isSkipped(AppPermission.location)).thenReturn(true);
         when(
-          () => permissions.check(AppPermission.location),
+          () => skips.isSkipped(permission: AppPermission.location),
+        ).thenReturn(true);
+        when(
+          () => permissions.check(permission: AppPermission.location),
         ).thenAnswer((_) async => const Right(AppPermissionStatus.denied));
       },
       build: build,
@@ -72,7 +87,7 @@ void main() {
     blocTest<PermissionBloc, PermissionState>(
       'emits the failure',
       setUp: () => when(
-        () => permissions.check(AppPermission.camera),
+        () => permissions.check(permission: AppPermission.camera),
       ).thenAnswer((_) async => const Left(failure)),
       build: build,
       act: (bloc) => bloc.add(const PermissionChecked(AppPermission.camera)),
@@ -85,7 +100,9 @@ void main() {
     blocTest<PermissionBloc, PermissionState>(
       'records the result and bumps requestCount',
       setUp: () =>
-          when(() => permissions.request(AppPermission.microphone)).thenAnswer(
+          when(
+            () => permissions.request(permission: AppPermission.microphone),
+          ).thenAnswer(
             (_) async => const Right(AppPermissionStatus.permanentlyDenied),
           ),
       build: build,
@@ -109,8 +126,10 @@ void main() {
 
     blocTest<PermissionBloc, PermissionState>(
       'drops a second request while one is in flight',
-      setUp: () => when(() => permissions.request(AppPermission.camera))
-          .thenAnswer((_) async {
+      setUp: () =>
+          when(
+            () => permissions.request(permission: AppPermission.camera),
+          ).thenAnswer((_) async {
             await Future<void>.delayed(const Duration(milliseconds: 10));
             return const Right(AppPermissionStatus.granted);
           }),
@@ -119,8 +138,9 @@ void main() {
         ..add(const PermissionRequested(AppPermission.camera))
         ..add(const PermissionRequested(AppPermission.camera)),
       wait: const Duration(milliseconds: 50),
-      verify: (_) =>
-          verify(() => permissions.request(AppPermission.camera)).called(1),
+      verify: (_) => verify(
+        () => permissions.request(permission: AppPermission.camera),
+      ).called(1),
     );
   });
 
@@ -128,7 +148,7 @@ void main() {
     blocTest<PermissionBloc, PermissionState>(
       'marks skipped but does NOT report granted (B15)',
       setUp: () => when(
-        () => skips.markSkipped(AppPermission.location),
+        () => skips.markSkipped(permission: AppPermission.location),
       ).thenAnswer((_) async => const Right(null)),
       build: build,
       seed: () => const PermissionState(
@@ -148,14 +168,16 @@ void main() {
           AppPermissionStatus.denied,
         );
         expect(bloc.state.isSkipped(AppPermission.location), isTrue);
-        verifyNever(() => permissions.request(any()));
+        verifyNever(
+          () => permissions.request(permission: any(named: 'permission')),
+        );
       },
     );
 
     blocTest<PermissionBloc, PermissionState>(
       'keeps it un-skipped when persisting fails',
       setUp: () => when(
-        () => skips.markSkipped(AppPermission.camera),
+        () => skips.markSkipped(permission: AppPermission.camera),
       ).thenAnswer((_) async => const Left(failure)),
       build: build,
       act: (bloc) => bloc.add(const PermissionSkipped(AppPermission.camera)),
@@ -166,7 +188,7 @@ void main() {
   blocTest<PermissionBloc, PermissionState>(
     'AllPermissionsChecked checks every permission',
     setUp: () => when(
-      () => permissions.check(any()),
+      () => permissions.check(permission: any(named: 'permission')),
     ).thenAnswer((_) async => const Right(AppPermissionStatus.denied)),
     build: build,
     act: (bloc) => bloc.add(const AllPermissionsChecked()),
@@ -179,7 +201,7 @@ void main() {
       ),
     ],
     verify: (_) => verify(
-      () => permissions.check(any()),
+      () => permissions.check(permission: any(named: 'permission')),
     ).called(AppPermission.values.length),
   );
 }

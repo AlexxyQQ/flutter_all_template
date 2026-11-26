@@ -1,6 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_all_template/core/common/features/app_settings/data/repositories/app_preferences_repository_impl.dart';
+import 'package:flutter_all_template/core/common/features/app_settings/domain/usecases/get_app_preferences_use_case.dart';
+import 'package:flutter_all_template/core/common/features/app_settings/domain/usecases/set_locale_tag_use_case.dart';
 import 'package:flutter_all_template/core/common/presentation/blocs/locale/locale_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,11 +18,12 @@ void main() {
 
   setUp(() {
     store = InMemoryPreferencesStore();
-    repository = AppPreferencesRepositoryImpl(store);
+    repository = AppPreferencesRepositoryImpl(store: store);
   });
 
   LocaleCubit build({Locale device = const Locale('fr', 'FR')}) => LocaleCubit(
-    repository,
+    getPreferences: GetAppPreferencesUseCase(repository: repository),
+    setLocaleTag: SetLocaleTagUseCase(repository: repository),
     supportedLocales: _supported,
     deviceLocale: () => device,
   );

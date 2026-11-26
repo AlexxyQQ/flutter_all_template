@@ -41,7 +41,7 @@ void main() {
 
     setUp(() {
       client = FakeApiClient((_) => todoJson('1'));
-      dataSource = TodoRemoteDataSource(client);
+      dataSource = TodoRemoteDataSource(client: client);
     });
 
     test('lists with page, limit, cursor and filters', () async {
@@ -86,13 +86,13 @@ void main() {
     });
 
     test('uses the right verb and path for each call', () async {
-      await dataSource.getTodo('a/b');
-      await dataSource.createTodo(const CreateTodoParams(title: 'New'));
+      await dataSource.getTodo(id: 'a/b');
+      await dataSource.createTodo(params: const CreateTodoParams(title: 'New'));
       await dataSource.updateTodo(
-        const UpdateTodoParams(id: '1', isDone: true),
+        params: const UpdateTodoParams(id: '1', isDone: true),
       );
       client.respond = (_) => null; // 204 No Content
-      await dataSource.deleteTodo('1');
+      await dataSource.deleteTodo(id: '1');
 
       expect(client.calls.map((c) => '${c.method} ${c.path} ${c.body}'), [
         'GET /todos/a%2Fb null',
@@ -105,22 +105,27 @@ void main() {
     test('propagates AppExceptions from the client', () {
       client.respond = (_) => throw const NetworkException();
 
-      expect(() => dataSource.getTodo('1'), throwsA(isA<NetworkException>()));
+      expect(
+        () => dataSource.getTodo(id: '1'),
+        throwsA(isA<NetworkException>()),
+      );
     });
   });
 
   group('TodoLocalDataSource', () {
     late TodoLocalDataSource dataSource;
 
-    setUp(() => dataSource = TodoLocalDataSource(InMemoryPreferencesStore()));
+    setUp(
+      () => dataSource = TodoLocalDataSource(store: InMemoryPreferencesStore()),
+    );
 
     test('get/update/delete target only the requested id', () async {
-      await dataSource.saveTodos([_todo('1'), _todo('2'), _todo('3')]);
+      await dataSource.saveTodos(todos: [_todo('1'), _todo('2'), _todo('3')]);
 
-      expect((await dataSource.getTodo('2')).id, '2');
+      expect((await dataSource.getTodo(id: '2')).id, '2');
 
-      await dataSource.saveTodo(_todo('2', title: 'Updated'));
-      await dataSource.deleteTodo('3');
+      await dataSource.saveTodo(todo: _todo('2', title: 'Updated'));
+      await dataSource.deleteTodo(id: '3');
 
       final todos = await dataSource.getTodos();
       expect(todos.map((t) => (t.id, t.title)), [
@@ -130,18 +135,21 @@ void main() {
     });
 
     test('deleting an unknown id leaves other items untouched', () async {
-      await dataSource.saveTodos([_todo('1')]);
-      await dataSource.deleteTodo('nope');
+      await dataSource.saveTodos(todos: [_todo('1')]);
+      await dataSource.deleteTodo(id: 'nope');
 
       expect(await dataSource.getTodos(), hasLength(1));
     });
 
     test('missing items throw CacheMissException', () {
-      expect(() => dataSource.getTodo('x'), throwsA(isA<CacheMissException>()));
+      expect(
+        () => dataSource.getTodo(id: 'x'),
+        throwsA(isA<CacheMissException>()),
+      );
     });
 
     test('clear empties the cache', () async {
-      await dataSource.saveTodos([_todo('1')]);
+      await dataSource.saveTodos(todos: [_todo('1')]);
       await dataSource.clear();
 
       expect(await dataSource.getTodos(), isEmpty);

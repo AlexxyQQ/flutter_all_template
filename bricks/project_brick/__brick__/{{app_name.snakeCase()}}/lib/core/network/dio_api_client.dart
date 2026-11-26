@@ -8,7 +8,7 @@ import 'dio_exception_mapper.dart';
 /// [ApiClient] backed by the app-wide [Dio] (configured in `NetworkModule`).
 @LazySingleton(as: ApiClient)
 class DioApiClient implements ApiClient {
-  DioApiClient(this._dio);
+  DioApiClient({required Dio dio}) : _dio = dio;
 
   final Dio _dio;
 

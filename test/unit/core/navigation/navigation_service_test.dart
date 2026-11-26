@@ -14,7 +14,7 @@ void main() {
 
   setUp(() {
     router = _MockRouter();
-    navigation = NavigationService(router);
+    navigation = NavigationService(appRouter: router);
   });
 
   test('pushNamed delegates to pushPath', () async {

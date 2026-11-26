@@ -28,20 +28,28 @@ import 'push/push_messaging_client.dart';
 /// unregistered + deleted by a logout hook.
 @lazySingleton
 class NotificationService implements NotificationPermissionApi {
-  NotificationService(
-    this._push,
-    this._awesome,
-    this._prefs,
-    this._tokens,
-    this._session,
-    this._navigation,
-    this._routes,
-    this._logger,
-  ) : _display = NotificationDisplayHelper(
-        _awesome,
-        (message, error, stackTrace) =>
-            _logger.e(message, error: error, stackTrace: stackTrace),
-      );
+  NotificationService({
+    required PushMessagingClient push,
+    required AwesomeNotifications awesome,
+    required PreferencesStore prefs,
+    required PushTokenRepository tokens,
+    required SessionManager session,
+    required NavigationService navigation,
+    required NotificationRouteAllowlist routes,
+    required ILoggerService logger,
+  }) : _push = push,
+       _awesome = awesome,
+       _prefs = prefs,
+       _tokens = tokens,
+       _session = session,
+       _navigation = navigation,
+       _routes = routes,
+       _logger = logger,
+       _display = NotificationDisplayHelper(
+         awesomeNotifications: awesome,
+         onError: (message, error, stackTrace) =>
+             logger.e(message, error: error, stackTrace: stackTrace),
+       );
 
   final PushMessagingClient _push;
   final AwesomeNotifications _awesome;
@@ -94,8 +102,10 @@ class NotificationService implements NotificationPermissionApi {
         ..add(_push.onMessage.listen(_onForegroundMessage))
         ..add(_push.onTokenRefresh.listen(_onTokenRefresh))
         ..add(_session.statusStream.listen(_onSessionStatus));
-      _push.registerBackgroundHandler(firebaseMessagingBackgroundHandler);
-      _session.registerLogoutHook(_onLogout);
+      _push.registerBackgroundHandler(
+        handler: firebaseMessagingBackgroundHandler,
+      );
+      _session.registerLogoutHook(hook: _onLogout);
 
       final initialAction = await _awesome.getInitialNotificationAction();
       if (initialAction != null) {
@@ -318,7 +328,7 @@ class NotificationService implements NotificationPermissionApi {
   }
 
   Future<void> _register(String token) async {
-    final result = await _tokens.register(token);
+    final result = await _tokens.register(token: token);
     result.fold(
       (failure) => _logger.e('Push token registration failed: ${failure.type}'),
       (_) => _registeredToken = token,
@@ -329,7 +339,7 @@ class NotificationService implements NotificationPermissionApi {
     try {
       final token = _registeredToken ?? await _push.getToken();
       if (token != null) {
-        final result = await _tokens.unregister(token);
+        final result = await _tokens.unregister(token: token);
         result.fold(
           (failure) =>
               _logger.e('Push token unregistration failed: ${failure.type}'),

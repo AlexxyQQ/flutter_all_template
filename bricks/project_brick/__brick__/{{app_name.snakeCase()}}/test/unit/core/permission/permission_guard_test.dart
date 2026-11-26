@@ -38,7 +38,7 @@ void main() {
     stubGate(allowed: true);
 
     await PermissionGuard(
-      AppPermission.camera,
+      permission: AppPermission.camera,
       gate: gate,
     ).onNavigation(resolver, router);
 
@@ -50,7 +50,7 @@ void main() {
     stubGate(allowed: false);
 
     await PermissionGuard(
-      AppPermission.location,
+      permission: AppPermission.location,
       gate: gate,
       allowIfSkipped: false,
     ).onNavigation(resolver, router);
@@ -70,7 +70,7 @@ void main() {
   test('screen result resumes or aborts the original navigation', () async {
     stubGate(allowed: false);
     await PermissionGuard(
-      AppPermission.camera,
+      permission: AppPermission.camera,
       gate: gate,
     ).onNavigation(resolver, router);
     final route =

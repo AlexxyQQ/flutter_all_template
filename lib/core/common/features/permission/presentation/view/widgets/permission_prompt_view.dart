@@ -1,13 +1,11 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../../../presentation/extensions/size/size_extension.dart';
-import '../../../../../presentation/views/widgets/system/app_button.dart';
-import '../../../../../presentation/views/widgets/system/text/app_text_widget.dart';
 import '../../../permission_spec.dart';
 
-/// Illustration, title, explanation and the continue / maybe-later buttons
-/// for one [PermissionSpec].
+/// Icon, title, explanation and the continue / maybe-later buttons for one
+/// [PermissionSpec].
 class PermissionPromptView extends StatelessWidget {
   const PermissionPromptView({
     required this.spec,
@@ -25,47 +23,50 @@ class PermissionPromptView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final imageAsset = spec.imageAsset;
     return SafeArea(
       child: Padding(
-        padding: 16.allPadding,
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (imageAsset != null)
-              Image.asset(imageAsset, height: 200, width: 200)
-            else
-              Icon(spec.icon, size: 120, color: theme.colorScheme.primary),
-            24.verticalGap,
-            AppText(
-              spec.titleKey,
+            Icon(spec.icon, size: 96, color: theme.colorScheme.primary),
+            const SizedBox(height: 24),
+            Text(
+              spec.titleKey.tr(),
+              key: const Key('permission_title'),
               textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: theme.textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              spec.messageKey.tr(),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 32),
+            Semantics(
+              identifier: 'permission_continue_button',
+              child: ElevatedButton(
+                key: const Key('permission_continue_button'),
+                onPressed: isLoading ? null : onContinue,
+                child: isLoading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(LocaleKeys.common_words_continue.tr()),
               ),
             ),
-            12.verticalGap,
-            Padding(
-              padding: 32.horizontalPadding,
-              child: AppText(
-                spec.messageKey,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge,
+            const SizedBox(height: 12),
+            Semantics(
+              identifier: 'permission_skip_button',
+              child: TextButton(
+                key: const Key('permission_skip_button'),
+                onPressed: isLoading ? null : onSkip,
+                child: Text(LocaleKeys.common_sentences_mayBeLater.tr()),
               ),
             ),
-            32.verticalGap,
-            AppButton.primary(
-              isLoading: isLoading,
-              onPressed: onContinue,
-              label: LocaleKeys.common_words_continue,
-            ),
-            20.verticalGap,
-            AppButton.ghost(
-              isDisabled: isLoading,
-              onPressed: onSkip,
-              label: LocaleKeys.common_sentences_mayBeLater,
-            ),
-            48.verticalGap,
           ],
         ),
       ),

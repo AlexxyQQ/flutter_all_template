@@ -9,7 +9,8 @@ import '../../domain/repository/permission_repository.dart';
 /// Stores "skipped" flags as plain preferences (not a secret).
 @LazySingleton(as: IPermissionSkipRepository)
 class PermissionSkipRepositoryImpl implements IPermissionSkipRepository {
-  const PermissionSkipRepositoryImpl(this._prefs);
+  const PermissionSkipRepositoryImpl({required PreferencesStore prefs})
+    : _prefs = prefs;
 
   final PreferencesStore _prefs;
 
@@ -17,14 +18,14 @@ class PermissionSkipRepositoryImpl implements IPermissionSkipRepository {
       'permission.skipped.${permission.name}';
 
   @override
-  bool isSkipped(AppPermission permission) =>
+  bool isSkipped({required AppPermission permission}) =>
       _prefs.getBool(keyFor(permission)) ?? false;
 
   @override
-  ResultFuture<void> markSkipped(AppPermission permission) =>
+  ResultFuture<void> markSkipped({required AppPermission permission}) =>
       guard(() => _prefs.setBool(keyFor(permission), value: true));
 
   @override
-  ResultFuture<void> clearSkipped(AppPermission permission) =>
+  ResultFuture<void> clearSkipped({required AppPermission permission}) =>
       guard(() => _prefs.remove(keyFor(permission)));
 }

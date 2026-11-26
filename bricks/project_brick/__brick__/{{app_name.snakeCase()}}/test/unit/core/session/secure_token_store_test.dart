@@ -29,11 +29,13 @@ void main() {
 
   setUp(() {
     secure = _InMemorySecureStore();
-    store = SecureTokenStore(secure);
+    store = SecureTokenStore(secureStore: secure);
   });
 
   test('stores each token under its own key', () async {
-    await store.save(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
+    await store.save(
+      tokens: const AuthTokens(accessToken: 'a', refreshToken: 'r'),
+    );
     expect(secure.values, {
       SecureTokenStore.accessTokenKey: 'a',
       SecureTokenStore.refreshTokenKey: 'r',
@@ -57,14 +59,18 @@ void main() {
   });
 
   test('saving without refresh token removes the old one', () async {
-    await store.save(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
-    await store.save(const AuthTokens(accessToken: 'b'));
+    await store.save(
+      tokens: const AuthTokens(accessToken: 'a', refreshToken: 'r'),
+    );
+    await store.save(tokens: const AuthTokens(accessToken: 'b'));
     expect(secure.values.containsKey(SecureTokenStore.refreshTokenKey), false);
     expect((await store.read())?.accessToken, 'b');
   });
 
   test('clear removes both keys', () async {
-    await store.save(const AuthTokens(accessToken: 'a', refreshToken: 'r'));
+    await store.save(
+      tokens: const AuthTokens(accessToken: 'a', refreshToken: 'r'),
+    );
     await store.clear();
     expect(secure.values, isEmpty);
     expect(await store.read(), isNull);

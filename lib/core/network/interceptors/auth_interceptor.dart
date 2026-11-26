@@ -9,10 +9,11 @@ import '../network_constants.dart';
 /// host never receive the token.
 @lazySingleton
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(
-    this._tokenStore,
-    @Named(NetworkNames.apiBaseUrl) String baseUrl,
-  ) : _hostMatcher = ApiHostMatcher(baseUrl);
+  AuthInterceptor({
+    required TokenStore tokenStore,
+    @Named(NetworkNames.apiBaseUrl) required String baseUrl,
+  }) : _tokenStore = tokenStore,
+       _hostMatcher = ApiHostMatcher(baseUrl: baseUrl);
 
   final TokenStore _tokenStore;
   final ApiHostMatcher _hostMatcher;

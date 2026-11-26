@@ -1,0 +1,38 @@
+{{=<% %>=}}
+name: Security scan
+
+# Dependency vulnerability scan (OSV). Weekly + manual only: it does not need to
+# run on every pull request. Dependabot already raises security updates.
+#
+# gitleaks-action was removed: it needs a paid license for organization repos.
+# Run `gitleaks detect --config .gitleaks.toml` locally (or as a pre-commit hook)
+# instead. See docs/CI_CD.md.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  osv:
+    name: OSV-Scanner (pubspec.lock)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: OSV-Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+        with:
+          scan-args: |-
+            --lockfile=pubspec.lock

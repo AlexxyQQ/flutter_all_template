@@ -6,12 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../config/constants/gen/assets.gen.dart';
 import '../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../../../core/common/presentation/extensions/size/size_extension.dart';
-import '../../../../../core/common/presentation/extensions/theme/theme_extension.dart';
 import '../../../../../core/common/presentation/routes/app_router.gr.dart';
-import '../../../../../core/common/presentation/views/widgets/system/images/app_image_widget.dart';
-import '../../../../../core/common/presentation/views/widgets/system/loaders/app_circular_loader.dart';
-import '../../../../../core/common/presentation/views/widgets/system/text/app_text_widget.dart';
 
 /// Brand splash shown on cold start; replaces itself with [HomeRoute].
 ///
@@ -55,32 +50,31 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.surface,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Semantics(
+              identifier: 'splash_logo',
               image: true,
               label: LocaleKeys
-                  .features_home_presentation_views_screens_home_screen_logoLabel
+                  .features_splash_presentation_screens_splash_screen_logoLabel
                   .tr(),
               excludeSemantics: true,
-              child: AppImage.fromAsset(
+              child: Image.asset(
                 Assets.images.logo.path,
+                key: const Key('splash_logo'),
                 width: 120,
                 height: 120,
               ),
             ),
-            24.verticalGap,
-            const AppCircularLoader(),
-            12.verticalGap,
-            AppText(
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(key: Key('splash_loader')),
+            const SizedBox(height: 12),
+            Text(
               LocaleKeys
-                  .features_home_presentation_views_screens_home_screen_splashLoading,
-              style: context.textStyles.bodyMedium.copyWith(
-                color: context.colors.onSurfaceVariant,
-              ),
+                  .features_splash_presentation_screens_splash_screen_loading
+                  .tr(),
             ),
           ],
         ),

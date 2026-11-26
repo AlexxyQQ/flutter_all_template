@@ -32,7 +32,7 @@ typedef PageFetcher<T, Q> =
 /// ```dart
 /// @injectable
 /// class TodoListBloc extends PagedListBloc<Todo, TodoQuery> {
-///   TodoListBloc(ITodoRepository repository)
+///   TodoListBloc({required ITodoRepository repository})
 ///     : super(
 ///         initialQuery: const TodoQuery(),
 ///         fetchPage: (page, query) =>

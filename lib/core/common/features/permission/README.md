@@ -11,14 +11,15 @@ permission/
 ├── domain/
 │   ├── entities/app_permission.dart        # enum AppPermission (+ tryParse)
 │   ├── entities/app_permission_status.dart # domain status enum (no permission_handler types)
-│   └── repository/permission_repository.dart  # IPermissionRepository, IPermissionSkipRepository
+│   ├── repository/permission_repository.dart  # IPermissionRepository, IPermissionSkipRepository
+│   └── usecases/                           # Check, Request, OpenSettings, IsSkipped, MarkSkipped
 ├── data/
 │   ├── data_sources/permission_platform_data_source.dart  # permission_handler / geolocator seam
 │   └── repository/
 │       ├── permission_repository_impl.dart       # check / request / openSettings (guard())
 │       └── permission_skip_repository_impl.dart  # "skipped" flags in PreferencesStore
 └── presentation/
-    ├── bloc/                               # PermissionBloc
+    ├── bloc/                               # PermissionBloc (depends on the use cases)
     ├── routes/permission_route.dart        # /permission/:permission
     ├── routes/permission_gate.dart         # granted-or-skipped policy
     ├── routes/permission_guard.dart        # PermissionGuard(AppPermission)
@@ -31,7 +32,7 @@ permission/
 
 1. Add a value to `AppPermission`.
 2. Add its row to the exhaustive `switch` in `permission_spec.dart`
-   (platform `Permission`, icon/image, title/message/re-ask keys).
+   (platform `Permission`, icon, title/message/re-ask keys).
 3. Add the translation keys to `assets/translations/*.json` and regenerate
    locale keys.
 4. Declare the platform permission (AndroidManifest / Info.plist).
@@ -77,7 +78,7 @@ Deep link: `/permission/camera` (unknown names show an error state).
 ```dart
 AutoRoute(
   page: CameraRoute.page,
-  guards: [PermissionGuard(AppPermission.camera, gate: sl())],
+  guards: [PermissionGuard(permission: AppPermission.camera, gate: sl())],
 )
 ```
 

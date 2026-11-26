@@ -18,7 +18,11 @@ import '../../domain/entities/{{feature_name.snakeCase()}}.dart';
 {{/use_local_datasource}}{{^use_local_datasource}}/// Remote repository: data-source exceptions become `Failure`s via `guard`.
 {{/use_local_datasource}}@LazySingleton(as: I{{feature_name.pascalCase()}}Repository)
 class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pascalCase()}}Repository {
-  {{feature_name.pascalCase()}}RepositoryImpl(this._remote{{#use_local_datasource}}, this._local{{/use_local_datasource}});
+  {{feature_name.pascalCase()}}RepositoryImpl({
+    required I{{feature_name.pascalCase()}}RemoteDataSource remote,
+    {{#use_local_datasource}}required I{{feature_name.pascalCase()}}LocalDataSource local,
+    {{/use_local_datasource}}}) : _remote = remote{{#use_local_datasource}},
+       _local = local{{/use_local_datasource}};
 
   final I{{feature_name.pascalCase()}}RemoteDataSource _remote;
 {{#use_local_datasource}}  final I{{feature_name.pascalCase()}}LocalDataSource _local;
@@ -32,7 +36,7 @@ class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pas
     return result.map((model) => model.toEntity());
 {{/use_local_datasource}}{{#use_local_datasource}}    try {
       final result = await _remote.get{{feature_name.pascalCase()}}s(page: page, query: query);
-      await _cache(() => _local.save{{feature_name.pascalCase()}}s(result.items));
+      await _cache(() => _local.save{{feature_name.pascalCase()}}s(items: result.items));
       return result.map((model) => model.toEntity());
     } on AppException catch (e) {
       if (!_isOffline(e)) {
@@ -47,19 +51,19 @@ class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pas
 {{/use_local_datasource}}  });
 
   @override
-  ResultFuture<{{feature_name.pascalCase()}}> get{{feature_name.pascalCase()}}(String id) => guard(() async {
-{{^use_local_datasource}}    final model = await _remote.get{{feature_name.pascalCase()}}(id);
+  ResultFuture<{{feature_name.pascalCase()}}> get{{feature_name.pascalCase()}}({required String id}) => guard(() async {
+{{^use_local_datasource}}    final model = await _remote.get{{feature_name.pascalCase()}}(id: id);
     return model.toEntity();
 {{/use_local_datasource}}{{#use_local_datasource}}    try {
-      final model = await _remote.get{{feature_name.pascalCase()}}(id);
-      await _cache(() => _local.save{{feature_name.pascalCase()}}(model));
+      final model = await _remote.get{{feature_name.pascalCase()}}(id: id);
+      await _cache(() => _local.save{{feature_name.pascalCase()}}(item: model));
       return model.toEntity();
     } on AppException catch (e) {
       if (!_isOffline(e)) {
         rethrow;
       }
       try {
-        return (await _local.get{{feature_name.pascalCase()}}(id)).toEntity();
+        return (await _local.get{{feature_name.pascalCase()}}(id: id)).toEntity();
       } on CacheMissException {
         throw e; // Report the network problem, not the cache miss.
       }
@@ -67,23 +71,23 @@ class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pas
 {{/use_local_datasource}}  });
 
   @override
-  ResultFuture<{{feature_name.pascalCase()}}> create{{feature_name.pascalCase()}}({{#use_params}}Create{{feature_name.pascalCase()}}Params params{{/use_params}}{{^use_params}}{required String title}{{/use_params}}) => guard(() async {
-    final model = await _remote.create{{feature_name.pascalCase()}}({{#use_params}}params{{/use_params}}{{^use_params}}title: title{{/use_params}});
-{{#use_local_datasource}}    await _cache(() => _local.save{{feature_name.pascalCase()}}(model));
+  ResultFuture<{{feature_name.pascalCase()}}> create{{feature_name.pascalCase()}}({{#use_params}}{required Create{{feature_name.pascalCase()}}Params params}{{/use_params}}{{^use_params}}{required String title}{{/use_params}}) => guard(() async {
+    final model = await _remote.create{{feature_name.pascalCase()}}({{#use_params}}params: params{{/use_params}}{{^use_params}}title: title{{/use_params}});
+{{#use_local_datasource}}    await _cache(() => _local.save{{feature_name.pascalCase()}}(item: model));
 {{/use_local_datasource}}    return model.toEntity();
   });
 
   @override
-  ResultFuture<{{feature_name.pascalCase()}}> update{{feature_name.pascalCase()}}({{#use_params}}Update{{feature_name.pascalCase()}}Params params{{/use_params}}{{^use_params}}{{feature_name.pascalCase()}} item{{/use_params}}) => guard(() async {
-    final model = await _remote.update{{feature_name.pascalCase()}}({{#use_params}}params{{/use_params}}{{^use_params}}item{{/use_params}});
-{{#use_local_datasource}}    await _cache(() => _local.save{{feature_name.pascalCase()}}(model));
+  ResultFuture<{{feature_name.pascalCase()}}> update{{feature_name.pascalCase()}}({{#use_params}}{required Update{{feature_name.pascalCase()}}Params params}{{/use_params}}{{^use_params}}{required {{feature_name.pascalCase()}} item}{{/use_params}}) => guard(() async {
+    final model = await _remote.update{{feature_name.pascalCase()}}({{#use_params}}params: params{{/use_params}}{{^use_params}}item: item{{/use_params}});
+{{#use_local_datasource}}    await _cache(() => _local.save{{feature_name.pascalCase()}}(item: model));
 {{/use_local_datasource}}    return model.toEntity();
   });
 
   @override
-  ResultFuture<void> delete{{feature_name.pascalCase()}}(String id) => guard(() async {
-    await _remote.delete{{feature_name.pascalCase()}}(id);
-{{#use_local_datasource}}    await _cache(() => _local.delete{{feature_name.pascalCase()}}(id));
+  ResultFuture<void> delete{{feature_name.pascalCase()}}({required String id}) => guard(() async {
+    await _remote.delete{{feature_name.pascalCase()}}(id: id);
+{{#use_local_datasource}}    await _cache(() => _local.delete{{feature_name.pascalCase()}}(id: id));
 {{/use_local_datasource}}  });
 {{#use_local_datasource}}
   static bool _isOffline(AppException e) =>

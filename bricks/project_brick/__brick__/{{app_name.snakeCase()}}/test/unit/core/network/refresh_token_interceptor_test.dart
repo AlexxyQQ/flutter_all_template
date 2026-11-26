@@ -24,7 +24,7 @@ class _InMemoryTokenStore implements TokenStore {
   Future<AuthTokens?> read() async => tokens;
 
   @override
-  Future<void> save(AuthTokens tokens) async => this.tokens = tokens;
+  Future<void> save({required AuthTokens tokens}) async => this.tokens = tokens;
 
   @override
   Future<void> clear() async => tokens = null;
@@ -59,20 +59,20 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: _baseUrl))
       ..httpClientAdapter = adapter
       ..interceptors.addAll([
-        AuthInterceptor(tokenStore, _baseUrl),
+        AuthInterceptor(tokenStore: tokenStore, baseUrl: _baseUrl),
         RefreshTokenInterceptor(
-          tokenStore,
-          sessionManager,
-          refresher,
-          retryDio,
-          _baseUrl,
+          tokenStore: tokenStore,
+          sessionManager: sessionManager,
+          refresher: refresher,
+          retryDio: retryDio,
+          baseUrl: _baseUrl,
         ),
       ]);
-    client = DioApiClient(dio);
+    client = DioApiClient(dio: dio);
   });
 
   test('refreshes once for concurrent 401s and retries each request', () async {
-    when(() => refresher.refresh('r1')).thenAnswer((_) async {
+    when(() => refresher.refresh(refreshToken: 'r1')).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       return const AuthTokens(accessToken: 'new', refreshToken: 'r2');
     });
@@ -83,7 +83,7 @@ void main() {
     ]);
 
     expect(results, everyElement({'ok': true}));
-    verify(() => refresher.refresh('r1')).called(1);
+    verify(() => refresher.refresh(refreshToken: 'r1')).called(1);
     expect(tokenStore.tokens?.accessToken, 'new');
     expect(tokenStore.tokens?.refreshToken, 'r2');
     verifyNever(sessionManager.signOut);
@@ -91,7 +91,7 @@ void main() {
 
   test('refresh failure signs out and throws UnauthorizedException', () async {
     when(
-      () => refresher.refresh(any()),
+      () => refresher.refresh(refreshToken: any(named: 'refreshToken')),
     ).thenThrow(const UnauthorizedException());
 
     await expectLater(
@@ -108,7 +108,9 @@ void main() {
       client.get('items', decode: Decoders.object),
       throwsA(isA<UnauthorizedException>()),
     );
-    verifyNever(() => refresher.refresh(any()));
+    verifyNever(
+      () => refresher.refresh(refreshToken: any(named: 'refreshToken')),
+    );
     verify(sessionManager.signOut).called(1);
   });
 
@@ -119,7 +121,9 @@ void main() {
       client.get('items', decode: Decoders.object),
       throwsA(isA<UnauthorizedException>()),
     );
-    verifyNever(() => refresher.refresh(any()));
+    verifyNever(
+      () => refresher.refresh(refreshToken: any(named: 'refreshToken')),
+    );
     verifyNever(sessionManager.signOut);
   });
 
@@ -128,6 +132,8 @@ void main() {
       client.get('https://other.example.org/x', decode: Decoders.object),
       throwsA(isA<UnauthorizedException>()),
     );
-    verifyNever(() => refresher.refresh(any()));
+    verifyNever(
+      () => refresher.refresh(refreshToken: any(named: 'refreshToken')),
+    );
   });
 }

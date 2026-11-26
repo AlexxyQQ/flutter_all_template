@@ -33,12 +33,20 @@ void run(HookContext context) async {
     _updateAndroidConfig(appOrg, appName);
     _updateIosBundleId(appOrg, appName);
 
+    // 3b. Template names inside CI/release/test config (codemagic.yaml,
+    //     scripts/, .maestro/, docs/, .github/).
+    _renameInConfigFiles(appOrg, appName);
+
     // 4. Delete files of disabled modules. Source files that reference these
     //    modules are already conditional (see tool/sync_brick.dart markers).
-    if (!useFirebase) {
+    if (useFirebase) {
+      _materialiseFirebaseConfig();
+    } else {
       _deleteDir('lib/config/firebase');
-      _deleteFile('android/app/google-services.json');
-      _deleteFile('firebase.json');
+      for (final f in _firebaseConfigFiles) {
+        _deleteFile(f);
+        _deleteFile('$f.example');
+      }
     }
     if (!useNotifications) {
       _deleteDir('lib/core/common/domain/services/notification');
@@ -90,6 +98,26 @@ void run(HookContext context) async {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/// Firebase client config: git-ignored, shipped only as `<name>.example`.
+const _firebaseConfigFiles = <String>[
+  'android/app/google-services.json',
+  'ios/Runner/GoogleService-Info.plist',
+  'firebase.json',
+  'lib/config/firebase/firebase_options.dart',
+];
+
+/// Creates the real (git-ignored) placeholder files from the `.example`
+/// files so the project compiles before `flutterfire configure` is run.
+void _materialiseFirebaseConfig() {
+  for (final path in _firebaseConfigFiles) {
+    final example = File('$path.example');
+    final real = File(path);
+    if (example.existsSync() && !real.existsSync()) {
+      example.copySync(path);
+    }
+  }
+}
 
 /// Converts a string to snake_case (handles spaces and hyphens).
 String _toSnakeCase(String input) =>
@@ -168,15 +196,67 @@ void _moveMainActivity(String packageId) {
 }
 
 /// iOS bundle identifiers use camelCase app names (`com.example.myApp`).
-void _updateIosBundleId(String appOrg, String appName) {
+String _iosBundleId(String appOrg, String appName) {
   final parts = appName.split('_').where((p) => p.isNotEmpty).toList();
   final camel = parts.first +
       parts.skip(1).map((p) => p[0].toUpperCase() + p.substring(1)).join();
+  return '$appOrg.$camel';
+}
+
+void _updateIosBundleId(String appOrg, String appName) {
   _replaceInFile(
     'ios/Runner.xcodeproj/project.pbxproj',
     'com.alexxy.flutterAllTemplate',
-    '$appOrg.$camel',
+    _iosBundleId(appOrg, appName),
   );
+}
+
+/// Replaces the template's bundle ids and package name in the config files
+/// that ship with the project but are not Dart or platform sources.
+void _renameInConfigFiles(String appOrg, String appName) {
+  // Longest first: `flutter_all_template` is a prefix of the Android id.
+  final replacements = <String, String>{
+    'com.alexxy.flutterAllTemplate': _iosBundleId(appOrg, appName),
+    'com.alexxy.flutter_all_template': '$appOrg.$appName',
+    'com/alexxy/flutter_all_template':
+        '${appOrg.replaceAll('.', '/')}/$appName',
+    'flutter_all_template': appName,
+  };
+  const targets = <String>[
+    'codemagic.yaml',
+    'scripts',
+    '.maestro',
+    'docs',
+    '.github',
+    'SECURITY.md',
+    'FOLDER_STRUCTURE.md',
+    'env',
+    '.gitleaks.toml',
+    'ios/Runner/Info.plist',
+    'android/app/src/main/AndroidManifest.xml',
+    'lib/core/common/domain/services/notification/docs',
+  ];
+  const textExtensions = <String>[
+    '.yaml', '.yml', '.sh', '.md', '.json', '.mjs', '.toml', '.plist',
+    '.xml', //
+  ];
+  for (final target in targets) {
+    final files = <File>[];
+    if (FileSystemEntity.isDirectorySync(target)) {
+      files.addAll(
+          Directory(target).listSync(recursive: true).whereType<File>());
+    } else if (File(target).existsSync()) {
+      files.add(File(target));
+    }
+    for (final file in files) {
+      if (!textExtensions.any(file.path.endsWith)) continue;
+      var content = file.readAsStringSync();
+      final original = content;
+      replacements
+          .forEach((from, to) => content = content.replaceAll(from, to));
+      if (content != original) file.writeAsStringSync(content);
+    }
+  }
 }
 
 /// Deletes a file if it exists. Silently skips if missing.

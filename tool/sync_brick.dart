@@ -13,9 +13,21 @@
 //   // brick:if use_permissions      -> {{#use_permissions}}
 //   // brick:unless use_firebase     -> {{^use_firebase}}
 //   // brick:end                     -> {{/<innermost open section>}}
+//   // brick:repo-only ... brick:end -> region is dropped from the brick (for
+//                                      steps that only make sense in the
+//                                      template repo itself; no nesting)
 //
 // `#` comments work the same way in YAML. Directories of disabled modules are
-// removed by `hooks/post_gen.dart`.
+// removed by `hooks/post_gen.dart`, which also rewrites the template's package
+// name and bundle ids in config files (codemagic.yaml, .maestro/, scripts/,
+// docs/, .github/).
+//
+// What generated projects get (everything else tracked in the repo ships as is):
+//   - lean PR CI (.github/workflows/ci.yml without the brick-sync step),
+//     weekly OSV scan, dependabot, codemagic.yaml, scripts/, .maestro/, docs/
+//   - a short project README instead of the template README
+//   - NOT shipped: bricks/, tool/, mason files, CHANGELOG.md, the `brick`
+//     rps script
 import 'dart:convert';
 import 'dart:io';
 
@@ -34,20 +46,21 @@ final List<RegExp> _excluded = <RegExp>[
   RegExp(r'^\.mason/'),
   RegExp(r'^mason(-lock)?\.(yaml|json)$'),
   RegExp(r'^CHANGELOG\.md$'),
-  RegExp(r'^TODO\.md$'),
   RegExp(r'^README\.md$'), // replaced by a generated project README
-  RegExp(r'^docs/(TEMPLATE_AUDIT_AND_PLAN|REFACTOR_CONTRACTS)\.md$'),
 ];
 
 /// Files whose literal `{{ ... }}` (e.g. GitHub Actions expressions) must be
 /// protected from Mustache by switching delimiters for the whole file.
 final List<RegExp> _literalBraces = <RegExp>[
   RegExp(r'^\.github/'),
+  RegExp(r'^\.maestro/'),
   RegExp(r'^docs/'),
+  RegExp(r'^scripts/'),
+  RegExp(r'^codemagic\.yaml$'),
 ];
 
 final RegExp _marker = RegExp(
-  r'^\s*(?://|#)\s*brick:(if|unless|end)(?:\s+(\w+))?\s*$',
+  r'^\s*(?://|#)\s*brick:(if|unless|end|repo-only)(?:\s+(\w+))?\s*$',
 );
 
 Future<void> main(List<String> args) async {
@@ -140,11 +153,16 @@ String? _tryDecode(List<int> bytes) {
 String _transform(String path, String input) {
   final out = StringBuffer();
   final open = <String>[];
+  const repoOnly = '<repo-only>';
 
   for (final line in input.split('\n')) {
     final cr = line.endsWith('\r') ? '\r' : '';
     final match = _marker.firstMatch(line);
+    final skipping = open.isNotEmpty && open.last == repoOnly;
     if (match == null) {
+      if (skipping) {
+        continue;
+      }
       out
         ..write(line)
         ..write('\n');
@@ -152,6 +170,9 @@ String _transform(String path, String input) {
     }
     final kind = match.group(1)!;
     final name = match.group(2);
+    if (skipping && kind != 'end') {
+      throw FormatException('brick:$kind inside brick:repo-only');
+    }
     switch (kind) {
       case 'if':
         open.add(name!);
@@ -159,11 +180,16 @@ String _transform(String path, String input) {
       case 'unless':
         open.add(name!);
         out.write('{{^$name}}$cr\n');
+      case 'repo-only':
+        open.add(repoOnly);
       case _:
         if (open.isEmpty) {
           throw const FormatException('brick:end without an open section');
         }
-        out.write('{{/${open.removeLast()}}}$cr\n');
+        final closed = open.removeLast();
+        if (closed != repoOnly) {
+          out.write('{{/$closed}}$cr\n');
+        }
     }
   }
   if (open.isNotEmpty) {
@@ -188,6 +214,14 @@ String _transform(String path, String input) {
         .replaceFirst(
           'description: "A new Flutter project."',
           'description: "{{app_name.titleCase()}}"',
+        )
+        // The brick tooling is not part of generated projects.
+        .replaceFirst(
+          RegExp(
+            r'^  brick: dart run tool/sync_brick\.dart\r?\n',
+            multiLine: true,
+          ),
+          '',
         );
   }
 
@@ -263,27 +297,30 @@ List<int> _withoutCarriageReturns(List<int> bytes) {
 
 const String _projectReadme = '''# {{app_name.titleCase()}}
 
-Generated from the Flutter All Template (Clean Architecture, BLoC, get_it +
-injectable, auto_route, Freezed, Material 3).
+Flutter app generated from the Flutter All Template: Clean Architecture, BLoC,
+get_it + injectable, auto_route, Freezed, Material 3.
 
 ## First run
 
 ```bash
 flutter pub get
-dart run easy_localization:generate -S assets/translations -f keys -O lib/config/constants/gen -o locale_keys.g.dart
 dart run build_runner build --delete-conflicting-outputs
+dart run easy_localization:generate -S assets/translations -f keys -O lib/config/constants/gen -o locale_keys.g.dart
 dart fix --apply && dart format .
 cp env/dev.example.json env/dev.json   # then edit BASE_URL
 flutter run --dart-define-from-file=env/dev.json
 ```
 
-Generated code (`*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `*.config.dart`,
-locale keys) is git-ignored; re-run the two generators above after changing
-models, routes, injectable classes or translations.
+Generated code (`*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `*.config.dart`, locale
+keys) is git-ignored. Re-run the two generators after changing models, routes,
+injectable classes or translations.
 
-## Read next
+## Docs
 
 - `FOLDER_STRUCTURE.md` - where things live and the layering rules
-- `SECURITY.md` - secret handling and release hardening checklist
+- `RULES.md` - coding rules with do/don't examples (read before your first PR)
+- `docs/CI_CD.md` - PR CI, local Android releases, Codemagic for iOS
+- `docs/MAESTRO.md` - end-to-end tests
 - `docs/FLAVORS.md`, `docs/CODE_SIGNING.md`, `docs/PLATFORM_SETUP.md`
+- `SECURITY.md` - secret handling and release hardening
 ''';

@@ -59,7 +59,7 @@ void main() {
   test('CrashReporterSink forwards warnings and errors only', () {
     final reporter = _RecordingReporter();
     final error = StateError('x');
-    LoggerService(sinks: [CrashReporterSink(reporter)])
+    LoggerService(sinks: [CrashReporterSink(reporter: reporter)])
       ..d('debug')
       ..i('info')
       ..w('careful', name: 'Mod')

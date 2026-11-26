@@ -1,4 +1,3 @@
-{{=<% %>=}}
 # Code signing
 
 Never commit keystores, `key.properties`, certificates, provisioning profiles or their
@@ -45,37 +44,12 @@ with `android/app/proguard-rules.pro`. If a plugin breaks only in release, add a
 rule there. Upload `build/app/outputs/mapping/release/mapping.txt` and the Dart
 symbols in `build/symbols/<flavor>/` to your crash reporter for every release.
 
-### 3. CI (GitHub Actions)
+### 3. Releasing
 
-Store these repository **secrets**: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-`ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS`.
-
-```bash
-base64 -w0 my_app-upload.jks   # macOS: base64 -i my_app-upload.jks
-```
-
-```yaml
-- name: Configure Android signing
-  env:
-    KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-    STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-    KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-    KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-  run: |
-    echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
-    {
-      echo "storePassword=$STORE_PASSWORD"
-      echo "keyPassword=$KEY_PASSWORD"
-      echo "keyAlias=$KEY_ALIAS"
-      echo "storeFile=$RUNNER_TEMP/upload.jks"
-    } > android/key.properties
-
-- name: Build app bundle
-  run: flutter build appbundle --release --obfuscate --split-debug-info=build/symbols/prod --dart-define-from-file=env/prod.json
-```
-
-Run release jobs only on protected branches/tags and in a GitHub **environment** with
-required reviewers so that pull requests from forks never see the secrets.
+Android is signed and built **on your machine**, never in GitHub Actions, so the keystore
+never leaves it and no secrets need to be stored in GitHub. `scripts/release.sh` refuses
+to run (outside `--dry-run`) when `android/key.properties` is missing, so you cannot
+upload a debug-signed build by accident. See `docs/CI_CD.md`.
 
 ### Changing the application ID
 
@@ -100,23 +74,32 @@ afterwards):
    (`.p8`) to Firebase → Project settings → Cloud Messaging.
 3. Let Xcode manage signing for development; for distribution export an
    **Apple Distribution** certificate (`.p12`) and an App Store provisioning profile.
-4. `rps build ipa prod` → upload `build/ios/ipa/*.ipa` with Transporter or
-   `xcrun altool`/`notarytool`.
+4. Build the IPA on a Mac (`flutter build ipa --release --dart-define-from-file=env/prod.json`)
+   and upload `build/ios/ipa/*.ipa` with Transporter or `xcrun altool`.
 
-### CI
+### Codemagic (no Mac needed)
 
-Prefer [fastlane match](https://docs.fastlane.tools/actions/match/) (certificates and
-profiles encrypted in a private repo/bucket) or an App Store Connect API key with
-automatic signing. Required secrets typically are: `MATCH_PASSWORD`, `MATCH_GIT_URL`
-(or storage credentials), and `APP_STORE_CONNECT_API_KEY_*`. Build on `macos-latest`
-and keep the same rule as Android: release jobs run only on protected refs.
+`codemagic.yaml` signs iOS builds automatically with an **App Store Connect API key**;
+you never handle certificates or profiles yourself.
 
----
+1. App Store Connect > Users and Access > Integrations > App Store Connect API: create a
+   key with the **App Manager** role. Download the `.p8` once.
+2. Codemagic > Teams > Integrations > App Store Connect: add the key (Issuer ID, Key ID,
+   `.p8`) and name the integration `codemagic` (the name used in `codemagic.yaml`).
+3. Make sure the App ID (bundle id, same as `PRODUCT_BUNDLE_IDENTIFIER` and the
+   `bundle_id` anchor in `codemagic.yaml`) exists and the app record is created in
+   App Store Connect.
+4. On each build Codemagic fetches or creates the **Apple Distribution** certificate and
+   an App Store profile (`ios_signing` + `fetch-signing-files --create`).
+
+Apple allows a limited number of distribution certificates per account; if creation
+fails, either delete an unused one in Apple Developer or add your own certificate private
+key in Codemagic (`CERTIFICATE_PRIVATE_KEY`, see the Codemagic docs).
 
 ## Rotating or revoking
 
 - Android upload key compromised → request an upload key reset in Play Console; with
   Play App Signing the app signing key is unaffected.
 - iOS certificate compromised → revoke it in Apple Developer, regenerate with `match nuke`
-  + `match` (or manually), update CI secrets.
-- Always rotate the CI secrets afterwards and audit recent workflow runs.
+  + `match` (or manually), update the Codemagic integration.
+- Always rotate the Codemagic secrets afterwards and audit recent builds.

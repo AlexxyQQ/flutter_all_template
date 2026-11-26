@@ -8,9 +8,9 @@ import '../../domain/repositories/app_preferences_repository.dart';
 
 @LazySingleton(as: IAppPreferencesRepository)
 class AppPreferencesRepositoryImpl implements IAppPreferencesRepository {
-  AppPreferencesRepositoryImpl(this._store);
+  AppPreferencesRepositoryImpl({required PreferencesStore store})
+    : _store = store;
 
-  static const String themeKey = 'prefs.theme';
   static const String localeKey = 'prefs.locale';
   static const String hasOnboardedKey = 'prefs.has_onboarded';
 
@@ -19,13 +19,8 @@ class AppPreferencesRepositoryImpl implements IAppPreferencesRepository {
   @override
   AppPreferences read() {
     try {
-      final themeName = _store.getString(themeKey);
       final localeTag = _store.getString(localeKey);
       return AppPreferences(
-        theme: AppThemePreference.values.firstWhere(
-          (t) => t.name == themeName,
-          orElse: () => AppThemePreference.system,
-        ),
         localeTag: localeTag == null || localeTag.isEmpty ? null : localeTag,
         hasOnboarded: _store.getBool(hasOnboardedKey) ?? false,
       );
@@ -35,11 +30,7 @@ class AppPreferencesRepositoryImpl implements IAppPreferencesRepository {
   }
 
   @override
-  ResultVoid setTheme(AppThemePreference theme) =>
-      guard(() => _store.setString(themeKey, theme.name));
-
-  @override
-  ResultVoid setLocaleTag(String localeTag) =>
+  ResultVoid setLocaleTag({required String localeTag}) =>
       guard(() => _store.setString(localeKey, localeTag));
 
   @override

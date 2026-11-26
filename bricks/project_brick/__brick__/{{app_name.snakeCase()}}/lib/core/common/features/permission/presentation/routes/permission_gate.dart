@@ -1,7 +1,8 @@
 import 'package:injectable/injectable.dart';
 
 import '../../domain/entities/app_permission.dart';
-import '../../domain/repository/permission_repository.dart';
+import '../../domain/usecases/check_permission_use_case.dart';
+import '../../domain/usecases/is_permission_skipped_use_case.dart';
 
 /// Decides whether navigation to a permission-protected screen may proceed.
 ///
@@ -11,19 +12,23 @@ import '../../domain/repository/permission_repository.dart';
 /// gracefully.
 @lazySingleton
 class PermissionGate {
-  const PermissionGate(this._permissions, this._skips);
+  const PermissionGate({
+    required CheckPermissionUseCase check,
+    required IsPermissionSkippedUseCase isSkipped,
+  }) : _check = check,
+       _isSkipped = isSkipped;
 
-  final IPermissionRepository _permissions;
-  final IPermissionSkipRepository _skips;
+  final CheckPermissionUseCase _check;
+  final IsPermissionSkippedUseCase _isSkipped;
 
   Future<bool> canProceed(
     AppPermission permission, {
     bool allowIfSkipped = true,
   }) async {
-    if (allowIfSkipped && _skips.isSkipped(permission)) {
+    if (allowIfSkipped && _isSkipped(permission: permission)) {
       return true;
     }
-    final result = await _permissions.check(permission);
+    final result = await _check(permission: permission);
     return result.fold((_) => false, (status) => status.isGranted);
   }
 }

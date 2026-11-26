@@ -6,27 +6,32 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../../config/constants/locales/app_locales.dart';
 import '../../../domain/services/logger/logger_service.dart';
-import '../../../features/app_settings/domain/repositories/app_preferences_repository.dart';
+import '../../../features/app_settings/domain/usecases/get_app_preferences_use_case.dart';
+import '../../../features/app_settings/domain/usecases/set_locale_tag_use_case.dart';
 
 part 'locale_state.dart';
 
 /// Single source of truth for the app locale.
 ///
-/// Persisted through [IAppPreferencesRepository] (EasyLocalization runs with
+/// Persisted through [SetLocaleTagUseCase] (EasyLocalization runs with
 /// `saveLocale: false`). The widget tree mirrors [LocaleState.currentLocale]
 /// into EasyLocalization; the cubit itself never touches a `BuildContext`.
 @injectable
 class LocaleCubit extends Cubit<LocaleState> {
-  LocaleCubit(
-    this._repository, {
+  LocaleCubit({
+    required GetAppPreferencesUseCase getPreferences,
+    required SetLocaleTagUseCase setLocaleTag,
     @ignoreParam List<Locale>? supportedLocales,
     @ignoreParam Locale Function()? deviceLocale,
-  }) : _supportedLocales = supportedLocales ?? AppLocales.appLocales,
+  }) : _getPreferences = getPreferences,
+       _setLocaleTag = setLocaleTag,
+       _supportedLocales = supportedLocales ?? AppLocales.appLocales,
        _deviceLocale =
            deviceLocale ?? (() => PlatformDispatcher.instance.locale),
        super(const LocaleState());
 
-  final IAppPreferencesRepository _repository;
+  final GetAppPreferencesUseCase _getPreferences;
+  final SetLocaleTagUseCase _setLocaleTag;
   final List<Locale> _supportedLocales;
   final Locale Function() _deviceLocale;
 
@@ -34,7 +39,7 @@ class LocaleCubit extends Cubit<LocaleState> {
   /// Never persists (the device locale is not a user choice).
   Future<void> load() async {
     final locale = resolveStartLocale(
-      savedTag: _repository.read().localeTag,
+      savedTag: _getPreferences().localeTag,
       deviceLocale: _deviceLocale(),
       supportedLocales: _supportedLocales,
     );
@@ -51,7 +56,7 @@ class LocaleCubit extends Cubit<LocaleState> {
       return;
     }
     emit(LocaleState(currentLocale: supported, isInitialized: true));
-    final result = await _repository.setLocaleTag(supported.toLanguageTag());
+    final result = await _setLocaleTag(localeTag: supported.toLanguageTag());
     result.match(
       (failure) => AppLogger.warning(
         'Failed to persist locale (${failure.type.name})',

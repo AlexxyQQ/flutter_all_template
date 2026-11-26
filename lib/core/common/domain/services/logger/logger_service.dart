@@ -27,7 +27,9 @@ class LoggerService implements ILoggerService {
       return LoggerService(sinks: [ConsoleLogSink()]);
     }
     return LoggerService(
-      sinks: [CrashReporterSink(crashReporter ?? const NoopCrashReporter())],
+      sinks: [
+        CrashReporterSink(reporter: crashReporter ?? const NoopCrashReporter()),
+      ],
       minLevel: .warning,
     );
   }

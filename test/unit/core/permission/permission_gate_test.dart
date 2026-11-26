@@ -2,6 +2,8 @@ import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
 import 'package:flutter_all_template/core/common/features/permission/domain/entities/app_permission.dart';
 import 'package:flutter_all_template/core/common/features/permission/domain/entities/app_permission_status.dart';
 import 'package:flutter_all_template/core/common/features/permission/domain/repository/permission_repository.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/check_permission_use_case.dart';
+import 'package:flutter_all_template/core/common/features/permission/domain/usecases/is_permission_skipped_use_case.dart';
 import 'package:flutter_all_template/core/common/features/permission/presentation/routes/permission_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -21,12 +23,15 @@ void main() {
   setUp(() {
     permissions = _MockPermissionRepository();
     skips = _MockSkipRepository();
-    gate = PermissionGate(permissions, skips);
-    when(() => skips.isSkipped(camera)).thenReturn(false);
+    gate = PermissionGate(
+      check: CheckPermissionUseCase(repository: permissions),
+      isSkipped: IsPermissionSkippedUseCase(repository: skips),
+    );
+    when(() => skips.isSkipped(permission: camera)).thenReturn(false);
   });
 
   void stubStatus(AppPermissionStatus status) => when(
-    () => permissions.check(camera),
+    () => permissions.check(permission: camera),
   ).thenAnswer((_) async => Right(status));
 
   test('granted: proceed', () async {
@@ -45,20 +50,20 @@ void main() {
   });
 
   test('skipped: proceed without querying the OS', () async {
-    when(() => skips.isSkipped(camera)).thenReturn(true);
+    when(() => skips.isSkipped(permission: camera)).thenReturn(true);
     expect(await gate.canProceed(camera), isTrue);
-    verifyNever(() => permissions.check(camera));
+    verifyNever(() => permissions.check(permission: camera));
   });
 
   test('skipped but allowIfSkipped=false: uses the real status', () async {
-    when(() => skips.isSkipped(camera)).thenReturn(true);
+    when(() => skips.isSkipped(permission: camera)).thenReturn(true);
     stubStatus(AppPermissionStatus.denied);
     expect(await gate.canProceed(camera, allowIfSkipped: false), isFalse);
   });
 
   test('failure: blocked', () async {
     when(
-      () => permissions.check(camera),
+      () => permissions.check(permission: camera),
     ).thenAnswer((_) async => const Left(Failure.unknown()));
     expect(await gate.canProceed(camera), isFalse);
   });

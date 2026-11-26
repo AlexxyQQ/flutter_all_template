@@ -72,17 +72,14 @@ in the Run & Debug panel (`.vscode/launch.json`).
 
 If no file is passed, `AppEnv` falls back to `FLAVOR=dev` with an empty `BASE_URL`.
 
-## CI
+## CI and releases
 
-CI does not need env files to analyze or test. A release workflow should write the file
-from repository **variables** (not secrets — the values are public once shipped):
+GitHub CI does not need env files to analyze or test. Release builds happen outside
+GitHub Actions (see `docs/CI_CD.md`):
 
-```yaml
-- name: Write env/prod.json
-  env:
-    PROD_ENV_JSON: ${{ vars.PROD_ENV_JSON }}
-  run: printf '%s' "$PROD_ENV_JSON" > env/prod.json
-```
+- Android: `bash scripts/release.sh <flavor>` reads your local `env/<flavor>.json`.
+- iOS: Codemagic writes `env/<flavor>.json` from the `ENV_JSON_<FLAVOR>` secret in its
+  `ios_release` environment group.
 
 ## Adding a key
 

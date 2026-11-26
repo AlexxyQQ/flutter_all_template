@@ -14,7 +14,7 @@ void main() {
 
   setUp(() {
     api = _MockApiClient();
-    repository = PushTokenRepositoryImpl(api);
+    repository = PushTokenRepositoryImpl(api: api);
   });
 
   test('register POSTs the token to the push-token endpoint', () async {
@@ -26,7 +26,7 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    final result = await repository.register('t');
+    final result = await repository.register(token: 't');
 
     expect(result.isRight(), isTrue);
     final body =
@@ -51,7 +51,7 @@ void main() {
       ),
     ).thenThrow(const UnauthorizedException());
 
-    final result = await repository.unregister('t');
+    final result = await repository.unregister(token: 't');
 
     expect(result.getLeft().toNullable()?.type, FailureType.unauthorized);
   });

@@ -1,74 +1,54 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# FVM Version Cache
-.fvm/
-
 # ============================================================
-# 🔐 Firebase / Secrets — DO NOT COMMIT REAL CREDENTIALS
-# The placeholder versions of these files are tracked in git.
-# After running `flutterfire configure`, git will see changes —
-# use `git update-index --assume-unchanged <file>` to suppress
-# them locally, or add your real files to a private branch.
+# SECURITY: nothing below may ever be committed. Only the
+# placeholder `*.example` siblings of secret files are tracked.
 # ============================================================
-# Uncomment these lines to prevent git from tracking real keys:
-# android/app/google-services.json
-# ios/Runner/GoogleService-Info.plist
-# lib/config/firebase/firebase_options.dart
-# brick/__brick__/android/app/google-services.json
-# brick/__brick__/ios/Runner/GoogleService-Info.plist
-# brick/__brick__/lib/config/firebase/firebase_options.dart
 
-# Environment files (real values — never commit). Only *.example.json is tracked.
+# Firebase client config (real values come from `flutterfire configure`).
+# Create placeholders with `rps firebase:init`; templates are the *.example files.
+google-services.json
+GoogleService-Info.plist
+firebase.json
+.firebaserc
+lib/config/firebase/firebase_options.dart
+# Firebase / GCP service accounts and admin SDK keys
+**/*service-account*.json
+**/*-adminsdk-*.json
+**/*firebase-adminsdk*.json
+
+# Signing material: keystores, certificates, provisioning, API keys
+android/key.properties
+**/key.properties
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pfx
+*.pem
+*.cer
+*.crt
+*.key
+*.mobileprovision
+*.certSigningRequest
+
+# Environment files (real values). Only env/*.example.json is tracked.
 env/*.json
 !env/*.example.json
 .env
 .env.*
+!.env.example
+
+# Local tool state that may hold tokens or absolute paths
+.claude/
+.mcp.json
+.mason/
+mason-lock.json
+bricks/**/hooks/build/
+bricks/**/hooks/pubspec.lock
+pubspec_overrides.yaml
+.fvm/
+
 # ============================================================
-# Generated code — produced by `rps gen` / CI, never committed
+# Generated code: produced by `rps gen` / CI, never committed
 # ============================================================
 *.g.dart
 *.freezed.dart
@@ -77,16 +57,63 @@ env/*.json
 *.mocks.dart
 lib/config/constants/gen/
 
-# Mason local state & compiled hooks (contain absolute local paths).
-# mason-lock.json is machine-specific for local `path:` bricks — regenerate with `mason get`.
-.mason/
-mason-lock.json
-bricks/**/hooks/build/
+# ============================================================
+# Build output, symbols, release artefacts
+# ============================================================
+build/
+coverage/
+.dart_tool/
+.pub-cache/
+.pub/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+**/doc/api/
+**/ios/Flutter/.last_build_id
+**/symbols/
+*.symbols
+app.*.symbols
+app.*.map.json
+*.dSYM
+*.dSYM.zip
+*.dsym
+*.apk
+*.aab
+*.ipa
+*.tar.gz
+/android/app/debug
+/android/app/profile
+/android/app/release
 
-# Android release signing (never commit)
-android/key.properties
-*.jks
-*.keystore
+# Platform build/local state (also covered by android/.gitignore, ios/.gitignore)
+android/local.properties
+android/.gradle/
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+*.xcuserstate
 
-# Local tool settings
-.claude/settings.local.json
+# Maestro run output
+maestro-report*
+.maestro/**/screenshots/
+.maestro/**/*.mp4
+
+# Logs, OS and IDE junk
+*.log
+*.class
+*.pyc
+*.swp
+.DS_Store
+Thumbs.db
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+node_modules/
+*.iml
+*.ipr
+*.iws
+.idea/
+# .vscode/ is tracked on purpose (shared launch configs).

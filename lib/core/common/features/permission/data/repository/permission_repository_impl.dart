@@ -14,12 +14,18 @@ import '../data_sources/permission_platform_data_source.dart';
 
 @LazySingleton(as: IPermissionRepository)
 class PermissionRepositoryImpl implements IPermissionRepository {
-  const PermissionRepositoryImpl(
-    this._platform,
+  const PermissionRepositoryImpl({
+    required PermissionPlatformDataSource platform,
     // brick:if use_notifications
-    this._notifications,
+    required NotificationPermissionApi notifications,
     // brick:end
-  );
+  }) : _platform = platform,
+       // brick:if use_notifications
+       _notifications = notifications,
+       // brick:end
+       // Always-present last initializer keeps the list valid when the optional
+       // notifications region is stripped from generated projects.
+       super();
 
   final PermissionPlatformDataSource _platform;
 
@@ -30,60 +36,66 @@ class PermissionRepositoryImpl implements IPermissionRepository {
   // brick:end
 
   @override
-  ResultFuture<AppPermissionStatus> check(AppPermission permission) =>
-      guard(() async {
-        switch (permission) {
-          // brick:if use_notifications
-          case AppPermission.notification:
-            if (await _notifications.isPermissionGranted()) {
-              return AppPermissionStatus.granted;
-            }
-            return _platformStatus(permission);
-          // brick:end
-          case AppPermission.location:
-            if (!await _platform.isLocationServiceEnabled()) {
-              // GPS is off: treat as not granted so the UI prompts.
-              return AppPermissionStatus.denied;
-            }
-            return _platformStatus(permission);
-          case _:
-            return _platformStatus(permission);
+  ResultFuture<AppPermissionStatus> check({
+    required AppPermission permission,
+  }) => guard(() async {
+    switch (permission) {
+      // brick:if use_notifications
+      case AppPermission.notification:
+        if (await _notifications.isPermissionGranted()) {
+          return AppPermissionStatus.granted;
         }
-      });
+        return _platformStatus(permission);
+      // brick:end
+      case AppPermission.location:
+        if (!await _platform.isLocationServiceEnabled()) {
+          // GPS is off: treat as not granted so the UI prompts.
+          return AppPermissionStatus.denied;
+        }
+        return _platformStatus(permission);
+      case _:
+        return _platformStatus(permission);
+    }
+  });
 
   @override
-  ResultFuture<AppPermissionStatus> request(AppPermission permission) =>
-      guard(() async {
-        switch (permission) {
-          // brick:if use_notifications
-          case AppPermission.notification:
-            if (await _notifications.requestPermission()) {
-              return AppPermissionStatus.granted;
-            }
-            // Distinguish "denied" from "denied forever".
-            return _platformStatus(permission);
-          // brick:end
-          case AppPermission.location:
-            if (!await _platform.isLocationServiceEnabled()) {
-              await _platform.openLocationSettings();
-              return AppPermissionStatus.denied;
-            }
-            return mapPermissionStatus(
-              await _platform.request(permission.spec.platformPermission),
-            );
-          case _:
-            return mapPermissionStatus(
-              await _platform.request(permission.spec.platformPermission),
-            );
+  ResultFuture<AppPermissionStatus> request({
+    required AppPermission permission,
+  }) => guard(() async {
+    switch (permission) {
+      // brick:if use_notifications
+      case AppPermission.notification:
+        if (await _notifications.requestPermission()) {
+          return AppPermissionStatus.granted;
         }
-      });
+        // Distinguish "denied" from "denied forever".
+        return _platformStatus(permission);
+      // brick:end
+      case AppPermission.location:
+        if (!await _platform.isLocationServiceEnabled()) {
+          await _platform.openLocationSettings();
+          return AppPermissionStatus.denied;
+        }
+        return mapPermissionStatus(
+          await _platform.request(
+            permission: permission.spec.platformPermission,
+          ),
+        );
+      case _:
+        return mapPermissionStatus(
+          await _platform.request(
+            permission: permission.spec.platformPermission,
+          ),
+        );
+    }
+  });
 
   @override
   ResultFuture<bool> openSettings() => guard(_platform.openAppSettings);
 
   Future<AppPermissionStatus> _platformStatus(AppPermission permission) async =>
       mapPermissionStatus(
-        await _platform.status(permission.spec.platformPermission),
+        await _platform.status(permission: permission.spec.platformPermission),
       );
 }
 

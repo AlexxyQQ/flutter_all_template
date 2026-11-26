@@ -10,7 +10,8 @@ import 'key_value_stores.dart';
 /// whose `debugMessage` contains only the operation and key name.
 @LazySingleton(as: SecureStore)
 class FlutterSecureStore implements SecureStore {
-  FlutterSecureStore(this._storage);
+  FlutterSecureStore({required FlutterSecureStorage storage})
+    : _storage = storage;
 
   final FlutterSecureStorage _storage;
 

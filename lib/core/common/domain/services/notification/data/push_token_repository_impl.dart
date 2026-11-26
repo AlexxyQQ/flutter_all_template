@@ -9,12 +9,12 @@ import '../notification_api_paths.dart';
 
 @LazySingleton(as: PushTokenRepository)
 class PushTokenRepositoryImpl implements PushTokenRepository {
-  const PushTokenRepositoryImpl(this._api);
+  const PushTokenRepositoryImpl({required ApiClient api}) : _api = api;
 
   final ApiClient _api;
 
   @override
-  ResultFuture<void> register(String token) => guard(
+  ResultFuture<void> register({required String token}) => guard(
     () => _api.post<void>(
       NotificationApiPaths.pushToken,
       body: {'token': token, 'platform': defaultTargetPlatform.name},
@@ -23,7 +23,7 @@ class PushTokenRepositoryImpl implements PushTokenRepository {
   );
 
   @override
-  ResultFuture<void> unregister(String token) => guard(
+  ResultFuture<void> unregister({required String token}) => guard(
     () => _api.delete<void>(
       NotificationApiPaths.pushToken,
       body: {'token': token},

@@ -234,7 +234,7 @@ JSON (`en-GB.json`):
 
 Dart usage:
 ```dart
-AppText(LocaleKeys
+Text(LocaleKeys
     .core_common_features_permission_presentation_screens_camera_permission_screen_title
     .tr())
 ```

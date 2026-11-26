@@ -9,9 +9,9 @@ import 'package:permission_handler/permission_handler.dart'
 /// Thin wrapper around the `permission_handler` / `geolocator` statics so the
 /// repository can be unit-tested.
 abstract interface class PermissionPlatformDataSource {
-  Future<PermissionStatus> status(Permission permission);
+  Future<PermissionStatus> status({required Permission permission});
 
-  Future<PermissionStatus> request(Permission permission);
+  Future<PermissionStatus> request({required Permission permission});
 
   Future<bool> isLocationServiceEnabled();
 
@@ -25,10 +25,11 @@ class PermissionHandlerDataSource implements PermissionPlatformDataSource {
   const PermissionHandlerDataSource();
 
   @override
-  Future<PermissionStatus> status(Permission permission) => permission.status;
+  Future<PermissionStatus> status({required Permission permission}) =>
+      permission.status;
 
   @override
-  Future<PermissionStatus> request(Permission permission) =>
+  Future<PermissionStatus> request({required Permission permission}) =>
       permission.request();
 
   @override

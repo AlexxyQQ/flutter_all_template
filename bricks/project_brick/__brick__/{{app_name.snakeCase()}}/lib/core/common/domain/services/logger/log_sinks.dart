@@ -116,7 +116,7 @@ class NoopCrashReporter implements CrashReporter {
 
 /// Forwards **warnings and errors only** to a [CrashReporter].
 class CrashReporterSink implements LogSink {
-  CrashReporterSink(this.reporter);
+  CrashReporterSink({required this.reporter});
 
   final CrashReporter reporter;
 

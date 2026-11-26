@@ -9,20 +9,20 @@ abstract interface class I{{feature_name.pascalCase()}}LocalDataSource {
   Future<List<{{feature_name.pascalCase()}}Model>> get{{feature_name.pascalCase()}}s();
 
   /// Throws `CacheMissException` if [id] isn't cached.
-  Future<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}(String id);
+  Future<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}({required String id});
 
-  Future<void> save{{feature_name.pascalCase()}}s(Iterable<{{feature_name.pascalCase()}}Model> items);
+  Future<void> save{{feature_name.pascalCase()}}s({required Iterable<{{feature_name.pascalCase()}}Model> items});
 
-  Future<void> save{{feature_name.pascalCase()}}({{feature_name.pascalCase()}}Model item);
+  Future<void> save{{feature_name.pascalCase()}}({required {{feature_name.pascalCase()}}Model item});
 
-  Future<void> delete{{feature_name.pascalCase()}}(String id);
+  Future<void> delete{{feature_name.pascalCase()}}({required String id});
 
   Future<void> clear();
 }
 
 @LazySingleton(as: I{{feature_name.pascalCase()}}LocalDataSource)
 class {{feature_name.pascalCase()}}LocalDataSource implements I{{feature_name.pascalCase()}}LocalDataSource {
-  {{feature_name.pascalCase()}}LocalDataSource(PreferencesStore store)
+  {{feature_name.pascalCase()}}LocalDataSource({required PreferencesStore store})
     : _items = JsonCollectionStore<{{feature_name.pascalCase()}}Model>(
         store: store,
         key: storageKey,
@@ -39,16 +39,16 @@ class {{feature_name.pascalCase()}}LocalDataSource implements I{{feature_name.pa
   Future<List<{{feature_name.pascalCase()}}Model>> get{{feature_name.pascalCase()}}s() => _items.readAll();
 
   @override
-  Future<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}(String id) => _items.read(id);
+  Future<{{feature_name.pascalCase()}}Model> get{{feature_name.pascalCase()}}({required String id}) => _items.read(id);
 
   @override
-  Future<void> save{{feature_name.pascalCase()}}s(Iterable<{{feature_name.pascalCase()}}Model> items) => _items.upsertAll(items);
+  Future<void> save{{feature_name.pascalCase()}}s({required Iterable<{{feature_name.pascalCase()}}Model> items}) => _items.upsertAll(items);
 
   @override
-  Future<void> save{{feature_name.pascalCase()}}({{feature_name.pascalCase()}}Model item) => _items.upsert(item);
+  Future<void> save{{feature_name.pascalCase()}}({required {{feature_name.pascalCase()}}Model item}) => _items.upsert(item);
 
   @override
-  Future<void> delete{{feature_name.pascalCase()}}(String id) => _items.delete(id);
+  Future<void> delete{{feature_name.pascalCase()}}({required String id}) => _items.delete(id);
 
   @override
   Future<void> clear() => _items.clear();

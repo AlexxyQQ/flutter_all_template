@@ -73,10 +73,10 @@ void main() {
       () => push.onTokenRefresh,
     ).thenAnswer((_) => const Stream<String>.empty());
     when(
-      () => tokens.register(any()),
+      () => tokens.register(token: any(named: 'token')),
     ).thenAnswer((_) async => const Right(null));
     when(
-      () => tokens.unregister(any()),
+      () => tokens.unregister(token: any(named: 'token')),
     ).thenAnswer((_) async => const Right(null));
     when(
       () => awesome.initialize(any(), any(), debug: any(named: 'debug')),
@@ -94,14 +94,16 @@ void main() {
     when(() => navigation.pushNamed(any())).thenAnswer((_) async {});
 
     service = NotificationService(
-      push,
-      awesome,
-      prefs,
-      tokens,
-      session,
-      navigation,
-      const NotificationRouteAllowlist.custom({'home': AppPaths.splashRoute}),
-      logger,
+      push: push,
+      awesome: awesome,
+      prefs: prefs,
+      tokens: tokens,
+      session: session,
+      navigation: navigation,
+      routes: const NotificationRouteAllowlist.custom({
+        'home': AppPaths.splashRoute,
+      }),
+      logger: logger,
     );
   });
 
@@ -128,24 +130,29 @@ void main() {
         await service.initialize();
         final hook =
             verify(
-                  () => session.registerLogoutHook(captureAny()),
+                  () => session.registerLogoutHook(
+                    hook: captureAny(named: 'hook'),
+                  ),
                 ).captured.single
                 as LogoutHook;
 
         await hook();
 
-        verify(() => tokens.unregister(_token)).called(1);
+        verify(() => tokens.unregister(token: _token)).called(1);
         verify(() => push.deleteToken()).called(1);
       },
     );
 
     test('the hook still deletes the token when unregistering fails', () async {
       when(
-        () => tokens.unregister(any()),
+        () => tokens.unregister(token: any(named: 'token')),
       ).thenAnswer((_) async => const Left(Failure.unknown()));
       await service.initialize();
       final hook =
-          verify(() => session.registerLogoutHook(captureAny())).captured.single
+          verify(
+                () =>
+                    session.registerLogoutHook(hook: captureAny(named: 'hook')),
+              ).captured.single
               as LogoutHook;
 
       await hook();
@@ -161,8 +168,10 @@ void main() {
         await service.initialize();
         await service.initialize();
 
-        verify(() => session.registerLogoutHook(any())).called(1);
-        verify(() => tokens.register(_token)).called(1);
+        verify(
+          () => session.registerLogoutHook(hook: any(named: 'hook')),
+        ).called(1);
+        verify(() => tokens.register(token: _token)).called(1);
       },
     );
   });
@@ -174,7 +183,7 @@ void main() {
       verify(
         () => prefs.setBool(NotificationPrefs.enabledKey, value: false),
       ).called(1);
-      verify(() => tokens.unregister(_token)).called(1);
+      verify(() => tokens.unregister(token: _token)).called(1);
       verify(() => push.deleteToken()).called(1);
       verify(() => awesome.cancelAll()).called(1);
       verifyNever(() => awesome.cancel(any()));
@@ -185,7 +194,7 @@ void main() {
 
       await service.toggleNotifications(isEnabled: true);
 
-      verify(() => tokens.register(_token)).called(1);
+      verify(() => tokens.register(token: _token)).called(1);
     });
   });
 
