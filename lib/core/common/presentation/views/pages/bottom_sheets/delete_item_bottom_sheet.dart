@@ -47,7 +47,7 @@ class DeleteItemBottomSheet extends StatelessWidget {
             16.horizontalGap,
             Expanded(
               child: AppText(
-                '${LocaleKeys.common_words_delete.tr()} ${title}',
+                '${LocaleKeys.common_words_delete.tr()} $title',
                 style: context.textStyles.titleLarge.copyWith(
                   fontWeight: AppMaterialTextPrimitives.semibold,
                 ),

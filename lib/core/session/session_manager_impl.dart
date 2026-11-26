@@ -100,6 +100,7 @@ class SessionManagerImpl implements SessionManager {
     }
   }
 
+  @override
   @disposeMethod
   Future<void> dispose() => _status.close();
 }

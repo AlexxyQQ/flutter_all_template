@@ -42,10 +42,6 @@ final class Failure extends Equatable {
       statusCode = null,
       fieldErrors = const {};
 
-  /// Transitional helper for legacy call sites. Never exposes `e.toString()`.
-  @Deprecated('Throw/catch AppException and use guard() instead.')
-  factory Failure.fromException(Object? e) => const Failure.unknown();
-
   /// Localization key or safe user-facing message.
   final String message;
 

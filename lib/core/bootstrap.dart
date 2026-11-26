@@ -55,6 +55,7 @@ Future<void> bootstrap({
       runApp(
         EasyLocalization(
           supportedLocales: AppLocales.appLocales,
+          // ignore: avoid_hardcoded_strings_in_widgets
           path: 'assets/translations',
           fallbackLocale: AppLocales.en,
           startLocale: startLocale,

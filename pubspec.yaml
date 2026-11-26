@@ -88,7 +88,6 @@ dependencies:
   intl: ^0.20.2
   path_provider: ^2.1.5
   shared_preferences: ^2.5.4
-  uuid: ^4.5.2
 
 dev_dependencies:
   # ============================================================
@@ -98,6 +97,7 @@ dev_dependencies:
     sdk: flutter
   mockito: ^5.6.3 # Mocking library for unit tests
   mocktail: ^1.0.4 # Codegen-free mocks (preferred for new tests)
+  shared_preferences_platform_interface: ^2.4.1 # In-memory prefs for DI/storage tests
   bloc_test: ^10.0.0 # Testing helpers for BLoC
   network_image_mock: ^2.1.1 # Mock network images in widget tests
 

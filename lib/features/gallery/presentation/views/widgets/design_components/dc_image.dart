@@ -19,15 +19,15 @@ class DcImage extends StatelessWidget {
   const DcImage({super.key});
 
   // A simple 1x1 transparent pixel in Base64 for testing Memory images
-  static String _base64Pixel =
+  static const String _base64Pixel =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1cRzAAAAAElFTkSuQmCC';
 
   Uint8List get _memoryBytes => base64Decode(_base64Pixel);
 
   // Use a public stable SVG for testing network
-  static String _networkSvgUrl =
+  static const String _networkSvgUrl =
       'https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/android.svg';
-  static String _errorUrl = 'https://invalid-url.com/missing.svg';
+  static const String _errorUrl = 'https://invalid-url.com/missing.svg';
 
   @override
   Widget build(BuildContext context) {
@@ -120,11 +120,11 @@ class DcImage extends StatelessWidget {
             title: LocaleKeys
                 .features_splash_presentation_views_widgets_design_components_dc_image_network_svg_success,
           ),
-          AppSvgPicture.fromNetwork(
+          const AppSvgPicture.fromNetwork(
             _networkSvgUrl,
             width: 100,
             height: 100,
-            theme: const PictureTheme(fit: BoxFit.contain),
+            theme: PictureTheme(fit: BoxFit.contain),
           ),
 
           10.verticalGap,

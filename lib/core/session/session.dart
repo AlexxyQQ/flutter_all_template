@@ -38,4 +38,7 @@ abstract interface class SessionManager {
   Future<void> signOut();
 
   void registerLogoutHook(LogoutHook hook);
+
+  /// Releases resources (e.g. stream controllers). Called by GetIt on teardown.
+  Future<void> dispose();
 }

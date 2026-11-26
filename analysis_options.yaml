@@ -48,7 +48,7 @@ linter:
     require_trailing_commas: true # Require trailing commas in multi-line params.
     lines_longer_than_80_chars: false # Allow long lines.
     public_member_api_docs: false # No enforced docs on public APIs.
-    sort_pub_dependencies: ignore # Don't enforce pubspec deps ordering.
+    sort_pub_dependencies: false # Don't enforce pubspec deps ordering.
     use_enums: true # Encourage enums instead of constants/strings.
     cascade_invocations: true # Use cascades (..) for chained calls.
     always_declare_return_types: true # Explicit return types on functions.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,9 +38,8 @@ class DcChangeable extends StatelessWidget {
               return AppChipWidget.detail(
                 isSelected: isSelected,
                 title: locale.languageCode.toUpperCase(),
-                onTap: () {
-                  context.read<LocaleCubit>().changeLocale(locale);
-                },
+                onTap: () =>
+                    unawaited(context.read<LocaleCubit>().changeLocale(locale)),
               );
             }).toList(),
           ),
@@ -59,9 +60,8 @@ class DcChangeable extends StatelessWidget {
                   return AppChipWidget.detail(
                     isSelected: isSelected,
                     title: mode.name.toTitleCase,
-                    onTap: () {
-                      context.read<ThemeCubit>().changeTheme(mode);
-                    },
+                    onTap: () =>
+                        unawaited(context.read<ThemeCubit>().changeTheme(mode)),
                   );
                 }).toList(),
               );

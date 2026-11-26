@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../config/constants/gen/locale_keys.g.dart';
 import '../../../../common/domain/entities/failure.dart';
+import '../../../../common/presentation/extensions/size/size_extension.dart';
 import '../../bloc/paged_list_bloc.dart';
 
 /// Infinite list bound to a [PagedListBloc].
@@ -26,6 +27,8 @@ class PaginationListView<T> extends StatefulWidget {
     this.scrollController,
     this.showLoadMoreButton = false,
     this.separatorBuilder,
+    // Default must be const; extension getters aren't const-evaluable.
+    // ignore: avoid_edge_insets_all
     this.padding = const EdgeInsets.all(16),
     this.enablePullToRefresh = true,
     this.autoStart = true,
@@ -167,8 +170,7 @@ class _PaginationListViewState<T> extends State<PaginationListView<T>> {
       padding: widget.padding,
       itemCount: itemCount,
       separatorBuilder: (context, index) =>
-          widget.separatorBuilder?.call(context, index) ??
-          const SizedBox(height: 8),
+          widget.separatorBuilder?.call(context, index) ?? 8.verticalGap,
       itemBuilder: (context, index) => index < state.items.length
           ? widget.itemBuilder(context, state.items[index], index)
           : footer!,
@@ -178,9 +180,9 @@ class _PaginationListViewState<T> extends State<PaginationListView<T>> {
   Widget? _buildFooter(BuildContext context, PagedState<T, Object?> state) {
     final failure = state.failure;
     if (state.isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator.adaptive()),
+      return Padding(
+        padding: 16.allPadding,
+        child: const Center(child: CircularProgressIndicator.adaptive()),
       );
     }
     if (failure != null && state.hasMore) {
@@ -191,7 +193,7 @@ class _PaginationListViewState<T> extends State<PaginationListView<T>> {
     }
     if (!state.hasMore) {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: 16.allPadding,
         child: Text(
           LocaleKeys.common_sentences_noMoreData.tr(),
           textAlign: TextAlign.center,
@@ -200,7 +202,7 @@ class _PaginationListViewState<T> extends State<PaginationListView<T>> {
       );
     }
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: 16.allPadding,
       child: OutlinedButton(
         onPressed: state.canLoadMore ? _loadMore : null,
         child: Text(LocaleKeys.common_sentences_loadMore.tr()),
@@ -227,7 +229,7 @@ class _Placeholder extends StatelessWidget {
             minWidth: constraints.maxWidth,
           ),
           child: Center(
-            child: Padding(padding: const EdgeInsets.all(16), child: child),
+            child: Padding(padding: 16.allPadding, child: child),
           ),
         ),
       ),
@@ -245,12 +247,12 @@ class _ErrorMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: 16.allPadding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
+          16.verticalGap,
           Text(
             failure.message.tr(),
             textAlign: TextAlign.center,
@@ -258,7 +260,7 @@ class _ErrorMessage extends StatelessWidget {
               color: theme.colorScheme.error,
             ),
           ),
-          const SizedBox(height: 16),
+          16.verticalGap,
           FilledButton(
             onPressed: onRetry,
             child: Text(LocaleKeys.common_words_retry.tr()),
@@ -283,7 +285,7 @@ class _EmptyMessage extends StatelessWidget {
           size: 48,
           color: theme.colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(height: 16),
+        16.verticalGap,
         Text(
           LocaleKeys.common_errors_noDataFound.tr(),
           textAlign: TextAlign.center,

@@ -48,11 +48,20 @@ jobs:
           -S assets/translations -f keys
           -O lib/config/constants/gen -o locale_keys.g.dart
 
+      # easy_localization emits unformatted Dart; normalise it so the
+      # formatting gate below does not fail on generated code.
+      - name: Format generated code
+        run: dart format lib/config/constants/gen
+
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze
         run: flutter analyze
+
+      # Custom lint rules (app_custom_lints); `flutter analyze` does not run them.
+      - name: Custom lint
+        run: dart run custom_lint
 
       - name: Test
         run: flutter test --coverage

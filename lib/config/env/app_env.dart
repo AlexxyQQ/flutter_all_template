@@ -14,9 +14,7 @@ abstract final class AppEnv {
   static const String baseUrl = String.fromEnvironment('BASE_URL');
 
   /// Opt-in remote log upload (disabled unless explicitly enabled).
-  static const bool enableLogUpload = bool.fromEnvironment(
-    'ENABLE_LOG_UPLOAD',
-  );
+  static const bool enableLogUpload = bool.fromEnvironment('ENABLE_LOG_UPLOAD');
   static const String logUploadUrl = String.fromEnvironment('LOG_UPLOAD_URL');
 
   /// Debug-only escape hatches. Ignored in release builds.

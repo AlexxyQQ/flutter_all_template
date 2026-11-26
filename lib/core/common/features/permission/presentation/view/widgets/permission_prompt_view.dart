@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../../../config/constants/gen/locale_keys.g.dart';
+import '../../../../../presentation/extensions/size/size_extension.dart';
 import '../../../../../presentation/views/widgets/system/app_button.dart';
 import '../../../../../presentation/views/widgets/system/text/app_text_widget.dart';
 import '../../../permission_spec.dart';
@@ -27,7 +28,7 @@ class PermissionPromptView extends StatelessWidget {
     final imageAsset = spec.imageAsset;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: 16.allPadding,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -35,7 +36,7 @@ class PermissionPromptView extends StatelessWidget {
               Image.asset(imageAsset, height: 200, width: 200)
             else
               Icon(spec.icon, size: 120, color: theme.colorScheme.primary),
-            const SizedBox(height: 24),
+            24.verticalGap,
             AppText(
               spec.titleKey,
               textAlign: TextAlign.center,
@@ -43,28 +44,28 @@ class PermissionPromptView extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 12),
+            12.verticalGap,
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: 32.horizontalPadding,
               child: AppText(
                 spec.messageKey,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge,
               ),
             ),
-            const SizedBox(height: 32),
+            32.verticalGap,
             AppButton.primary(
               isLoading: isLoading,
               onPressed: onContinue,
               label: LocaleKeys.common_words_continue,
             ),
-            const SizedBox(height: 20),
+            20.verticalGap,
             AppButton.ghost(
               isDisabled: isLoading,
               onPressed: onSkip,
               label: LocaleKeys.common_sentences_mayBeLater,
             ),
-            const SizedBox(height: 48),
+            48.verticalGap,
           ],
         ),
       ),

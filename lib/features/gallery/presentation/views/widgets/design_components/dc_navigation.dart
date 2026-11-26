@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../../../../config/constants/paths/app_path.dart';
+import '../../../../../../core/common/features/permission/domain/entities/app_permission.dart';
 import '../../../../../../core/common/presentation/extensions/size/size_extension.dart';
 import '../../../../../../core/common/presentation/routes/app_router.gr.dart';
 import '../../../../../../core/common/presentation/views/widgets/system/app_button.dart';
@@ -33,8 +33,10 @@ class DcNavigation extends StatelessWidget {
                     .features_home_presentation_views_screens_home_screen_title,
               ),
               AppButton.stroke(
-                onPressed: () => context.router.pushPath(
-                  '${AppPaths.permission}/${AppPaths.notificationPermission}',
+                onPressed: () => context.router.push(
+                  PermissionScreenRoute(
+                    permission: AppPermission.notification.name,
+                  ),
                 ),
                 label: LocaleKeys
                     .core_common_features_permission_presentation_screens_notification_permission_screen_title,
