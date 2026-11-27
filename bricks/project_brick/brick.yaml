@@ -1,6 +1,6 @@
 name: flutter_all_template
-description: Barebones Flutter starter (Clean Architecture, BLoC, Material 3) with optional Firebase, notifications and permissions
-version: 3.0.0+1
+description: Barebones Flutter starter (Clean Architecture, BLoC, Material 3) with optional Firebase, notifications, permissions and delivery tooling (CI, Codemagic, Maestro)
+version: 3.1.0+1
 environment:
   mason: ">=0.1.0-dev.52 <0.2.0"
 
@@ -15,6 +15,16 @@ vars:
     description: Organization identifier (e.g. com.example)
     prompt: What is the organization? (e.g. com.example)
     default: com.example
+  app_display_name:
+    type: string
+    description: Name shown under the launcher icon (Android label, iOS CFBundleDisplayName). Leave empty to derive it from app_name (my_app -> My App)
+    prompt: Display name under the launcher icon? (leave empty to derive it from the app name)
+    default: ""
+  base_url:
+    type: string
+    description: Dev API base URL written to env/dev.example.json. Must end with a slash. Leave empty to keep the emulator default (http://10.0.2.2:8080/api/v1/)
+    prompt: Dev API base URL? (e.g. https://api.example.com/v1/, leave empty for the emulator default)
+    default: ""
   use_firebase:
     type: boolean
     description: Include Firebase Core and Firebase Analytics
@@ -30,3 +40,18 @@ vars:
     description: Include the permission flow (PermissionBloc + screen + route guard)
     prompt: Include permission screens?
     default: false
+  use_ci:
+    type: boolean
+    description: GitHub Actions (PR CI, weekly OSV scan), Dependabot and the gitleaks config
+    prompt: Include GitHub Actions CI and security scans?
+    default: true
+  use_codemagic:
+    type: boolean
+    description: codemagic.yaml (iOS/Android cloud builds and store delivery)
+    prompt: Include the Codemagic pipeline?
+    default: true
+  use_maestro:
+    type: boolean
+    description: Maestro end-to-end flows, their stub server, scripts/maestro.sh, docs/MAESTRO.md and the rps maestro scripts
+    prompt: Include Maestro end-to-end tests?
+    default: true

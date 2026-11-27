@@ -1,0 +1,55 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../../../config/constants/gen/locale_keys.g.dart';
+import '../../../../../../core/generic/presentation/bloc/bloc_exports.dart';
+{{#use_params}}import '../../../../domain/params/{{feature_name.snakeCase()}}_params.dart';
+{{/use_params}}import '../../../bloc/{{feature_name.snakeCase()}}_list_bloc.dart';
+
+/// Search box under the app bar. Typing sends a (debounced) query change to
+/// the [{{feature_name.pascalCase()}}ListBloc], which reloads from the first page.
+class {{feature_name.pascalCase()}}SearchField extends StatefulWidget {
+  const {{feature_name.pascalCase()}}SearchField({super.key});
+
+  @override
+  State<{{feature_name.pascalCase()}}SearchField> createState() => _{{feature_name.pascalCase()}}SearchFieldState();
+}
+
+class _{{feature_name.pascalCase()}}SearchFieldState extends State<{{feature_name.pascalCase()}}SearchField> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) => context.read<{{feature_name.pascalCase()}}ListBloc>().add(
+    PagedListQueryChanged<{{#use_params}}{{feature_name.pascalCase()}}Query{{/use_params}}{{^use_params}}String{{/use_params}}>(
+      {{#use_params}}{{feature_name.pascalCase()}}Query(search: value.trim()){{/use_params}}{{^use_params}}value.trim(){{/use_params}},
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Semantics(
+        identifier: '{{feature_name.snakeCase()}}_search_field',
+        child: TextField(
+          key: const Key('{{feature_name.snakeCase()}}_search_field'),
+          controller: _controller,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search),
+            hintText: LocaleKeys.common_words_search.tr(),
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+          onChanged: _onChanged,
+        ),
+      ),
+    );
+  }
+}

@@ -117,3 +117,6 @@ node_modules/
 *.iws
 .idea/
 # .vscode/ is tracked on purpose (shared launch configs).
+
+# Generated on demand by `rps brick` (tool/sync_brick.dart); never committed.
+bricks/project_brick/__brick__/

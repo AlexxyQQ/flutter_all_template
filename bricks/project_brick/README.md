@@ -6,6 +6,7 @@ the optional modules you pick.
 ```bash
 dart pub global activate mason_cli
 git clone https://github.com/AlexxyQQ/flutter_all_template && cd flutter_all_template
+dart run tool/sync_brick.dart          # generates __brick__ from the repo (git-ignored)
 mason get
 mason make flutter_all_template        # renders into ./<app_name>/
 ```
@@ -36,7 +37,7 @@ The app, tests, and the delivery tooling: lean PR CI (`.github/workflows/ci.yml`
 OSV scan, Dependabot, `codemagic.yaml`, `scripts/release.sh`, `.maestro/` with
 `scripts/maestro.sh`, and `docs/` (CI_CD, MAESTRO, FLAVORS, CODE_SIGNING, PLATFORM_SETUP).
 Not shipped: `bricks/`, `tool/`, mason files, `CHANGELOG.md`, the template README (replaced
-by a short project README), the `brick` rps script and the brick-sync CI step.
+by a short project README), the `brick` rps script and the brick-generation CI step.
 
 ## Next steps in the generated project
 
@@ -51,11 +52,11 @@ flutter run --dart-define-from-file=env/dev.json
 
 ## Maintaining the brick
 
-`__brick__/` is generated from the repo; never edit it by hand.
+`__brick__/` is generated from the repo and git-ignored: never edit or commit it. Generate
+it on demand (CI runs the same command as a smoke test):
 
 ```bash
-dart run tool/sync_brick.dart           # rewrite
-dart run tool/sync_brick.dart --check   # fail if stale (runs in CI)
+dart run tool/sync_brick.dart
 ```
 
 Optional regions in source files are marked with comments that become Mustache sections:

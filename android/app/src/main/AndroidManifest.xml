@@ -6,7 +6,7 @@
          required permissions (e.g. firebase_messaging adds WAKE_LOCK,
          ACCESS_NETWORK_STATE, POST_NOTIFICATIONS), so only list what the
          app itself requests at runtime.
-         Keep this list in sync with lib/core/common/features/permission/.
+         Keep this list in sync with lib/features/permission/.
          ================================================================ -->
 
     <!-- Network (normal permission, always needed) -->

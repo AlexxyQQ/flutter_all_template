@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter_all_template/core/error/app_exception.dart';
 import 'package:flutter_all_template/core/generic/domain/entities/page.dart';
+import 'package:flutter_all_template/core/session/session_scope.dart';
 import 'package:flutter_all_template/features/example/data/data_sources/local/todo_local_data_source.dart';
 import 'package:flutter_all_template/features/example/data/data_sources/remote/todo_remote_data_source.dart';
 import 'package:flutter_all_template/features/example/data/models/todo_model.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../core/generic/data/in_memory_preferences_store.dart';
+import '../../../../helpers/in_memory_preferences_store.dart';
 import '../fakes.dart';
 
 TodoModel _todo(String id, {String title = 'Title', bool isDone = false}) =>
@@ -26,7 +27,6 @@ void main() {
 
       expect(model.isDone, isTrue);
       expect(model.toEntity().updatedAt, DateTime.utc(2026));
-      expect(TodoModel.fromEntity(model.toEntity()), model);
       expect(model.toJson(), containsPair('is_done', true));
     });
 
@@ -60,7 +60,7 @@ void main() {
 
       final call = client.calls.single;
       expect(call.method, 'GET');
-      expect(call.path, '/todos');
+      expect(call.path, 'todos');
       expect(call.query, {
         'page': 2,
         'limit': 2,
@@ -88,7 +88,6 @@ void main() {
     });
 
     test('uses the right verb and path for each call', () async {
-      await dataSource.getTodo(id: 'a/b');
       await dataSource.createTodo(params: const CreateTodoParams(title: 'New'));
       await dataSource.updateTodo(
         params: const UpdateTodoParams(id: '1', isDone: true),
@@ -97,10 +96,9 @@ void main() {
       await dataSource.deleteTodo(id: '1');
 
       expect(client.calls.map((c) => '${c.method} ${c.path} ${c.body}'), [
-        'GET /todos/a%2Fb null',
-        'POST /todos {title: New}',
-        'PATCH /todos/1 {is_done: true}',
-        'DELETE /todos/1 null',
+        'POST todos {title: New}',
+        'PATCH todos/1 {is_done: true}',
+        'DELETE todos/1 null',
       ]);
     });
 
@@ -108,7 +106,7 @@ void main() {
       client.respond = (_) => throw const NetworkException();
 
       expect(
-        () => dataSource.getTodo(id: '1'),
+        () => dataSource.deleteTodo(id: '1'),
         throwsA(isA<NetworkException>()),
       );
     });
@@ -118,11 +116,8 @@ void main() {
     late InMemoryPreferencesStore store;
     late TodoLocalDataSource dataSource;
 
-    const page1 = PageRequest.first(limit: 2);
-    const page2 = PageRequest(page: 2, limit: 2);
     const all = TodoQuery();
     const open = TodoQuery(onlyOpen: true);
-    const milk = TodoQuery(search: 'milk');
 
     PageResult<TodoModel> result(List<TodoModel> items, {bool more = true}) =>
         PageResult(items: items, hasMore: more, nextCursor: 'c');
@@ -130,17 +125,26 @@ void main() {
     Future<void> save(
       TodoQuery query,
       List<TodoModel> items, {
-      PageRequest page = page1,
-    }) => dataSource.savePage(page: page, query: query, result: result(items));
+      int limit = 2,
+    }) => dataSource.saveFirstPage(
+      query: query,
+      limit: limit,
+      result: result(items),
+    );
 
-    Future<PageResult<TodoModel>?> read(
-      TodoQuery query, {
-      PageRequest page = page1,
-    }) => dataSource.getPage(page: page, query: query);
+    Future<PageResult<TodoModel>?> read(TodoQuery query, {int limit = 2}) =>
+        dataSource.getFirstPage(query: query, limit: limit);
 
     setUp(() {
       store = InMemoryPreferencesStore();
       dataSource = TodoLocalDataSource(store: store);
+    });
+
+    test('is stored under the session scope so sign-out wipes it', () {
+      expect(
+        TodoLocalDataSource.storageKey,
+        startsWith(SessionScope.keyPrefix),
+      );
     });
 
     test('replays exactly what the server returned for that query', () async {
@@ -150,149 +154,47 @@ void main() {
       expect(hit!.items.map((t) => t.id), ['1', '2']);
       expect(hit.hasMore, isTrue);
       expect(hit.nextCursor, 'c');
-      // Another query / page / size is never approximated from this one.
+      // Another query / page size is never approximated from this one.
       expect(await read(open), isNull);
-      expect(await read(all, page: page2), isNull);
-      expect(await read(all, page: const PageRequest.first(limit: 5)), isNull);
+      expect(await read(const TodoQuery(search: 'milk')), isNull);
+      expect(await read(all, limit: 5), isNull);
     });
 
-    test('a fresh first page drops the stale later pages', () async {
+    test('keeps only the most recent first page', () async {
       await save(all, [_todo('1')]);
-      await save(all, [_todo('2')], page: page2);
-      await save(open, [_todo('1')]);
+      await save(open, [_todo('2')]);
 
-      await save(all, [_todo('9')]);
-
-      expect(await read(all, page: page2), isNull);
-      expect(await read(open), isNotNull);
-      expect((await read(all))!.items.single.id, '9');
+      expect(await read(all), isNull);
+      expect((await read(open))!.items.single.id, '2');
     });
 
-    test('is bounded: least recently used pages are evicted', () async {
-      const hot = TodoQuery(search: 'q0');
-      for (var i = 0; i < TodoLocalDataSource.maxPages + 5; i++) {
-        await save(TodoQuery(search: 'q$i'), [_todo('$i')]);
-        await read(hot); // Keep q0 recently used.
-      }
+    test('an unreadable entry is discarded and reads as a miss', () async {
+      store.values[TodoLocalDataSource.storageKey] = '{not json';
 
-      expect(await read(hot), isNotNull);
-      expect(await read(const TodoQuery(search: 'q1')), isNull);
-      final stored = store.getString(TodoLocalDataSource.storageKey)!;
-      expect(
-        '"search"'.allMatches(stored).length,
-        TodoLocalDataSource.maxPages,
-      );
+      expect(await read(all), isNull);
+      expect(store.values, isNot(contains(TodoLocalDataSource.storageKey)));
     });
 
-    test('oversized pages and searches are not stored unbounded', () async {
-      const big = PageRequest.first(limit: 500);
-      await save(all, [for (var i = 0; i < 300; i++) _todo('$i')], page: big);
-      expect(
-        (await read(all, page: big))!.items,
-        hasLength(TodoLocalDataSource.maxItemsPerPage),
-      );
-
-      final longSearch = TodoQuery(search: 'x' * 200);
-      await save(longSearch, [_todo('1')]);
-      expect(await read(longSearch), isNull);
-    });
-
-    test('getTodo finds an item in any cached page, else misses', () async {
-      await save(all, [_todo('1'), _todo('2')]);
-
-      expect((await dataSource.getTodo(id: '2')).id, '2');
-      expect(
-        () => dataSource.getTodo(id: 'x'),
-        throwsA(isA<CacheMissException>()),
-      );
-    });
-
-    group('mutations', () {
-      setUp(() async {
-        await save(all, [_todo('1', title: 'Buy milk'), _todo('2')]);
-        await save(open, [_todo('1', title: 'Buy milk'), _todo('2')]);
-        await save(milk, [_todo('1', title: 'Buy milk')]);
+    test('an entry of the wrong shape is discarded', () async {
+      store.values[TodoLocalDataSource.storageKey] = jsonEncode({
+        'search': '',
+        'only_open': false,
+        'limit': 2,
+        'items': [
+          {'garbage': true},
+        ],
+        'has_more': true,
       });
 
-      test('an update replaces in place', () async {
-        await dataSource.saveTodo(todo: _todo('2', title: 'Renamed'));
-
-        expect((await read(all))!.items.map((t) => t.title), [
-          'Buy milk',
-          'Renamed',
-        ]);
-        expect(await read(milk), isNotNull);
-      });
-
-      test('completing an item removes it from "only open" pages', () async {
-        await dataSource.saveTodo(
-          todo: _todo('1', title: 'Buy milk', isDone: true),
-        );
-
-        expect((await read(open))!.items.map((t) => t.id), ['2']);
-        expect((await read(all))!.items.first.isDone, isTrue);
-      });
-
-      test(
-        'an item that newly matches a query invalidates that query',
-        () async {
-          await dataSource.saveTodo(todo: _todo('2', title: 'milk run'));
-
-          expect(await read(milk), isNull);
-          expect(await read(all), isNotNull);
-        },
-      );
-
-      test('delete removes the id from every page', () async {
-        await dataSource.deleteTodo(id: '1');
-
-        for (final q in [all, open, milk]) {
-          expect((await read(q))!.items.where((t) => t.id == '1'), isEmpty);
-        }
-      });
-    });
-
-    group('repair', () {
-      test('a corrupt value is discarded and the cache works again', () async {
-        store.values[TodoLocalDataSource.storageKey] = '{not json';
-
-        expect(await read(open), isNull);
-        expect(
-          store.values.containsKey(TodoLocalDataSource.storageKey),
-          isFalse,
-        );
-
-        await save(open, [_todo('1')]);
-        expect(await read(open), isNotNull);
-      });
-
-      test('a corrupt value never blocks writes', () async {
-        store.values[TodoLocalDataSource.storageKey] = '[1, 2]';
-
-        await save(open, [_todo('1')]);
-
-        expect(await read(open), isNotNull);
-      });
-
-      test('only the undecodable entry is dropped', () async {
-        await save(open, [_todo('1')]);
-        await save(all, [_todo('2')]);
-        final json =
-            jsonDecode(store.getString(TodoLocalDataSource.storageKey)!)
-                as Map<String, dynamic>;
-        (json['entries'] as List<dynamic>)[0] = {'garbage': true};
-        store.values[TodoLocalDataSource.storageKey] = jsonEncode(json);
-
-        expect(await read(open), isNull);
-        expect(await read(all), isNotNull);
-      });
+      expect(await read(all), isNull);
+      expect(store.values, isNot(contains(TodoLocalDataSource.storageKey)));
     });
 
     test('clear empties the cache', () async {
-      await save(open, [_todo('1')]);
+      await save(all, [_todo('1')]);
       await dataSource.clear();
 
-      expect(await read(open), isNull);
+      expect(await read(all), isNull);
     });
   });
 }

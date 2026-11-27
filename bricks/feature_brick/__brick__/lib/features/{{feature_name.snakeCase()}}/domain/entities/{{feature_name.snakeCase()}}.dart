@@ -1,15 +1,25 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part '{{feature_name.snakeCase()}}.freezed.dart';
+import 'package:equatable/equatable.dart';
 
 /// A {{feature_name.pascalCase()}}. Pure domain object: no JSON, no Flutter.
 ///
 /// Add your domain fields here, in `{{feature_name.pascalCase()}}Model` and (if present) the params.
-@freezed
-abstract class {{feature_name.pascalCase()}} with _${{feature_name.pascalCase()}} {
-  const factory {{feature_name.pascalCase()}}({
-    required String id,
-    required String title,
-    required DateTime updatedAt,
-  }) = _{{feature_name.pascalCase()}};
+final class {{feature_name.pascalCase()}} extends Equatable {
+  const {{feature_name.pascalCase()}}({
+    required this.id,
+    required this.title,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String title;
+  final DateTime updatedAt;
+
+  {{feature_name.pascalCase()}} copyWith({String? title, DateTime? updatedAt}) => {{feature_name.pascalCase()}}(
+    id: id,
+    title: title ?? this.title,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+
+  @override
+  List<Object?> get props => [id, title, updatedAt];
 }

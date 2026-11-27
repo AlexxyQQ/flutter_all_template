@@ -31,10 +31,25 @@ are git-ignored; create them with `rps gen`.
 ```
 lib/
 ├── main.dart          entry point: optional Firebase init, then bootstrap
-├── config/            static configuration, no business logic
-├── core/              shared infrastructure and cross-cutting concerns
+├── app/               composition root: knows every feature (bootstrap, DI, router, observers)
+├── config/            static configuration, no business logic and no imports from core/
+├── core/              shared, feature-agnostic code; never imports features/ or app/
 └── features/          product features (data / domain / presentation)
 ```
+
+Dependencies point one way: `app` -> `features` -> `core` -> `config`.
+The only upward reference is generated: feature route files import the route classes from
+`app/router/app_router.gr.dart`.
+
+### `app/`
+
+| Path | Purpose |
+|---|---|
+| `bootstrap.dart`, `app.dart` | error handling, DI setup, session restore, `MaterialApp.router` with the global providers |
+| `di/service_locator.dart` | get_it + injectable setup (`sl`) |
+| `router/app_router.dart` | `AppRouter` (auto_route): composes the routes of every feature; registered as `RootStackRouter` |
+| `providers/global_bloc_providers.dart` | app-wide bloc providers |
+| `observers/` | `AppBlocObserver`, `AppRouteObserver` |
 
 ### `config/`
 
@@ -44,33 +59,37 @@ lib/
 | `constants/api/` | base URL helpers (`api_constants.dart`), endpoint paths (`api_paths.dart`) |
 | `constants/locales/` | supported locales |
 | `constants/paths/app_path.dart` | route path constants |
-| `constants/type_defs/` | `ResultFuture`, `ResultVoid` and friends |
 | `constants/gen/` | generated `assets.gen.dart` (flutter_gen) and `locale_keys.g.dart` (git-ignored) |
 | `firebase/firebase_options.dart` | FlutterFire config, git-ignored; tracked as `.example` (only with the Firebase module) |
-| `observers/` | `AppBlocObserver`, route observer |
 
 ### `core/`
 
 | Path | Purpose |
 |---|---|
-| `bootstrap.dart`, `app.dart` | DI setup, global error handling, `MaterialApp.router` with the global providers |
-| `error/` | `AppException` (thrown by data sources) and `guard()` which turns it into a `Failure` |
-| `network/` | `ApiClient` interface, Dio implementation, auth / refresh-token / logging interceptors |
-| `storage/` | `SecureStore` for secrets, `PreferencesStore` for settings, and `EncryptedHiveStore` for private local records |
-| `session/` | `TokenStore` on secure storage and `SessionManager` (sign-in / sign-out) |
-| `generic/` | `PagedListBloc`, `LoadCubit`, `SelectionCubit`, `PageRequest`/`PageResult`, `JsonCollectionStore`, `AsyncLock`, `SingleFlightCache` (see its README) |
-| `common/data/models/helpers/` | JSON and entity conversion helpers |
-| `common/domain/entities/failure.dart` | `Failure`; its `message` is a localization key |
-| `common/domain/services/analytics/` | per-user action, navigation and error analytics with local and remote destinations |
-| `common/domain/services/logger/` | redacting logger with pluggable sinks |
-| `common/domain/services/navigation/` | `NavigationService` over `AppRouter` |
-| `common/domain/services/notification/` | FCM + local notifications (optional module) |
-| `common/features/app_settings/` | locale preference (non-secret) |
-| `common/features/permission/` | one enum, one spec table, one bloc, one screen, one guard (optional module) |
-| `common/locator/` | get_it + injectable setup (`sl`) |
-| `common/presentation/blocs/` | `LocaleCubit`, global bloc providers |
-| `common/presentation/modals/` | shared bottom sheets and popup dialogs |
-| `common/presentation/routes/` | `AppRouter` (auto_route) |
+| `error/` | `AppException` (thrown by data sources), `guard()` which turns it into a `Failure`, `Failure` (pure Dart) and the `ResultFuture<T>` typedef |
+| `network/` | `IApiClient` interface, Dio implementation, auth / refresh-token / logging interceptors |
+| `storage/` | `ISecureStore` for secrets, `IPreferencesStore` for settings, and `EncryptedHiveStore` for private local records |
+| `session/` | `ITokenStore` on secure storage, `ISessionManager` (sign-in / sign-out / status), the interceptor-only `ISessionAuthority` (token refresh, session generation) and `SessionScope` (preference keys removed on sign-out) |
+| `generic/` | `PagedListBloc`, `PageRequest`/`PageResult`, `JsonCollectionStore`, `AsyncLock` (see its README) |
+| `presentation/modals/` | `ModalService`, shared bottom sheets and popup dialogs |
+| `services/` | cross-cutting services, one folder each (below) |
+
+Every service uses the same layout:
+
+```
+core/services/<name>/
+├── domain/          interfaces and entities, pure Dart (no Flutter, Dio, Hive, Firebase, plugins)
+├── data/            implementations, DI modules, destinations, helpers (all infrastructure)
+├── presentation/    only if the service touches Flutter UI (lifecycle observers, NavigationService)
+└── README.md
+```
+
+| Service | Purpose |
+|---|---|
+| `services/analytics/` | per-user action, navigation and error analytics with local and remote destinations |
+| `services/logger/` | redacting logger (`ILoggerService`, static `AppLogger`) with pluggable sinks |
+| `services/navigation/` | `NavigationService` over a `RootStackRouter` (the app supplies `AppRouter`) |
+| `services/notification/` | FCM + local notifications (optional module) |
 
 ### `features/`
 
@@ -83,8 +102,9 @@ features/<name>/
 └── presentation/    bloc/, routes/ (route table), views/{wrappers (route shell, provides the bloc), screens, widgets}
 ```
 
-Current features: `splash` and `home` (presentation only) and `example` (a complete Todo slice
-with paging, search and an offline cache). Generate new slices (with page, wrapper, route and widget test) with `mason make flutter_feature`.
+Current features: `splash` and `home` (presentation only), `app_settings` (locale preference,
+non-secret), `permission` (one enum, one spec table, one bloc, one screen, one guard; optional
+module) and `example` (a complete Todo slice with paging, search and an offline cache). Generate new slices (with page, wrapper, route and widget test) with `mason make flutter_feature`.
 
 ## Layering rules
 
@@ -95,6 +115,7 @@ with paging, search and an offline cache). Generate new slices (with page, wrapp
 - Data sources throw `AppException`; repositories wrap calls in `guard()` and return
   `ResultFuture<T>` (`Either<Failure, T>`).
 - Blocs never call `.tr()`: they expose `Failure.message` (a key) and widgets translate it.
+- `core/` never imports `features/` or `app/`; `config/` never imports `core/`; `domain` folders hold pure Dart only.
 - Resolve dependencies through constructor injection; `sl` is only used at composition
   points (route wrappers, `bootstrap`).
 - No `Map<String, dynamic>` crosses the domain boundary; ids are `String`.
@@ -106,14 +127,14 @@ with paging, search and an offline cache). Generate new slices (with page, wrapp
 | Task | Do |
 |---|---|
 | New feature | `mason make flutter_feature` (route is registered for you), run `rps gen` |
-| New route | `@RoutePage` screen, `*Route` class, register it in `app_router.dart` |
-| New translation | add the key to every `assets/translations/*.json`, run `rps gen:keys` |
-| New permission | see `lib/core/common/features/permission/README.md` |
-| New endpoint | add a constant to `ApiPaths`, call it through `ApiClient` in a remote data source |
+| New route | `@RoutePage` screen, a `<Feature>Routes` holder (`static final route`), register it in `app/router/app_router.dart` |
+| New translation | add a semantic key (`features.<name>.<key>`) to every `assets/translations/*.json`, run `rps gen:keys` |
+| New permission | see `lib/features/permission/README.md` |
+| New endpoint | add a constant to `ApiPaths`, call it through `IApiClient` in a remote data source |
 | New flavor value | add it to `env/*.example.json` and read it in `AppEnv` |
 
 ## Tests
 
-`test/unit/` mirrors `lib/core` and `lib/features`; `test/widget/` holds screen tests
+`test/unit/` mirrors `lib/app`, `lib/core` and `lib/features`; `test/widget/` holds screen tests
 (`helpers/test_app.dart` builds a minimal app). Prefer `mocktail` fakes over generated mocks.
 End-to-end flows live in `.maestro/` (see `docs/MAESTRO.md`).

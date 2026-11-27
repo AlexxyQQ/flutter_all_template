@@ -44,7 +44,11 @@ mason add -g flutter_all_template --path C:\src\fat\bricks\project_brick
 mason add -g flutter_feature      --path C:\src\fat\bricks\feature_brick
 ```
 
-Update later with `git pull` in that folder.
+`bricks/project_brick/__brick__` is generated and not committed, so build it once after
+cloning (and again after every `git pull`): `dart pub get && dart run tool/sync_brick.dart`
+(or `rps brick`).
+
+Update later with `git pull` in that folder, then regenerate the brick.
 
 > **Windows: do not use `mason add --git-url`.** Mason copies git bricks into a cache
 > folder with a ~170-character name, and the brick's deeper files then exceed Windows'
@@ -109,16 +113,16 @@ Do these in the first hour:
 3. **Delete the Todo example** once you have read it (it is the reference for your own
    features). Remove:
    - `lib/features/example/` and `test/unit/features/example/`, `test/widget/features/example/`
-   - the `TodoRoutes.route` entry in `lib/core/common/presentation/routes/app_router.dart`
+   - the `TodoRoutes.route` entry in `lib/app/router/app_router.dart`
    - the "open to-dos" button in `lib/features/home/presentation/views/screens/home_screen.dart`
    - `ApiPaths.todos` in `lib/config/constants/api/api_paths.dart`
-   - the todo checks in `test/unit/core/locator/di_smoke_test.dart`
+   - the todo checks in `test/unit/app/di/di_smoke_test.dart`
    - the todo translation keys in `assets/translations/*.json`, and `.maestro/flows/02_navigation.yaml`,
      `03_todos.yaml`, `.maestro/stub_server.mjs`
 
    Then `rps gen && rps check`. Both should pass before you commit.
 4. **Design.** The app uses Flutter's default Material 3 theme. Add your own `ThemeData`
-   in `lib/core/app.dart` when you are ready; there is intentionally no theme system to unwind.
+   in `lib/app/app.dart` when you are ready; there is intentionally no theme system to unwind.
 5. **Read the rules.** [RULES.md](RULES.md) is short and has Do/Don't examples. CI and
    reviewers expect it: layers, use cases, named parameters and constructors, errors via
    `guard()`, localized strings.
@@ -146,7 +150,7 @@ open the page (`context.router.push(const NoteRoute())`). `rps gen` also generat
 Set `ANALYTICS_ENABLED=true` in a flavor file to keep encrypted local action,
 screen and error history. Enable Firebase Analytics or set an HTTPS batch
 endpoint to forward the same events remotely. Identify the user after sign-in
-with an opaque account ID. [Analytics setup](lib/core/common/domain/services/analytics/README.md)
+with an opaque account ID. [Analytics setup](lib/core/services/analytics/README.md)
 
 ## Ship it
 
@@ -211,16 +215,15 @@ rps gen
 rps run dev
 ```
 
-The generated project brick is built **from this repo**, so never edit
-`bricks/project_brick/__brick__` by hand:
+The generated project brick is built **from this repo** and is git-ignored, so there is
+nothing to edit or commit in `bricks/project_brick/__brick__`:
 
 ```bash
-rps brick                               # dart run tool/sync_brick.dart: regenerate the brick
-dart run tool/sync_brick.dart --check   # fails if stale (CI runs this)
+rps brick                               # dart run tool/sync_brick.dart: generate the brick
 mason get && mason make flutter_all_template   # try it locally (bricks come from mason.yaml)
 ```
 
-Change something the brick copies, run `rps brick`, commit both. Details:
+Run `rps brick` before `mason make`; CI runs it as a smoke test. Details:
 [bricks/project_brick](bricks/project_brick/README.md). Read [RULES.md](RULES.md) before
 opening a PR.
 

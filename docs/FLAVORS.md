@@ -25,8 +25,6 @@ cp env/dev.example.json env/dev.json
 {
   "FLAVOR": "dev",
   "BASE_URL": "http://10.0.2.2:8080/api/v1/",
-  "ENABLE_LOG_UPLOAD": false,
-  "LOG_UPLOAD_URL": "",
   "ANALYTICS_ENABLED": false,
   "ANALYTICS_API_URL": "",
   "ANALYTICS_FIREBASE_ENABLED": false,
@@ -37,14 +35,12 @@ cp env/dev.example.json env/dev.json
 
 The values are read in Dart through `lib/config/env/app_env.dart` (`AppEnv.flavor`,
 `AppEnv.baseUrl`, …), which uses `String.fromEnvironment` / `bool.fromEnvironment`.
-They are constants, so unused branches (e.g. `if (AppEnv.isDev)`) are tree-shaken.
+They are constants, so unused branches (e.g. `if (AppEnv.flavor == 'dev')`) are tree-shaken.
 
 | Key | Type | Notes |
 |---|---|---|
 | `FLAVOR` | string | `dev` (default if no file is passed) · `staging` · `prod` |
 | `BASE_URL` | string | API root with trailing slash. Must be `https://` outside debug builds — Android blocks cleartext in release (`network_security_config.xml`) and iOS ATS blocks it everywhere |
-| `ENABLE_LOG_UPLOAD` | bool | Remote log upload is **off** unless this is `true` |
-| `LOG_UPLOAD_URL` | string | Used only when upload is enabled |
 | `ANALYTICS_ENABLED` | bool | Analytics is **off** unless this is `true` (and a destination below is set) |
 | `ANALYTICS_API_URL` | string | Absolute `https://` URL of your analytics batch endpoint; empty = not used |
 | `ANALYTICS_FIREBASE_ENABLED` | bool | Also send to Firebase Analytics; only in projects generated with Firebase |
@@ -76,7 +72,8 @@ See [`SECURITY.md`](../SECURITY.md).
 VS Code: pick **dev**, **staging**, **prod (profile mode)** or **prod (release mode)**
 in the Run & Debug panel (`.vscode/launch.json`).
 
-If no file is passed, `AppEnv` falls back to `FLAVOR=dev` with an empty `BASE_URL`.
+If no file is passed, `AppEnv` falls back to `FLAVOR=dev`, but `BASE_URL` stays empty and the app
+refuses to start (`AppEnv.validate()` throws a `StateError` naming the missing define).
 
 ## CI and releases
 

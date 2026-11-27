@@ -16,42 +16,58 @@ void main() {
   });
 
   test('synchronous reads delegate to the cache', () {
-    when(() => prefs.getString('s')).thenReturn('x');
-    when(() => prefs.getBool('b')).thenReturn(true);
-    when(() => prefs.getInt('i')).thenReturn(3);
+    when(() => prefs.get('s')).thenReturn('x');
+    when(() => prefs.get('b')).thenReturn(true);
 
-    expect(store.getString('s'), 'x');
-    expect(store.getBool('b'), isTrue);
-    expect(store.getInt('i'), 3);
+    expect(store.getString(key: 's'), 'x');
+    expect(store.getBool(key: 'b'), isTrue);
+  });
+
+  test('an absent key reads as null', () {
+    when(() => prefs.get('s')).thenReturn(null);
+    expect(store.getString(key: 's'), isNull);
   });
 
   test('a value of the wrong type reads as null', () {
-    when(() => prefs.getBool('b')).thenThrow(TypeError());
-    expect(store.getBool('b'), isNull);
+    when(() => prefs.get('b')).thenReturn('not a bool');
+    expect(store.getBool(key: 'b'), isNull);
   });
 
   test('writes delegate to the cache', () async {
     when(() => prefs.setString('s', 'x')).thenAnswer((_) async {});
     when(() => prefs.setBool('b', true)).thenAnswer((_) async {});
-    when(() => prefs.setInt('i', 1)).thenAnswer((_) async {});
     when(() => prefs.remove('s')).thenAnswer((_) async {});
     when(prefs.clear).thenAnswer((_) async {});
 
-    await store.setString('s', 'x');
-    await store.setBool('b', value: true);
-    await store.setInt('i', 1);
-    await store.remove('s');
+    await store.setString(key: 's', value: 'x');
+    await store.setBool(key: 'b', value: true);
+    await store.remove(key: 's');
     await store.clear();
 
     verify(() => prefs.setBool('b', true)).called(1);
     verify(prefs.clear).called(1);
   });
 
-  test('write errors become StorageException', () async {
-    when(() => prefs.setString('s', 'x')).thenThrow(Exception('disk full'));
+  test('removeByPrefix removes only keys with that prefix', () async {
+    when(() => prefs.keys).thenReturn({'session.a', 'session.b', 'prefs.c'});
+    when(() => prefs.remove(any())).thenAnswer((_) async {});
+
+    await store.removeByPrefix(prefix: 'session.');
+
+    verify(() => prefs.remove('session.a')).called(1);
+    verify(() => prefs.remove('session.b')).called(1);
+    verifyNever(() => prefs.remove('prefs.c'));
+  });
+
+  test('write errors become StorageException keeping the cause', () async {
+    final diskFull = Exception('disk full');
+    when(() => prefs.setString('s', 'x')).thenThrow(diskFull);
+
     await expectLater(
-      store.setString('s', 'x'),
-      throwsA(isA<StorageException>()),
+      store.setString(key: 's', value: 'x'),
+      throwsA(
+        isA<StorageException>().having((e) => e.cause, 'cause', same(diskFull)),
+      ),
     );
   });
 }

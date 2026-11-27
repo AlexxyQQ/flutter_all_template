@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_all_template/config/constants/type_defs/typedef.dart';
-import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_all_template/core/error/failure.dart';
+import 'package:flutter_all_template/core/error/typedef.dart';
 import 'package:flutter_all_template/core/generic/presentation/bloc/paged_list_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -25,7 +26,7 @@ class FakeFetcher {
   }
 }
 
-const failure = Failure(message: 'error.key', type: FailureType.network);
+const failure = Failure(messageKey: 'error.key', type: FailureType.network);
 
 Either<Failure, PageResult<int>> page(
   List<int> items, {
@@ -77,7 +78,7 @@ void main() {
       build: build,
       act: (bloc) async {
         bloc.add(const PagedListStarted());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListStarted());
       },
       verify: (_) => expect(fetcher.requests, hasLength(1)),
@@ -109,9 +110,9 @@ void main() {
       build: build,
       act: (bloc) async {
         bloc.add(const PagedListStarted());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListNextPageRequested());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListNextPageRequested()); // no more pages
       },
       verify: (bloc) {
@@ -128,18 +129,18 @@ void main() {
     test('concurrent requests are dropped while one is loading', () async {
       fetcher.responses.add(page([1, 2]));
       final bloc = build()..add(const PagedListStarted());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       bloc
         ..add(const PagedListNextPageRequested())
         ..add(const PagedListNextPageRequested())
         ..add(const PagedListNextPageRequested());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(fetcher.requests, hasLength(2));
       expect(bloc.state.isLoadingMore, isTrue);
       fetcher.pending.single.complete(page([3, 4]));
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(bloc.state.items, [1, 2, 3, 4]);
       await bloc.close();
     });
@@ -154,9 +155,9 @@ void main() {
       build: build,
       act: (bloc) async {
         bloc.add(const PagedListStarted());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListNextPageRequested());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(bloc.state.items, [1, 2]);
         expect(bloc.state.failure, failure);
         bloc.add(const PagedListNextPageRequested());
@@ -180,9 +181,9 @@ void main() {
       build: build,
       act: (bloc) async {
         bloc.add(const PagedListStarted());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListNextPageRequested());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListRefreshed());
       },
       skip: 4,
@@ -213,7 +214,7 @@ void main() {
       build: build,
       act: (bloc) async {
         bloc.add(const PagedListStarted());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListRefreshed());
       },
       verify: (bloc) {
@@ -226,17 +227,17 @@ void main() {
     test('discards a load-more that was in flight', () async {
       fetcher.responses.add(page([1, 2]));
       final bloc = build()..add(const PagedListStarted());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       bloc.add(const PagedListNextPageRequested()); // pending[0]
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       bloc.add(const PagedListRefreshed()); // pending[1]
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       fetcher.pending[1].complete(page([7, 8]));
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       fetcher.pending[0].complete(page([3, 4]));
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(bloc.state.items, [7, 8]);
       expect(bloc.state.nextPage?.page, 2);
@@ -245,33 +246,40 @@ void main() {
   });
 
   group('query', () {
-    test('is debounced: only the last query of a burst is fetched', () async {
-      fetcher.responses.add(page([1]));
-      final bloc = build(debounce: const Duration(milliseconds: 30))
-        ..add(const PagedListQueryChanged('a'))
-        ..add(const PagedListQueryChanged('ab'))
-        ..add(const PagedListQueryChanged('abc'));
+    test('is debounced: only the last query of a burst is fetched', () {
+      fakeAsync((async) {
+        fetcher.responses.add(page([1]));
+        final bloc = build(debounce: const Duration(milliseconds: 30))
+          ..add(const PagedListQueryChanged('a'))
+          ..add(const PagedListQueryChanged('ab'))
+          ..add(const PagedListQueryChanged('abc'));
 
-      await Future<void>.delayed(const Duration(milliseconds: 80));
+        async.elapse(const Duration(milliseconds: 29));
+        expect(fetcher.requests, isEmpty); // Still waiting for the burst.
 
-      expect(fetcher.requests, [(const PageRequest.first(limit: 2), 'abc')]);
-      expect(bloc.state.query, 'abc');
-      expect(bloc.state.items, [1]);
-      await bloc.close();
+        async.elapse(const Duration(milliseconds: 1));
+        async.flushMicrotasks();
+
+        expect(fetcher.requests, [(const PageRequest.first(limit: 2), 'abc')]);
+        expect(bloc.state.query, 'abc');
+        expect(bloc.state.items, [1]);
+        unawaited(bloc.close());
+        async.flushMicrotasks();
+      });
     });
 
     test(
       'is restartable: a slower older query never overwrites a newer one',
       () async {
         final bloc = build()..add(const PagedListQueryChanged('old'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListQueryChanged('new'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         fetcher.pending[1].complete(page([2]));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         fetcher.pending[0].complete(page([1]));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(bloc.state.query, 'new');
         expect(bloc.state.items, [2]);
@@ -285,9 +293,9 @@ void main() {
       build: build,
       act: (bloc) async {
         bloc.add(const PagedListQueryChanged('x'));
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
         bloc.add(const PagedListQueryChanged('x'));
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
       },
       verify: (_) => expect(fetcher.requests, hasLength(1)),
     );
@@ -301,12 +309,12 @@ void main() {
           ..add(page([1, 2], cursor: 'c1'))
           ..add(const Left(failure));
         final bloc = build()..add(const PagedListStarted());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(bloc.state.items, [1, 2]);
         expect(bloc.state.canLoadMore, isTrue);
 
         bloc.add(const PagedListQueryChanged('new'));
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
 
         expect(bloc.state.query, 'new');
         expect(bloc.state.failure, failure);
@@ -316,13 +324,13 @@ void main() {
         expect(bloc.state.canLoadMore, isFalse);
 
         bloc.add(const PagedListNextPageRequested());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(fetcher.requests, hasLength(2)); // No page-2 for 'new'.
 
         // Retrying the same query (refresh) recovers.
         fetcher.responses.add(page([7], hasMore: false));
         bloc.add(const PagedListRefreshed());
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
         expect(bloc.state.items, [7]);
         expect(bloc.state.failure, isNull);
         expect(fetcher.requests.last, (
@@ -338,10 +346,10 @@ void main() {
         ..add(page([1, 2], cursor: 'c1'))
         ..add(const Left(failure));
       final bloc = build()..add(const PagedListStarted());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       bloc.add(const PagedListRefreshed());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(bloc.state.items, [1, 2]);
       expect(bloc.state.failure, failure);
@@ -350,7 +358,120 @@ void main() {
     });
   });
 
+  group('refresh completion', () {
+    test('completes when the reload finished, even if it failed', () async {
+      fetcher.responses
+        ..add(page([1, 2]))
+        ..add(const Left(failure));
+      final bloc = build()..add(const PagedListStarted());
+      await pumpEventQueue();
+
+      final completion = Completer<void>();
+      bloc.add(PagedListRefreshed(completion: completion));
+      await pumpEventQueue();
+
+      expect(completion.isCompleted, isTrue);
+      expect(bloc.state.failure, failure);
+      await bloc.close();
+    });
+
+    test('stays pending while the reload is in flight', () async {
+      fetcher.responses.add(page([1, 2]));
+      final bloc = build()..add(const PagedListStarted());
+      await pumpEventQueue();
+
+      final completion = Completer<void>();
+      bloc.add(PagedListRefreshed(completion: completion));
+      await pumpEventQueue();
+      expect(completion.isCompleted, isFalse);
+
+      fetcher.pending.single.complete(page([9]));
+      await pumpEventQueue();
+      expect(completion.isCompleted, isTrue);
+      await bloc.close();
+    });
+  });
+
+  group('stale results', () {
+    test('a refresh finishing after a query change is dropped', () async {
+      fetcher.responses.add(page([1, 2]));
+      final bloc = build()..add(const PagedListStarted());
+      await pumpEventQueue();
+
+      bloc.add(const PagedListRefreshed()); // pending[0]: query ''
+      await pumpEventQueue();
+      bloc.add(const PagedListQueryChanged('new')); // pending[1]
+      await pumpEventQueue();
+
+      fetcher.pending[1].complete(page([5]));
+      await pumpEventQueue();
+      fetcher.pending[0].complete(page([1, 2, 3])); // Answers the old query.
+      await pumpEventQueue();
+
+      expect(bloc.state.query, 'new');
+      expect(bloc.state.items, [5]);
+      await bloc.close();
+    });
+
+    test('a load-more finishing after a query change is dropped', () async {
+      fetcher.responses.add(page([1, 2]));
+      final bloc = build()..add(const PagedListStarted());
+      await pumpEventQueue();
+
+      bloc.add(const PagedListNextPageRequested()); // pending[0]
+      await pumpEventQueue();
+      bloc.add(const PagedListQueryChanged('new')); // pending[1]
+      await pumpEventQueue();
+
+      fetcher.pending[1].complete(page([5]));
+      await pumpEventQueue();
+      fetcher.pending[0].complete(page([3, 4]));
+      await pumpEventQueue();
+
+      expect(bloc.state.items, [5]);
+      expect(bloc.state.isLoadingMore, isFalse);
+      await bloc.close();
+    });
+  });
+
+  group('load hooks', () {
+    test('report each load start and each failure once', () async {
+      fetcher.responses
+        ..add(page([1, 2]))
+        ..add(const Left(failure));
+      final bloc = RecordingBloc(fetcher.call);
+
+      bloc.add(const PagedListStarted());
+      await pumpEventQueue();
+      bloc.add(const PagedListRefreshed());
+      await pumpEventQueue();
+
+      expect(bloc.started, [PagedListStarted, PagedListRefreshed]);
+      expect(bloc.failures, [failure]);
+      await bloc.close();
+    });
+
+    test('an ignored event is not reported', () async {
+      fetcher.responses.add(page([1]));
+      final bloc = RecordingBloc(fetcher.call);
+
+      bloc.add(const PagedListStarted());
+      await pumpEventQueue();
+      bloc.add(const PagedListStarted()); // Already loaded: ignored.
+      await pumpEventQueue();
+
+      expect(bloc.started, [PagedListStarted]);
+      await bloc.close();
+    });
+  });
+
   group('PageRequest / PageResult', () {
+    test('first goes through the asserting constructor', () {
+      expect(const PageRequest.first(limit: 3), const PageRequest(limit: 3));
+      final zero = int.parse('0');
+      expect(() => PageRequest.first(limit: zero), throwsAssertionError);
+    });
+
     test('offset and fromItems', () {
       const request = PageRequest(page: 3, limit: 10);
       expect(request.offset, 20);
@@ -373,4 +494,20 @@ void main() {
       );
     });
   });
+}
+
+/// Exposes what the protected load hooks were told.
+class RecordingBloc extends PagedListBloc<int, String> {
+  RecordingBloc(PageFetcher<int, String> fetchPage)
+    : super(fetchPage: fetchPage, initialQuery: '', pageSize: 2);
+
+  final started = <Type>[];
+  final failures = <Failure>[];
+
+  @override
+  void onLoadStarted({required PagedListEvent event}) =>
+      started.add(event.runtimeType);
+
+  @override
+  void onLoadFailed({required Failure failure}) => failures.add(failure);
 }

@@ -7,6 +7,7 @@ import 'package:easy_localization/src/localization.dart';
 // ignore: implementation_imports
 import 'package:easy_localization/src/translations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_all_template/app/theme/app_theme.dart';
 
 /// Loads the real `en-GB` translations so `.tr()` works without the
 /// `EasyLocalization` widget (no SharedPreferences / asset bundle needed).
@@ -18,8 +19,6 @@ void loadTestTranslations() {
   Localization.load(const Locale('en', 'GB'), translations: Translations(json));
 }
 
-/// Hosts a router config in a [MaterialApp.router] with the default theme.
-Widget routerApp(RouterConfig<Object> config) => MaterialApp.router(
-  theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
-  routerConfig: config,
-);
+/// Hosts a router config in a [MaterialApp.router] with the app theme.
+Widget routerApp(RouterConfig<Object> config) =>
+    MaterialApp.router(theme: AppTheme.light, routerConfig: config);

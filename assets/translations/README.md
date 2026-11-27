@@ -17,108 +17,52 @@ To add a new language, duplicate `en-GB.json`, rename it to the BCP 47 tag (e.g.
 
 ## Key Structure Rules
 
-Keys mirror the **file-system path** of the screen or feature that uses them, using dot-separated segments. Every segment uses `snake_case`.
+Keys are **semantic**: they name *what the text is*, never *where the file lives*. Moving or
+renaming a Dart file must never force a key rename. Segments are dot-separated.
 
 ```
-<top_level>.<feature_path>.<screen_or_component>.<key>
+<namespace>.<area>.<key>
 ```
 
 ### Top-level namespaces
 
 | Namespace | Purpose |
 |-----------|---------|
-| `common` | Shared words, sentences, errors, form fields, currencies, calendar labels |
-| `core` | Core infrastructure features (e.g. permission screens) |
-| `features` | App-specific feature screens and widgets |
+| `common` | Shared words, sentences, errors, form fields, languages |
+| `features` | Everything owned by one feature: `features.<feature>.<key>` (`features.home.title`, `features.permission.camera.title`) |
 
----
+Group by the thing the text describes (a screen, a permission, a dialog), not by folder:
 
-## Nesting Convention
-
-The JSON structure must reflect the **Dart import path** of the widget/screen that consumes the key:
-
-```
-lib/core/common/features/permission/presentation/view/screens/camera_permission_screen.dart
-                 ↓
-core.common.features.permission.presentation.screens.camera_permission_screen.title
-```
-
-> The `view/` segment is omitted by convention — jump directly from `presentation` to `screens`.
-
-### Example — Adding a new screen
-
-Dart file path:
-```
-lib/features/auth/presentation/view/screens/login_screen.dart
-```
-
-JSON entry:
 ```json
 "features": {
-  "auth": {
-    "presentation": {
-      "screens": {
-        "login_screen": {
-          "title": "Sign In",
-          "subtitle": "Welcome back!",
-          "emailHint": "Enter your email",
-          "passwordHint": "Enter your password"
-        }
-      }
+  "home": { "title": "Home", "welcome": "Welcome" },
+  "permission": {
+    "camera": {
+      "title": "Camera Permission",
+      "message": "This app requires access to the camera.",
+      "reAskTitle": "Allow Camera Access",
+      "reAskMessage": "Please enable camera access in Settings to continue."
     }
   }
 }
 ```
 
-Generated `LocaleKeys` constant:
+Generated constants join the path with `_`:
+
 ```dart
-LocaleKeys.features_auth_presentation_screens_login_screen_title
-// resolves to → 'features.auth.presentation.screens.login_screen.title'
+LocaleKeys.features_home_title                 // 'features.home.title'
+LocaleKeys.features_permission_camera_title    // 'features.permission.camera.title'
 ```
 
----
-
-## Segment Naming Rules
+### Naming rules
 
 | Segment type | Convention | Example |
 |---|---|---|
-| Feature / module | `snake_case` | `auth`, `permission`, `user_profile` |
-| Screen | `snake_case` + `_screen` suffix | `login_screen`, `camera_permission_screen` |
-| Widget / component | `snake_case` + `_widget` or descriptive name | `delete_item_bottom_sheet` |
+| Namespace / feature / group | `snake_case` or a single lowercase word | `features`, `permission`, `user_profile` |
 | Leaf key | `camelCase` | `title`, `reAskMessage`, `noInternet` |
 
-> Leaf keys (the innermost keys that hold string values) use **camelCase**.
-> All structural/namespace keys use **snake_case**.
-
----
-
-## Standard Leaf Keys Per Screen
-
-Every permission screen (and most feature screens) should follow this structure:
-
-```json
-"<name>_permission_screen": {
-  "title": "Human-readable permission title",
-  "message": "Explanation shown to the user",
-  "dialog": {
-    "reAskTitle": "Dialog title when permanently denied",
-    "reAskMessage": "Dialog message directing user to Settings"
-  }
-}
-```
-
-Common leaf keys used across the app:
-
-| Key | Usage |
-|-----|-------|
-| `title` | Screen or section heading |
-| `message` | Descriptive body text |
-| `subtitle` | Secondary heading |
-| `hint` / `*Hint` | Text field placeholder |
-| `label` | Button or form field label |
-| `dialog.reAskTitle` | Confirmation dialog title |
-| `dialog.reAskMessage` | Confirmation dialog body |
-| `error.*` | Validation or network error messages |
+Common leaf keys: `title`, `message`, `subtitle`, `hint` / `*Hint`, `label`, `reAskTitle`,
+`reAskMessage`. Keep the same leaf names across features so screens read alike.
 
 ---
 
@@ -206,27 +150,17 @@ LocaleKeys.common_errors_validation_minLength.tr(
 
 ---
 
-## Complete Permission Screen Example
+## Complete Permission Example
 
 JSON (`en-GB.json`):
 ```json
-"core": {
-  "common": {
-    "features": {
-      "permission": {
-        "presentation": {
-          "screens": {
-            "camera_permission_screen": {
-              "title": "Camera Permission",
-              "message": "This app requires access to the camera.",
-              "dialog": {
-                "reAskTitle": "Allow Camera Access",
-                "reAskMessage": "Please enable camera access in Settings to continue."
-              }
-            }
-          }
-        }
-      }
+"features": {
+  "permission": {
+    "camera": {
+      "title": "Camera Permission",
+      "message": "This app requires access to the camera.",
+      "reAskTitle": "Allow Camera Access",
+      "reAskMessage": "Please enable camera access in Settings to continue."
     }
   }
 }
@@ -234,7 +168,5 @@ JSON (`en-GB.json`):
 
 Dart usage:
 ```dart
-Text(LocaleKeys
-    .core_common_features_permission_presentation_screens_camera_permission_screen_title
-    .tr())
+Text(LocaleKeys.features_permission_camera_title.tr())
 ```

@@ -5,11 +5,14 @@ import '../../storage/key_value_stores.dart';
 import 'async_lock.dart';
 
 /// A small, id-keyed collection of JSON objects persisted under a single
-/// [PreferencesStore] key.
+/// [IPreferencesStore] key.
 ///
 /// Meant for **non-secret, small** offline caches (a few hundred items at
 /// most), e.g. the last fetched page of a list. For large or queryable data
-/// use a real database (drift/sqflite); for secrets use `SecureStore`.
+/// use a real database (drift/sqflite); for secrets use `ISecureStore`.
+///
+/// Store **user-owned** data under a key starting with `SessionScope.keyPrefix`
+/// so sign-out wipes it.
 ///
 /// * Items are identified by [idOf], so lookups/updates/deletes can never hit
 ///   the wrong item (no hand-written predicates).
@@ -20,14 +23,14 @@ import 'async_lock.dart';
 ///   values are never included in exception messages.
 class JsonCollectionStore<T> {
   JsonCollectionStore({
-    required PreferencesStore store,
+    required IPreferencesStore store,
     required this.key,
     required this.idOf,
     required this.toJson,
     required this.fromJson,
   }) : _store = store;
 
-  final PreferencesStore _store;
+  final IPreferencesStore _store;
   final AsyncLock _lock = AsyncLock();
 
   /// The preferences key the collection is stored under.
@@ -41,7 +44,7 @@ class JsonCollectionStore<T> {
       _lock.synchronized(() => _read().values.toList());
 
   /// The item with [id]. Throws [CacheMissException] if absent.
-  Future<T> read(String id) => _lock.synchronized(() {
+  Future<T> read({required String id}) => _lock.synchronized(() {
     final item = _read()[id];
     if (item == null) {
       throw CacheMissException(debugMessage: '$key: no item with requested id');
@@ -50,24 +53,25 @@ class JsonCollectionStore<T> {
   });
 
   /// Inserts [item], or replaces the stored item with the same id.
-  Future<void> upsert(T item) => upsertAll([item]);
+  Future<void> upsert({required T item}) => upsertAll(items: [item]);
 
   /// Inserts or replaces every item of [items] in one write.
-  Future<void> upsertAll(Iterable<T> items) => _lock.synchronized(() async {
-    final current = _read();
-    for (final item in items) {
-      current[idOf(item)] = item;
-    }
-    await _write(current);
-  });
+  Future<void> upsertAll({required Iterable<T> items}) =>
+      _lock.synchronized(() async {
+        final current = _read();
+        for (final item in items) {
+          current[idOf(item)] = item;
+        }
+        await _write(current);
+      });
 
   /// Replaces the whole collection with [items].
-  Future<void> replaceAll(Iterable<T> items) => _lock.synchronized(
+  Future<void> replaceAll({required Iterable<T> items}) => _lock.synchronized(
     () => _write({for (final item in items) idOf(item): item}),
   );
 
   /// Removes the item with [id]. Returns `false` if it wasn't stored.
-  Future<bool> delete(String id) => _lock.synchronized(() async {
+  Future<bool> delete({required String id}) => _lock.synchronized(() async {
     final current = _read();
     if (current.remove(id) == null) {
       return false;
@@ -77,11 +81,11 @@ class JsonCollectionStore<T> {
   });
 
   /// Removes the whole collection.
-  Future<void> clear() => _lock.synchronized(() => _store.remove(key));
+  Future<void> clear() => _lock.synchronized(() => _store.remove(key: key));
 
   // Must only be called while holding [_lock].
   Map<String, T> _read() {
-    final raw = _store.getString(key);
+    final raw = _store.getString(key: key);
     if (raw == null || raw.isEmpty) {
       return {};
     }
@@ -89,12 +93,10 @@ class JsonCollectionStore<T> {
       final decoded = jsonDecode(raw) as List<dynamic>;
       final items = decoded.map((e) => fromJson(e as Map<String, dynamic>));
       return {for (final item in items) idOf(item): item};
-    } catch (e) {
-      // Never put the raw value in the message: it may contain user data.
-      throw StorageException(
-        debugMessage: '$key: stored collection is unreadable',
-        cause: e.runtimeType,
-      );
+    } on FormatException catch (e) {
+      throw _unreadable(e);
+    } on TypeError catch (e) {
+      throw _unreadable(e);
     }
   }
 
@@ -103,12 +105,19 @@ class JsonCollectionStore<T> {
     final String encoded;
     try {
       encoded = jsonEncode(items.values.map(toJson).toList());
-    } catch (e) {
+    } on JsonUnsupportedObjectError catch (e) {
       throw StorageException(
         debugMessage: '$key: item could not be encoded',
-        cause: e.runtimeType,
+        cause: e,
       );
     }
-    return _store.setString(key, encoded);
+    return _store.setString(key: key, value: encoded);
   }
+
+  // Never put the raw value in the message: it may contain user data. The
+  // cause (a decoder error) is kept for the logs.
+  StorageException _unreadable(Object cause) => StorageException(
+    debugMessage: '$key: stored collection is unreadable',
+    cause: cause,
+  );
 }

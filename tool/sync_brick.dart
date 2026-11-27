@@ -1,10 +1,11 @@
-// Regenerates `bricks/project_brick/__brick__` from this repository so the
-// Mason brick can never drift from the real template.
+// Generates `bricks/project_brick/__brick__` from this repository so the
+// Mason brick can never drift from the real template. The output is git-ignored:
+// it is produced on demand (before `mason make`, and as a smoke test in CI),
+// never committed.
 //
 // Usage (from the repository root):
 //
-//   dart run tool/sync_brick.dart           # rewrite the brick
-//   dart run tool/sync_brick.dart --check   # exit 1 if the brick is stale (CI)
+//   dart run tool/sync_brick.dart           # (re)write the brick
 //
 // How optional modules work: source files stay valid Dart/YAML/Gradle and mark
 // optional regions with comment markers, which this script turns into Mustache
@@ -63,8 +64,7 @@ final RegExp _marker = RegExp(
   r'^\s*(?://|#)\s*brick:(if|unless|end|repo-only)(?:\s+(\w+))?\s*$',
 );
 
-Future<void> main(List<String> args) async {
-  final check = args.contains('--check');
+Future<void> main() async {
   final files = await _trackedFiles();
   final output = <String, List<int>>{};
   final problems = <String>[];
@@ -95,19 +95,6 @@ Future<void> main(List<String> args) async {
   if (problems.isNotEmpty) {
     stderr.writeln('sync_brick failed:\n  ${problems.join('\n  ')}');
     exit(2);
-  }
-
-  final stale = _diff(output);
-  if (check) {
-    if (stale.isEmpty) {
-      stdout.writeln('Brick is up to date (${output.length} files).');
-      return;
-    }
-    stderr
-      ..writeln('Brick is stale (${stale.length} files differ). Run:')
-      ..writeln('  dart run tool/sync_brick.dart')
-      ..writeln(stale.take(15).map((p) => '  - $p').join('\n'));
-    exit(1);
   }
 
   final root = Directory(_brickDir);
@@ -241,60 +228,6 @@ String _transform(String path, String input) {
   return result;
 }
 
-List<String> _diff(Map<String, List<int>> expected) {
-  final root = Directory(_brickDir);
-  final stale = <String>[];
-  final existing = <String>{};
-  if (root.existsSync()) {
-    for (final entity in root.listSync(recursive: true)) {
-      if (entity is File) {
-        existing.add(
-          entity.path
-              .replaceAll(r'\', '/')
-              .substring(_brickDir.length + _projectDir.length + 2),
-        );
-      }
-    }
-  }
-  for (final entry in expected.entries) {
-    final f = File('$_brickDir/$_projectDir/${entry.key}');
-    if (!f.existsSync() || !_sameBytes(f.readAsBytesSync(), entry.value)) {
-      stale.add(entry.key);
-    }
-  }
-  stale.addAll(existing.difference(expected.keys.toSet()));
-  return stale;
-}
-
-/// Compares file contents ignoring CRLF vs LF, which differs between
-/// checkouts (git `autocrlf` on Windows) but is irrelevant to the brick.
-bool _sameBytes(List<int> a, List<int> b) {
-  final left = _withoutCarriageReturns(a);
-  final right = _withoutCarriageReturns(b);
-  if (left.length != right.length) {
-    return false;
-  }
-  for (var i = 0; i < left.length; i++) {
-    if (left[i] != right[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-List<int> _withoutCarriageReturns(List<int> bytes) {
-  const cr = 13;
-  const lf = 10;
-  final out = <int>[];
-  for (var i = 0; i < bytes.length; i++) {
-    if (bytes[i] == cr && i + 1 < bytes.length && bytes[i + 1] == lf) {
-      continue;
-    }
-    out.add(bytes[i]);
-  }
-  return out;
-}
-
 const String _projectReadme = '''# {{app_name.titleCase()}}
 
 Flutter app generated from the Flutter All Template: Clean Architecture, BLoC,
@@ -319,8 +252,8 @@ injectable classes or translations.
 
 - `FOLDER_STRUCTURE.md` - where things live and the layering rules
 - `RULES.md` - coding rules with do/don't examples (read before your first PR)
-- `docs/CI_CD.md` - PR CI, local Android releases, Codemagic for iOS
-- `docs/MAESTRO.md` - end-to-end tests
-- `docs/FLAVORS.md`, `docs/CODE_SIGNING.md`, `docs/PLATFORM_SETUP.md`
+{{#use_ci_docs}}- `docs/CI_CD.md` - PR CI, local Android releases, Codemagic for iOS
+{{/use_ci_docs}}{{#use_maestro}}- `docs/MAESTRO.md` - end-to-end tests
+{{/use_maestro}}- `docs/FLAVORS.md`, `docs/CODE_SIGNING.md`, `docs/PLATFORM_SETUP.md`
 - `SECURITY.md` - secret handling and release hardening
 ''';

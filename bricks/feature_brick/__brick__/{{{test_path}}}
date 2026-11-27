@@ -1,0 +1,239 @@
+import 'dart:async';
+
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:__package__/core/error/failure.dart';
+import 'package:__package__/app/di/service_locator.dart';
+import 'package:__package__/app/router/app_router.dart';
+import 'package:__package__/core/generic/domain/entities/page.dart';
+import 'package:__package__/features/{{feature_name.snakeCase()}}/domain/entities/{{feature_name.snakeCase()}}.dart';
+{{#use_params}}import 'package:__package__/features/{{feature_name.snakeCase()}}/domain/params/{{feature_name.snakeCase()}}_params.dart';
+{{/use_params}}{{#include_create}}import 'package:__package__/features/{{feature_name.snakeCase()}}/domain/usecases/create_{{feature_name.snakeCase()}}_use_case.dart';
+{{/include_create}}{{#include_delete}}import 'package:__package__/features/{{feature_name.snakeCase()}}/domain/usecases/delete_{{feature_name.snakeCase()}}_use_case.dart';
+{{/include_delete}}import 'package:__package__/features/{{feature_name.snakeCase()}}/domain/usecases/get_{{feature_plural.snakeCase()}}_use_case.dart';
+{{#include_update}}import 'package:__package__/features/{{feature_name.snakeCase()}}/domain/usecases/update_{{feature_name.snakeCase()}}_use_case.dart';
+{{/include_update}}import 'package:__package__/features/{{feature_name.snakeCase()}}/presentation/bloc/{{feature_name.snakeCase()}}_list_bloc.dart';
+import 'package:__package__/features/{{feature_name.snakeCase()}}/presentation/routes/{{feature_name.snakeCase()}}_routes.dart';
+import 'package:__package__/features/{{feature_name.snakeCase()}}/presentation/views/screens/{{feature_name.snakeCase()}}_list_screen.dart';
+
+import '../../helpers/test_app.dart';
+
+class MockGet{{feature_plural.pascalCase()}} extends Mock implements Get{{feature_plural.pascalCase()}}UseCase {}{{#include_create}}
+
+class MockCreate{{feature_name.pascalCase()}} extends Mock implements Create{{feature_name.pascalCase()}}UseCase {}{{/include_create}}{{#include_update}}
+
+class MockUpdate{{feature_name.pascalCase()}} extends Mock implements Update{{feature_name.pascalCase()}}UseCase {}{{/include_update}}{{#include_delete}}
+
+class MockDelete{{feature_name.pascalCase()}} extends Mock implements Delete{{feature_name.pascalCase()}}UseCase {}{{/include_delete}}
+
+{{feature_name.pascalCase()}} _item(String id, String title) =>
+    {{feature_name.pascalCase()}}(id: id, title: title, updatedAt: DateTime(2026));
+
+void main() {
+  late MockGet{{feature_plural.pascalCase()}} get{{feature_plural.pascalCase()}};
+{{#include_create}}  late MockCreate{{feature_name.pascalCase()}} create{{feature_name.pascalCase()}};
+{{/include_create}}{{#include_update}}  late MockUpdate{{feature_name.pascalCase()}} update{{feature_name.pascalCase()}};
+{{/include_update}}{{#include_delete}}  late MockDelete{{feature_name.pascalCase()}} delete{{feature_name.pascalCase()}};
+{{/include_delete}}
+  /// Pumps the registered route straight away (skips splash and home).
+  Future<AppRouter> pump{{feature_name.pascalCase()}}Route(WidgetTester tester) async {
+    final router = AppRouter();
+    await tester.pumpWidget(
+      routerApp(
+        router.config(
+          deepLinkBuilder: (_) => const DeepLink.path({{feature_name.pascalCase()}}Routes.path),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return router;
+  }
+
+  setUpAll(() {
+    loadTestTranslations();
+    registerFallbackValue(const PageRequest.first(limit: 1));
+{{#use_params}}    registerFallbackValue(const {{feature_name.pascalCase()}}Query());
+{{#include_create}}    registerFallbackValue(const Create{{feature_name.pascalCase()}}Params(title: ''));
+{{/include_create}}{{#include_update}}    registerFallbackValue(const Update{{feature_name.pascalCase()}}Params(id: ''));
+{{/include_update}}{{/use_params}}{{^use_params}}    registerFallbackValue('');
+{{#include_update}}    registerFallbackValue(_item('', ''));
+{{/include_update}}{{/use_params}}  });
+
+  setUp(() {
+    get{{feature_plural.pascalCase()}} = MockGet{{feature_plural.pascalCase()}}();
+{{#include_create}}    create{{feature_name.pascalCase()}} = MockCreate{{feature_name.pascalCase()}}();
+{{/include_create}}{{#include_update}}    update{{feature_name.pascalCase()}} = MockUpdate{{feature_name.pascalCase()}}();
+{{/include_update}}{{#include_delete}}    delete{{feature_name.pascalCase()}} = MockDelete{{feature_name.pascalCase()}}();
+{{/include_delete}}    when(
+      () => get{{feature_plural.pascalCase()}}(
+        page: any(named: 'page'),
+        query: any(named: 'query'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Right(PageResult(items: [_item('1', 'First')], hasMore: false)),
+    );
+{{#include_create}}    when(
+      () => create{{feature_name.pascalCase()}}({{#use_params}}params: any(named: 'params'){{/use_params}}{{^use_params}}title: any(named: 'title'){{/use_params}}),
+    ).thenAnswer((_) async => Right(_item('2', 'Second')));
+{{/include_create}}{{#include_update}}    when(
+      () => update{{feature_name.pascalCase()}}({{#use_params}}params: any(named: 'params'){{/use_params}}{{^use_params}}item: any(named: 'item'){{/use_params}}),
+    ).thenAnswer((_) async => Right(_item('1', 'Renamed')));
+{{/include_update}}{{#include_delete}}    when(
+      () => delete{{feature_name.pascalCase()}}(id: any(named: 'id')),
+    ).thenAnswer((_) async => const Right(null));
+{{/include_delete}}    sl.registerFactory<{{feature_name.pascalCase()}}ListBloc>(
+      () => {{feature_name.pascalCase()}}ListBloc(
+        get{{feature_plural.pascalCase()}}: get{{feature_plural.pascalCase()}},
+{{#include_create}}        create{{feature_name.pascalCase()}}: create{{feature_name.pascalCase()}},
+{{/include_create}}{{#include_update}}        update{{feature_name.pascalCase()}}: update{{feature_name.pascalCase()}},
+{{/include_update}}{{#include_delete}}        delete{{feature_name.pascalCase()}}: delete{{feature_name.pascalCase()}},
+{{/include_delete}}      ),
+    );
+  });
+
+  tearDown(() => sl.reset());
+
+  group('route', () {
+    test('{{feature_name.pascalCase()}}Routes.path is registered in AppRouter', () {
+      final registered = AppRouter().routes.map((route) => route.path);
+      expect({{feature_name.pascalCase()}}Routes.path, '{{{route_path}}}');
+      expect(registered, contains({{feature_name.pascalCase()}}Routes.path));
+    });
+
+    testWidgets('can be pushed with {{feature_name.pascalCase()}}ListRoute()', (tester) async {
+      final router = AppRouter();
+      await tester.pumpWidget(routerApp(router.config()));
+      await tester.pumpAndSettle();
+
+      // `push` completes only when the route is popped: do not await it.
+      unawaited(router.push(const {{feature_name.pascalCase()}}ListRoute()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType({{feature_name.pascalCase()}}ListScreen), findsOneWidget);
+      expect(router.topRoute.name, {{feature_name.pascalCase()}}ListRoute.name);
+    });
+  });
+
+  group('page + wrapper', () {
+    testWidgets('wrapper route provides the bloc and loads the first page', (
+      tester,
+    ) async {
+      await pump{{feature_name.pascalCase()}}Route(tester);
+
+      final context = tester.element(find.byType({{feature_name.pascalCase()}}ListScreen));
+      expect(context.read<{{feature_name.pascalCase()}}ListBloc>(), isA<{{feature_name.pascalCase()}}ListBloc>());
+      expect(find.byKey(const Key('{{feature_name.snakeCase()}}_list')), findsOneWidget);
+      expect(find.text('First'), findsOneWidget);
+      verify(
+        () => get{{feature_plural.pascalCase()}}(
+          page: any(named: 'page'),
+          query: any(named: 'query'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('shows the empty state', (tester) async {
+      when(
+        () => get{{feature_plural.pascalCase()}}(
+          page: any(named: 'page'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer(
+        (_) async => const Right(PageResult(items: [], hasMore: false)),
+      );
+      await pump{{feature_name.pascalCase()}}Route(tester);
+
+      expect(find.byKey(const Key('{{feature_name.snakeCase()}}_empty')), findsOneWidget);
+    });
+
+    testWidgets('shows the error and retries', (tester) async {
+      var calls = 0;
+      when(
+        () => get{{feature_plural.pascalCase()}}(
+          page: any(named: 'page'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? const Left(
+                Failure(messageKey: 'error.key', type: FailureType.network),
+              )
+            : Right(
+                PageResult(items: [_item('1', 'First')], hasMore: false),
+              );
+      });
+      await pump{{feature_name.pascalCase()}}Route(tester);
+      expect(find.byKey(const Key('{{feature_name.snakeCase()}}_error')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('{{feature_name.snakeCase()}}_retry_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('{{feature_name.snakeCase()}}_error')), findsNothing);
+      expect(find.text('First'), findsOneWidget);
+    });{{#include_search}}
+
+    testWidgets('searches with the typed text', (tester) async {
+      await pump{{feature_name.pascalCase()}}Route(tester);
+
+      await tester.enterText(
+        find.byKey(const Key('{{feature_name.snakeCase()}}_search_field')),
+        'abc',
+      );
+      // Past the bloc's query debounce.
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => get{{feature_plural.pascalCase()}}(
+          page: any(named: 'page'),
+          query: {{#use_params}}const {{feature_name.pascalCase()}}Query(search: 'abc'){{/use_params}}{{^use_params}}'abc'{{/use_params}},
+        ),
+      ).called(1);
+    });{{/include_search}}{{#include_create}}
+
+    testWidgets('adds an item', (tester) async {
+      await pump{{feature_name.pascalCase()}}Route(tester);
+
+      await tester.tap(find.byKey(const Key('{{feature_name.snakeCase()}}_add_button')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('{{feature_name.snakeCase()}}_title_field')),
+        'Second',
+      );
+      await tester.tap(find.byKey(const Key('{{feature_name.snakeCase()}}_save_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Second'), findsOneWidget);
+      expect(find.text('First'), findsOneWidget);
+    });{{/include_create}}{{#include_update}}
+
+    testWidgets('replaces an item when it is updated', (tester) async {
+      await pump{{feature_name.pascalCase()}}Route(tester);
+
+      final context = tester.element(find.byType({{feature_name.pascalCase()}}ListScreen));
+      context.read<{{feature_name.pascalCase()}}ListBloc>().add(
+        {{#use_params}}const {{feature_name.pascalCase()}}Updated(id: '1', title: 'Renamed'){{/use_params}}{{^use_params}}{{feature_name.pascalCase()}}Updated(_item('1', 'Renamed')){{/use_params}},
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Renamed'), findsOneWidget);
+      expect(find.text('First'), findsNothing);
+    });{{/include_update}}{{#include_delete}}
+
+    testWidgets('deletes an item', (tester) async {
+      await pump{{feature_name.pascalCase()}}Route(tester);
+
+      await tester.tap(find.byKey(const Key('{{feature_name.snakeCase()}}_delete_1')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('First'), findsNothing);
+      verify(() => delete{{feature_name.pascalCase()}}(id: '1')).called(1);
+    });{{/include_delete}}
+  });
+}

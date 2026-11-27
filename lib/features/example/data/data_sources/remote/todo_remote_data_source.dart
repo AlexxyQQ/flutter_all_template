@@ -6,14 +6,12 @@ import '../../../../../core/network/api_client.dart';
 import '../../../domain/params/todo_params.dart';
 import '../../models/todo_model.dart';
 
-/// HTTP access to `/todos`. Throws `AppException`s (via [ApiClient]).
+/// HTTP access to `todos`. Throws `AppException`s (via [IApiClient]).
 abstract interface class ITodoRemoteDataSource {
   Future<PageResult<TodoModel>> getTodos({
     required PageRequest page,
     required TodoQuery query,
   });
-
-  Future<TodoModel> getTodo({required String id});
 
   Future<TodoModel> createTodo({required CreateTodoParams params});
 
@@ -27,15 +25,14 @@ abstract interface class ITodoRemoteDataSource {
 /// | Call | Request | Response |
 /// |---|---|---|
 /// | list | `GET /todos?page=&limit=&cursor=&search=&only_open=` | `{"items": [Todo], "has_more": bool?, "next_cursor": String?}` |
-/// | read | `GET /todos/{id}` | `Todo` |
 /// | create | `POST /todos` `{"title"}` | `Todo` (201) |
 /// | update | `PATCH /todos/{id}` `{"title"?, "is_done"?}` | `Todo` |
 /// | delete | `DELETE /todos/{id}` | empty (204) |
 @LazySingleton(as: ITodoRemoteDataSource)
 class TodoRemoteDataSource implements ITodoRemoteDataSource {
-  TodoRemoteDataSource({required ApiClient client}) : _client = client;
+  TodoRemoteDataSource({required IApiClient client}) : _client = client;
 
-  final ApiClient _client;
+  final IApiClient _client;
 
   static String _item(String id) =>
       '${ApiPaths.todos}/${Uri.encodeComponent(id)}';
@@ -69,10 +66,6 @@ class TodoRemoteDataSource implements ITodoRemoteDataSource {
       },
     );
   }
-
-  @override
-  Future<TodoModel> getTodo({required String id}) =>
-      _client.get(_item(id), decode: _decodeTodo);
 
   @override
   Future<TodoModel> createTodo({required CreateTodoParams params}) => _client

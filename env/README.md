@@ -16,9 +16,7 @@ flutter run --dart-define-from-file=env/dev.json   # or: rps run dev
 |---|---|---|
 | `FLAVOR` | string | `dev`, `staging` or `prod` |
 | `BASE_URL` | string | API base URL (`https://…`, trailing slash) |
-| `ENABLE_LOG_UPLOAD` | bool | Opt-in remote log upload (default `false`) |
-| `LOG_UPLOAD_URL` | string | Endpoint for log upload when enabled |
-| `ANALYTICS_ENABLED` | bool | Analytics master switch (default `false`); see `lib/core/common/domain/services/analytics/README.md` |
+| `ANALYTICS_ENABLED` | bool | Analytics master switch (default `false`); see `lib/core/services/analytics/README.md` |
 | `ANALYTICS_API_URL` | string | Absolute URL of a custom analytics batch endpoint (empty = not used) |
 | `ANALYTICS_FIREBASE_ENABLED` | bool | Also send analytics to Firebase (Firebase builds only) |
 | `DEV_PROXY` | string | `host:port` of a debugging proxy — **ignored in release builds** |

@@ -8,61 +8,69 @@ import 'package:path_provider/path_provider.dart';
 
 import '../error/app_exception.dart';
 import '../generic/data/async_lock.dart';
+import '../services/logger/data/app_logger.dart';
 import 'key_value_stores.dart';
 
-/// App-private storage for sensitive local records. Hive only sees
-/// authenticated ciphertext and keyed digests of logical record keys.
+/// App-private storage for sensitive local records: values are AES-GCM
+/// ciphertext in a Hive box, the encryption key lives in platform secure
+/// storage.
+///
+/// Record **keys are stored in plain text** so [keys] can list them without
+/// decrypting anything. Use opaque, non-sensitive ids as keys (UUIDs,
+/// timestamps), never e-mails or other personal data; put that in the value.
+/// A key is bound to its value (authenticated data), so ciphertext copied to
+/// another key is rejected.
+///
+/// If the encryption key is lost (new device restore, cleared keystore) the
+/// box can never be read again; it is then deleted and recreated empty (with a
+/// logged warning) instead of failing every operation forever.
 @lazySingleton
 final class EncryptedHiveStore {
   EncryptedHiveStore({
-    @Named(keyVaultName) required SecureStore keyVault,
+    @Named(keyVaultName) required ISecureStore keyVault,
     @ignoreParam String? directoryPath,
   }) : _keyVault = keyVault,
        _directoryPath = directoryPath;
 
   static const String keyVaultName = 'hiveKeyVault';
-  static const String _keyName = 'encrypted_hive_key_v1';
-  static const String _boxName = 'secure_records_v1';
-  static const String _formatId = 'format';
+  static const String _keyName = 'encrypted_hive_key_v2';
+  static const String _boxName = 'secure_records_v2';
+  static const String _formatId = '__format__';
+  static const String _formatProof = 'secure_records_v2';
   static const int _keySize = 32;
+  static const String _name = 'EncryptedHiveStore';
 
-  final SecureStore _keyVault;
+  final ISecureStore _keyVault;
   final String? _directoryPath;
   final AsyncLock _lock = AsyncLock();
   final AesGcm _cipher = AesGcm.with256bits();
-  final Hmac _keyDigest = Hmac.sha256();
-  ({Box<String> box, SecretKey dataKey, SecretKey lookupKey})? _opened;
+  ({Box<String> box, SecretKey dataKey})? _opened;
 
   Future<String?> read({required String key}) => _run(
     operation: 'read',
     action: () async {
       final opened = await _open();
-      final id = await _recordId(key: key, lookupKey: opened.lookupKey);
-      final value = opened.box.get(id);
+      final value = opened.box.get(key);
       if (value == null) {
         return null;
       }
-      final record = await _decode(
-        value: value,
-        id: id,
-        dataKey: opened.dataKey,
-      );
-      return record.value;
+      return _decrypt(value: value, id: key, dataKey: opened.dataKey);
     },
   );
 
   Future<void> write({required String key, required String value}) => _run(
     operation: 'write',
     action: () async {
+      if (key == _formatId) {
+        throw ArgumentError.value(key, 'key', 'is reserved');
+      }
       final opened = await _open();
-      final id = await _recordId(key: key, lookupKey: opened.lookupKey);
-      final encrypted = await _encode(
-        key: key,
+      final encrypted = await _encrypt(
         value: value,
-        id: id,
+        id: key,
         dataKey: opened.dataKey,
       );
-      await opened.box.put(id, encrypted);
+      await opened.box.put(key, encrypted);
     },
   );
 
@@ -70,28 +78,19 @@ final class EncryptedHiveStore {
     operation: 'delete',
     action: () async {
       final opened = await _open();
-      final id = await _recordId(key: key, lookupKey: opened.lookupKey);
-      await opened.box.delete(id);
+      await opened.box.delete(key);
     },
   );
 
+  /// Every stored key. Nothing is decrypted, so this is cheap.
   Future<List<String>> keys() => _run(
     operation: 'list keys',
     action: () async {
       final opened = await _open();
-      final logicalKeys = <String>[];
-      for (final id in opened.box.keys.cast<String>()) {
-        if (id == _formatId) {
-          continue;
-        }
-        final record = await _decode(
-          value: opened.box.get(id)!,
-          id: id,
-          dataKey: opened.dataKey,
-        );
-        logicalKeys.add(record.key);
-      }
-      return logicalKeys;
+      return [
+        for (final key in opened.box.keys.cast<String>())
+          if (key != _formatId) key,
+      ];
     },
   );
 
@@ -107,14 +106,12 @@ final class EncryptedHiveStore {
         await opened.box.close();
       } finally {
         opened.dataKey.destroy();
-        opened.lookupKey.destroy();
         _opened = null;
       }
     },
   );
 
-  Future<({Box<String> box, SecretKey dataKey, SecretKey lookupKey})>
-  _open() async {
+  Future<({Box<String> box, SecretKey dataKey})> _open() async {
     final opened = _opened;
     if (opened != null) {
       return opened;
@@ -127,95 +124,109 @@ final class EncryptedHiveStore {
 
     final path =
         _directoryPath ?? (await getApplicationSupportDirectory()).path;
-    final storedKey = await _keyVault.read(_keyName);
-    final Uint8List bytes;
-    if (storedKey == null) {
-      if (await Hive.boxExists(_boxName, path: path)) {
+    var dataKey = await _readKey();
+    if (dataKey == null) {
+      await _discardBox(path: path, reason: 'its key is missing or invalid');
+      dataKey = await _createKey();
+    }
+    var box = await _openVerified(path: path, dataKey: dataKey);
+    if (box == null) {
+      await _discardBox(path: path, reason: 'it cannot be read with its key');
+      dataKey.destroy();
+      dataKey = await _createKey();
+      box = await _openVerified(path: path, dataKey: dataKey);
+      if (box == null) {
+        dataKey.destroy();
         throw const StorageException(
-          debugMessage: 'Secure Hive key is missing for an existing store',
-        );
-      }
-      final material = SecretKeyData.random(length: _keySize * 2);
-      try {
-        await _keyVault.write(_keyName, base64UrlEncode(material.bytes));
-        bytes = Uint8List.fromList(material.bytes);
-      } finally {
-        material.destroy();
-      }
-    } else {
-      bytes = base64Url.decode(storedKey);
-      if (bytes.length != _keySize * 2) {
-        throw const StorageException(
-          debugMessage: 'Secure Hive key has an invalid length',
+          debugMessage: 'Secure Hive could not verify a newly created store',
         );
       }
     }
+    return _opened = (box: box, dataKey: dataKey);
+  }
 
-    final dataKey = SecretKeyData(
-      Uint8List.sublistView(bytes, 0, _keySize),
-      overwriteWhenDestroyed: true,
-    );
-    final lookupKey = SecretKeyData(
-      Uint8List.sublistView(bytes, _keySize),
-      overwriteWhenDestroyed: true,
-    );
-    Box<String>? box;
+  /// The stored key, or `null` when there is none or it is malformed.
+  Future<SecretKeyData?> _readKey() async {
+    final stored = await _keyVault.read(key: _keyName);
+    if (stored == null) {
+      return null;
+    }
     try {
-      box = await Hive.openBox<String>(_boxName, path: path);
-      await _verifyFormat(box: box, dataKey: dataKey, lookupKey: lookupKey);
-      return _opened = (box: box, dataKey: dataKey, lookupKey: lookupKey);
+      final bytes = base64Url.decode(stored);
+      if (bytes.length == _keySize) {
+        return SecretKeyData(bytes, overwriteWhenDestroyed: true);
+      }
+    } on FormatException {
+      // Falls through: an undecodable key is as good as a missing one.
+    }
+    return null;
+  }
+
+  Future<SecretKeyData> _createKey() async {
+    final material = SecretKeyData.random(length: _keySize);
+    final key = SecretKeyData(
+      Uint8List.fromList(material.bytes),
+      overwriteWhenDestroyed: true,
+    );
+    material.destroy();
+    try {
+      await _keyVault.write(key: _keyName, value: base64UrlEncode(key.bytes));
     } catch (_) {
-      dataKey.destroy();
-      lookupKey.destroy();
-      await box?.close();
+      key.destroy();
       rethrow;
     }
+    return key;
   }
 
-  Future<void> _verifyFormat({
-    required Box<String> box,
-    required SecretKey dataKey,
-    required SecretKey lookupKey,
+  /// Deletes a box that can no longer be decrypted so a new one can be created.
+  Future<void> _discardBox({
+    required String path,
+    required String reason,
   }) async {
-    final proof = await _recordId(key: _boxName, lookupKey: lookupKey);
-    if (box.isEmpty) {
-      final encrypted = await _encode(
-        key: _formatId,
-        value: proof,
-        id: _formatId,
-        dataKey: dataKey,
-      );
-      await box.put(_formatId, encrypted);
+    if (!await Hive.boxExists(_boxName, path: path)) {
       return;
     }
-    final marker = box.get(_formatId);
-    if (marker != null) {
-      final record = await _decode(
-        value: marker,
-        id: _formatId,
-        dataKey: dataKey,
-      );
-      if (record.value == proof) {
-        return;
-      }
-    }
-    throw const StorageException(
-      debugMessage: 'Secure Hive could not verify the store key',
+    AppLogger.warning(
+      'Secure Hive records were discarded because $reason',
+      name: _name,
     );
+    await Hive.deleteBoxFromDisk(_boxName, path: path);
   }
 
-  Future<String> _recordId({
-    required String key,
-    required SecretKey lookupKey,
+  /// Opens the box and checks [dataKey] against a marker record (writing it
+  /// into a new box). Returns `null` when the box was written with another key.
+  Future<Box<String>?> _openVerified({
+    required String path,
+    required SecretKey dataKey,
   }) async {
-    final digest = await _keyDigest.calculateMac(
-      utf8.encode(key),
-      secretKey: lookupKey,
-    );
-    return base64UrlEncode(digest.bytes);
+    final box = await Hive.openBox<String>(_boxName, path: path);
+    try {
+      if (box.isEmpty) {
+        await box.put(
+          _formatId,
+          await _encrypt(value: _formatProof, id: _formatId, dataKey: dataKey),
+        );
+        return box;
+      }
+      final marker = box.get(_formatId);
+      if (marker != null &&
+          await _decrypt(value: marker, id: _formatId, dataKey: dataKey) ==
+              _formatProof) {
+        return box;
+      }
+    } on SecretBoxAuthenticationError {
+      // Wrong key: reported as `null` below.
+    } on FormatException {
+      // Corrupt marker: same.
+    } catch (_) {
+      await box.close();
+      rethrow;
+    }
+    await box.close();
+    return null;
   }
 
-  Future<({String key, String value})> _decode({
+  Future<String> _decrypt({
     required String value,
     required String id,
     required SecretKey dataKey,
@@ -230,18 +241,16 @@ final class EncryptedHiveStore {
       secretKey: dataKey,
       aad: utf8.encode(id),
     );
-    final fields = jsonDecode(utf8.decode(decrypted)) as List<dynamic>;
-    return (key: fields[0] as String, value: fields[1] as String);
+    return utf8.decode(decrypted);
   }
 
-  Future<String> _encode({
-    required String key,
+  Future<String> _encrypt({
     required String value,
     required String id,
     required SecretKey dataKey,
   }) async {
     final encrypted = await _cipher.encrypt(
-      utf8.encode(jsonEncode([key, value])),
+      utf8.encode(value),
       secretKey: dataKey,
       aad: utf8.encode(id),
     );
@@ -256,10 +265,13 @@ final class EncryptedHiveStore {
       return await action();
     } on StorageException {
       rethrow;
-    } catch (error) {
-      throw StorageException(
-        debugMessage: 'Secure Hive could not $operation',
-        cause: error.runtimeType,
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        StorageException(
+          debugMessage: 'Secure Hive could not $operation',
+          cause: error,
+        ),
+        stackTrace,
       );
     }
   });

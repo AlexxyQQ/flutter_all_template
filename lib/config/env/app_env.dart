@@ -10,12 +10,9 @@ abstract final class AppEnv {
     defaultValue: 'dev',
   );
 
-  /// API base URL, e.g. `https://api.example.com/v1/`.
+  /// API base URL, e.g. `https://api.example.com/v1/`. Checked at startup by
+  /// [validate]; without it no request would ever get an auth header.
   static const String baseUrl = String.fromEnvironment('BASE_URL');
-
-  /// Opt-in remote log upload (disabled unless explicitly enabled).
-  static const bool enableLogUpload = bool.fromEnvironment('ENABLE_LOG_UPLOAD');
-  static const String logUploadUrl = String.fromEnvironment('LOG_UPLOAD_URL');
 
   /// Analytics master switch (default off). Enabling it retains events
   /// locally and sends them to the configured remote destinations.
@@ -39,6 +36,22 @@ abstract final class AppEnv {
     'DEV_TRUST_SELF_SIGNED_CERTS',
   );
 
-  static bool get isProd => flavor == 'prod';
-  static bool get isDev => flavor == 'dev';
+  /// Fails fast, with a message that says how to fix it, when the build was
+  /// started without a usable `BASE_URL` (a missing
+  /// `--dart-define-from-file=env/<flavor>.json`). Called once by `Bootstrap`;
+  /// [url] exists so tests can check other values.
+  static void validate({String url = baseUrl}) {
+    final uri = Uri.tryParse(url.trim());
+    final valid =
+        uri != null &&
+        uri.host.isNotEmpty &&
+        (uri.scheme == 'https' || uri.scheme == 'http');
+    if (!valid) {
+      throw StateError(
+        'BASE_URL is missing or not an absolute http(s) URL (got "$url"). '
+        'Run with --dart-define-from-file=env/<flavor>.json and set BASE_URL '
+        '(see env/dev.example.json).',
+      );
+    }
+  }
 }

@@ -93,8 +93,8 @@ Logs are written to the console in debug builds and may be persisted to files an
 - Network logging must redact sensitive headers and body fields before printing.
 - Release builds log warnings/errors only, and error reports must be sanitized
   (no raw exception text that may embed request data).
-- Remote log upload is **off by default**, must use HTTPS, must not reuse the API client
-  that attaches bearer tokens, and should send sanitized error events only.
+- The template does not upload logs. If you add an uploader, it must use HTTPS, must not reuse
+  the API client that attaches bearer tokens, and should send sanitized error events only.
 - Use `AppLogger`; `print`/`debugPrint` are not allowed in `lib/`.
 
 ---
@@ -126,5 +126,5 @@ key fails closed. Android excludes app data from backups and device transfers.
 
 The store is native-only. The database file still reveals size and write patterns.
 At-rest encryption cannot protect records from a compromised process or a device
-that can access the running app's memory. Keep tokens in `SecureStore` and record
+that can access the running app's memory. Keep tokens in `ISecureStore` and record
 only the data the feature needs.

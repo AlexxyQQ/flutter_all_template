@@ -13,9 +13,7 @@ final class PageRequest extends Equatable {
       assert(limit > 0, 'limit must be positive');
 
   /// The first page request for a list of [limit] items per page.
-  const PageRequest.first({required this.limit})
-    : page = firstPage,
-      cursor = null;
+  const PageRequest.first({required int limit}) : this(limit: limit);
 
   /// Page numbers are 1-based everywhere in the app.
   static const int firstPage = 1;

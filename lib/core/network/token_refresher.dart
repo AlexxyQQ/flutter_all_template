@@ -11,13 +11,13 @@ import 'network_constants.dart';
 ///
 /// Replace the default implementation if your backend's refresh contract
 /// differs (e.g. cookie-based refresh, different field names).
-abstract interface class TokenRefresher {
+abstract interface class ITokenRefresher {
   /// Throws an `AppException` when the refresh is rejected or fails.
   Future<AuthTokens> refresh({required String refreshToken});
 }
 
-@LazySingleton(as: TokenRefresher)
-class DioTokenRefresher implements TokenRefresher {
+@LazySingleton(as: ITokenRefresher)
+class DioTokenRefresher implements ITokenRefresher {
   DioTokenRefresher({@Named(NetworkNames.refreshDio) required Dio dio})
     : _dio = dio;
 
@@ -30,10 +30,15 @@ class DioTokenRefresher implements TokenRefresher {
       response = await _dio.post<Object?>(
         ApiConstants.refreshTokenPath,
         data: {ApiConstants.refreshRequestField: refreshToken},
-        options: Options(extra: {RequestExtras.skipAuth: true}),
+        options: Options(
+          extra: {
+            RequestExtras.skipAuth: true,
+            RequestExtras.isRefreshRequest: true,
+          },
+        ),
       );
     } on DioException catch (e) {
-      throw mapDioException(e);
+      throw mapDioException(exception: e);
     }
 
     final data = response.data;

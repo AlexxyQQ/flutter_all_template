@@ -1,68 +1,56 @@
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../common/domain/services/logger/logger_service.dart';
+import '../generic/data/async_lock.dart';
+import '../services/logger/data/app_logger.dart';
+import '../storage/key_value_stores.dart';
 import 'session.dart';
+import 'session_authority.dart';
+import 'session_scope.dart';
 
-/// Default [SessionManager].
+/// Default [ISessionManager] and [ISessionAuthority] (see `SessionModule`).
 ///
 /// `signOut()` order:
 /// 1. run every registered [LogoutHook] (they may still need the token, e.g.
 ///    to unregister a push token on the backend), each isolated with its own
 ///    try/catch and a timeout;
 /// 2. clear the stored tokens;
-/// 3. emit [SessionStatus.unauthenticated].
+/// 3. remove every `SessionScope` preference;
+/// 4. emit [SessionStatus.unauthenticated].
 ///
 /// Concurrent `signOut()` calls (e.g. several 401s at once) share one run.
-@LazySingleton(as: SessionManager)
-class SessionManagerImpl implements SessionManager {
-  SessionManagerImpl({required TokenStore tokenStore})
-    : _tokenStore = tokenStore;
+@lazySingleton
+class SessionManagerImpl implements ISessionManager, ISessionAuthority {
+  SessionManagerImpl({
+    required ITokenStore tokenStore,
+    required IPreferencesStore preferences,
+  }) : _tokenStore = tokenStore,
+       _preferences = preferences;
 
   static const Duration hookTimeout = Duration(seconds: 5);
   static const String _name = 'SessionManager';
 
-  final TokenStore _tokenStore;
+  final ITokenStore _tokenStore;
+  final IPreferencesStore _preferences;
   final List<LogoutHook> _logoutHooks = [];
+  final AsyncLock _lock = AsyncLock();
   final BehaviorSubject<SessionStatus> _status =
       BehaviorSubject<SessionStatus>.seeded(SessionStatus.unknown);
 
-  Future<void> _pending = Future<void>.value();
-  Object? _identity = Object();
-  @override
-  Object? get identity => _identity;
-
-  Future<T> _serialize<T>(Future<T> Function() action) {
-    final result = _pending.then((_) => action());
-    _pending = result.then<void>((_) {}, onError: (Object _) {});
-    return result;
-  }
-
-  @override
-  Future<bool> saveRefresh(Object identity, AuthTokens tokens) =>
-      _serialize(() async {
-        if (!identical(identity, _identity)) {
-          return false;
-        }
-        await _tokenStore.save(tokens: tokens);
-        return identical(identity, _identity);
-      });
-
-  @override
-  Future<void> expire(Object identity) =>
-      identical(identity, _identity) ? signOut() : Future<void>.value();
-
+  int _generation = 0;
   Future<void>? _signingOut;
+
+  @override
+  int get generation => _generation;
 
   @override
   SessionStatus get status => _status.value;
 
-  /// Emits the current status to every new listener, then every change.
   @override
   Stream<SessionStatus> get statusStream => _status.stream;
 
   @override
-  Future<void> restore() => _serialize(() async {
+  Future<void> restore() => _lock.synchronized(() async {
     try {
       final tokens = await _tokenStore.read();
       _setStatus(
@@ -83,24 +71,25 @@ class SessionManagerImpl implements SessionManager {
 
   @override
   Future<void> signIn({required AuthTokens tokens}) {
-    _identity = null;
+    // A sign-out requested after this sign-in must start a fresh run.
     _signingOut = null;
-    return _serialize(() async {
+    return _lock.synchronized(() async {
       await _tokenStore.save(tokens: tokens);
-      _identity = Object();
+      _generation++;
       _setStatus(SessionStatus.authenticated);
     });
   }
 
   @override
   Future<void> signOut() {
-    _identity = null;
     final existing = _signingOut;
     if (existing != null) {
       return existing;
     }
+    // Immediately orphan requests and refreshes of the ending session.
+    _generation++;
     late final Future<void> run;
-    run = _serialize(_signOut).whenComplete(() {
+    run = _lock.synchronized(_signOut).whenComplete(() {
       if (identical(run, _signingOut)) {
         _signingOut = null;
       }
@@ -109,7 +98,6 @@ class SessionManagerImpl implements SessionManager {
   }
 
   Future<void> _signOut() async {
-    _identity = null;
     for (final hook in List<LogoutHook>.of(_logoutHooks)) {
       try {
         await hook().timeout(hookTimeout);
@@ -124,9 +112,10 @@ class SessionManagerImpl implements SessionManager {
     }
     try {
       await _tokenStore.clear();
+      await _preferences.removeByPrefix(prefix: SessionScope.keyPrefix);
     } catch (e, s) {
       AppLogger.error(
-        'Failed to clear tokens on sign-out',
+        'Failed to clear session data on sign-out',
         error: e,
         stackTrace: s,
         name: _name,
@@ -137,6 +126,22 @@ class SessionManagerImpl implements SessionManager {
   }
 
   @override
+  Future<bool> saveRefreshedTokens({
+    required int generation,
+    required AuthTokens tokens,
+  }) => _lock.synchronized(() async {
+    if (generation != _generation) {
+      return false;
+    }
+    await _tokenStore.save(tokens: tokens);
+    return generation == _generation;
+  });
+
+  @override
+  Future<void> expire({required int generation}) =>
+      generation == _generation ? signOut() : Future<void>.value();
+
+  @override
   void registerLogoutHook({required LogoutHook hook}) => _logoutHooks.add(hook);
 
   void _setStatus(SessionStatus status) {
@@ -145,7 +150,7 @@ class SessionManagerImpl implements SessionManager {
     }
   }
 
-  @override
+  /// Releases the status stream. Called by GetIt on teardown.
   @disposeMethod
   Future<void> dispose() => _status.close();
 }

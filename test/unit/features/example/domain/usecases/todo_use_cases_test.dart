@@ -1,10 +1,11 @@
+import 'package:flutter_all_template/config/constants/gen/locale_keys.g.dart';
+import 'package:flutter_all_template/core/error/failure.dart';
 import 'package:flutter_all_template/core/generic/domain/entities/page.dart';
 import 'package:flutter_all_template/features/example/domain/entities/todo.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
 import 'package:flutter_all_template/features/example/domain/repositories/todo_repository.dart';
 import 'package:flutter_all_template/features/example/domain/usecases/create_todo_use_case.dart';
 import 'package:flutter_all_template/features/example/domain/usecases/delete_todo_use_case.dart';
-import 'package:flutter_all_template/features/example/domain/usecases/get_todo_use_case.dart';
 import 'package:flutter_all_template/features/example/domain/usecases/get_todos_use_case.dart';
 import 'package:flutter_all_template/features/example/domain/usecases/update_todo_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,16 +48,6 @@ void main() {
     expect(got.toNullable(), result);
   });
 
-  test('GetTodoUseCase forwards the id', () async {
-    when(
-      () => repository.getTodo(id: '1'),
-    ).thenAnswer((_) async => Right(todo));
-
-    final got = await GetTodoUseCase(repository: repository)(id: '1');
-
-    expect(got.toNullable(), todo);
-  });
-
   test('CreateTodoUseCase trims the title', () async {
     when(
       () => repository.createTodo(params: any(named: 'params')),
@@ -70,6 +61,27 @@ void main() {
       () =>
           repository.createTodo(params: const CreateTodoParams(title: 'Milk')),
     ).called(1);
+  });
+
+  test(
+    'CreateTodoUseCase rejects a blank title without calling the API',
+    () async {
+      final result = await CreateTodoUseCase(repository: repository)(
+        params: const CreateTodoParams(title: '  \n '),
+      );
+
+      final failure = result.getLeft().toNullable()!;
+      expect(failure.type, FailureType.validation);
+      expect(failure.messageKey, CreateTodoUseCase.emptyTitleMessageKey);
+      verifyZeroInteractions(repository);
+    },
+  );
+
+  test('the empty-title key is the translated LocaleKeys entry', () {
+    expect(
+      CreateTodoUseCase.emptyTitleMessageKey,
+      LocaleKeys.features_example_errors_emptyTitle,
+    );
   });
 
   test('UpdateTodoUseCase forwards params unchanged', () async {

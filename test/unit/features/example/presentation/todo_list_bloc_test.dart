@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
-import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_service.dart';
+import 'package:flutter_all_template/core/error/failure.dart';
 import 'package:flutter_all_template/core/generic/presentation/bloc/paged_list_bloc.dart';
+import 'package:flutter_all_template/core/services/analytics/domain/analytics_service.dart';
 import 'package:flutter_all_template/features/example/domain/entities/todo.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
 import 'package:flutter_all_template/features/example/domain/usecases/create_todo_use_case.dart';
@@ -28,7 +28,7 @@ class MockAnalytics extends Mock implements IAnalyticsService {}
 Todo _todo(String id, {bool isDone = false}) =>
     Todo(id: id, title: 'Todo $id', isDone: isDone, updatedAt: DateTime(2026));
 
-const _failure = Failure(message: 'error.key', type: FailureType.network);
+const _failure = Failure(messageKey: 'error.key', type: FailureType.network);
 
 void main() {
   late MockGetTodos getTodos;
@@ -102,7 +102,6 @@ void main() {
     build: build,
     act: (bloc) =>
         bloc.add(const PagedListQueryChanged(TodoQuery(search: 'milk'))),
-    wait: const Duration(milliseconds: 10),
     verify: (bloc) {
       expect(bloc.state.query, const TodoQuery(search: 'milk'));
       verify(
@@ -252,62 +251,61 @@ void main() {
         final bloc = build()
           ..emit(seeded(const TodoQuery(), [_todo('1'), _todo('2')]))
           ..add(TodoToggled(_todo('1')));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         bloc.add(const PagedListQueryChanged(onlyOpen));
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        expect(bloc.state.query, onlyOpen);
-        expect(bloc.state.items, isEmpty); // Old query's items are gone.
-
-        updating.complete(const Left(_failure)); // Rollback must not re-insert.
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-
+        await pumpEventQueue();
         expect(bloc.state.query, onlyOpen);
         expect(bloc.state.items.map((t) => t.id), ['1', '2']); // The new load.
+
+        updating.complete(const Left(_failure)); // Rollback must not touch it.
+        await pumpEventQueue();
+
+        expect(bloc.state.query, onlyOpen);
+        expect(bloc.state.items.map((t) => t.id), ['1', '2']);
         await bloc.close();
       },
     );
   });
 
   group('mutation serialization', () {
-    test('a refresh fetched while a mutation ran is fetched again', () async {
-      final stale = Completer<Either<Failure, PageResult<Todo>>>();
-      var calls = 0;
+    test('mutations run one at a time, in the order they were added', () async {
+      final firstToggle = Completer<Either<Failure, Todo>>();
       when(
-        () => getTodos(
-          page: any(named: 'page'),
-          query: any(named: 'query'),
-        ),
-      ).thenAnswer((_) {
-        calls++;
-        return calls == 1
-            ? stale.future
-            : Future.value(
-                Right(
-                  PageResult(
-                    items: [_todo('1', isDone: true), _todo('2')],
-                    hasMore: false,
-                  ),
-                ),
-              );
-      });
+        () => updateTodo(params: const UpdateTodoParams(id: '1', isDone: true)),
+      ).thenAnswer((_) => firstToggle.future);
       when(
-        () => updateTodo(params: any(named: 'params')),
-      ).thenAnswer((_) async => Right(_todo('1', isDone: true)));
+        () => deleteTodo(id: '2'),
+      ).thenAnswer((_) async => const Right(null));
       final bloc = build()
         ..emit(loaded([_todo('1'), _todo('2')]))
-        ..add(const PagedListRefreshed());
-      await Future<void>.delayed(Duration.zero);
-      bloc.add(TodoToggled(_todo('1')));
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-      // The refresh response predates the toggle.
-      stale.complete(
-        Right(PageResult(items: [_todo('1'), _todo('2')], hasMore: false)),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        ..add(TodoToggled(_todo('1')))
+        ..add(const TodoDeleted('2'));
+      await pumpEventQueue();
 
-      expect(calls, 2);
-      expect(bloc.state.items.first.isDone, isTrue);
-      expect(bloc.state.status, PagedStatus.idle);
+      verifyNever(() => deleteTodo(id: any(named: 'id'))); // Still queued.
+
+      firstToggle.complete(Right(_todo('1', isDone: true)));
+      await pumpEventQueue();
+
+      verify(() => deleteTodo(id: '2')).called(1);
+      expect(bloc.state.items.map((t) => t.id), ['1']);
+      await bloc.close();
+    });
+
+    test('a blank title comes back as the use case failure', () async {
+      const blank = Failure.validation(
+        messageKey: 'features.example.errors.emptyTitle',
+      );
+      when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => const Left(blank));
+      final bloc = build()
+        ..emit(loaded([_todo('1')]))
+        ..add(const TodoCreated('   '));
+      await pumpEventQueue();
+
+      expect(bloc.state.failure, blank);
+      expect(bloc.state.items.map((t) => t.id), ['1']);
       await bloc.close();
     });
   });
@@ -387,7 +385,6 @@ void main() {
       act: (bloc) => bloc.add(
         const PagedListQueryChanged(TodoQuery(search: 'milk', onlyOpen: true)),
       ),
-      wait: const Duration(milliseconds: 10),
       verify: (_) => verify(
         () => analytics.trackAction(
           name: 'todo_search',

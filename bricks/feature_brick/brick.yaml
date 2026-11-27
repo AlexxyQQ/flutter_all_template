@@ -1,15 +1,55 @@
 name: flutter_feature
-description: Generates a clean-architecture feature slice (paged list + CRUD) for flutter_all_template
-version: 3.0.0+1
+description: Generates a clean-architecture feature slice (paged list + optional CRUD) for flutter_all_template
+version: 3.1.0+1
 environment:
   mason: ">=0.1.0 <0.2.0"
 
 vars:
+  # --- Naming -------------------------------------------------------------
   feature_name:
     type: string
     description: Feature name, singular (e.g. note, user_profile)
     prompt: What is the feature name? (singular, e.g. note or user_profile)
     default: note
+  feature_plural:
+    type: string
+    description: Plural of the feature name, used for list names (getNotes, ApiPaths.notes). Leave empty to derive it (note -> notes, category -> categories)
+    prompt: Plural form? (leave empty to derive it, e.g. category -> categories)
+    default: ""
+  api_path:
+    type: string
+    description: REST collection path, relative to the base URL (ApiPaths convention, no leading slash). Leave empty for <plural-in-kebab-case>
+    prompt: API path relative to the base URL? (leave empty for <plural>, e.g. v1/notes)
+    default: ""
+  route_path:
+    type: string
+    description: In-app route / deep-link path of the list page. Leave empty for /<plural-in-kebab-case>
+    prompt: Route path? (leave empty for /<plural>)
+    default: ""
+
+  # --- Operations ---------------------------------------------------------
+  include_create:
+    type: boolean
+    description: Create use case, repository/data-source methods, bloc event and the add button + dialog
+    prompt: Include create (use case, add button and dialog)?
+    default: true
+  include_update:
+    type: boolean
+    description: Update use case, repository/data-source methods and a bloc event (no screen is generated for it)
+    prompt: Include update (use case and bloc event)?
+    default: true
+  include_delete:
+    type: boolean
+    description: Delete use case, repository/data-source methods, bloc event and the delete button on each tile
+    prompt: Include delete (use case and delete button)?
+    default: true
+  include_search:
+    type: boolean
+    description: Search field under the app bar, wired to the list's debounced query
+    prompt: Include a search field?
+    default: true
+
+  # --- Data layer ---------------------------------------------------------
   use_local_datasource:
     type: boolean
     description: Add an offline cache (JsonCollectionStore on PreferencesStore) with remote-first, cache-fallback reads
@@ -19,4 +59,31 @@ vars:
     type: boolean
     description: Generate typed Create/Update params and a Query class (otherwise plain arguments and a String search query)
     prompt: Generate typed params and query classes?
+    default: true
+
+  # --- Project wiring (what the post-gen hook edits for you) -------------
+  generate_tests:
+    type: boolean
+    description: Generate the widget test (test/widget/features/<name>/<name>_flow_test.dart)
+    prompt: Generate the widget test?
+    default: true
+  register_api_path:
+    type: boolean
+    description: Add the ApiPaths constant to lib/config/constants/api/api_paths.dart
+    prompt: Add the ApiPaths constant automatically?
+    default: true
+  register_route:
+    type: boolean
+    description: Register the route in lib/app/router/app_router.dart
+    prompt: Register the route in AppRouter automatically?
+    default: true
+  add_translations:
+    type: boolean
+    description: Add features.<name>.* keys to assets/translations/en-GB.json
+    prompt: Add the English translation keys automatically?
+    default: true
+  format_code:
+    type: boolean
+    description: Run dart format on the generated files
+    prompt: Run dart format on the generated files?
     default: true

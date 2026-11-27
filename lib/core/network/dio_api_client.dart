@@ -5,9 +5,9 @@ import '../error/app_exception.dart';
 import 'api_client.dart';
 import 'dio_exception_mapper.dart';
 
-/// [ApiClient] backed by the app-wide [Dio] (configured in `NetworkModule`).
-@LazySingleton(as: ApiClient)
-class DioApiClient implements ApiClient {
+/// [IApiClient] backed by the app-wide [Dio] (configured in `NetworkModule`).
+@LazySingleton(as: IApiClient)
+class DioApiClient implements IApiClient {
   DioApiClient({required Dio dio}) : _dio = dio;
 
   final Dio _dio;
@@ -95,20 +95,11 @@ class DioApiClient implements ApiClient {
         options: Options(method: method, headers: headers),
       );
     } on DioException catch (e) {
-      throw mapDioException(e);
+      throw mapDioException(exception: e);
     }
 
-    final status = response.statusCode ?? 0;
-    // Dio's default validateStatus already rejects non-2xx, but a custom
-    // validateStatus on a request must not turn errors into "successes".
-    if (status < 200 || status >= 300) {
-      throw mapStatusCode(
-        status,
-        response.data,
-        debugMessage: 'HTTP $status: $method $path',
-      );
-    }
-
+    // No per-request `validateStatus` is exposed, so Dio has already turned
+    // every non-2xx response into a DioException above.
     final data = _normalise(response.data);
     try {
       return decode(data);

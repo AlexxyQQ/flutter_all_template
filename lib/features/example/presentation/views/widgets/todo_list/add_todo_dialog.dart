@@ -1,0 +1,57 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+
+import '../../../../../../config/constants/gen/locale_keys.g.dart';
+import '../../../../../../core/presentation/modals/app_popup_dialog.dart';
+
+class AddTodoDialog extends StatefulWidget {
+  const AddTodoDialog({super.key});
+
+  @override
+  State<AddTodoDialog> createState() => _AddTodoDialogState();
+}
+
+class _AddTodoDialogState extends State<AddTodoDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.of(context).pop(_controller.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPopupDialog(
+      title: LocaleKeys.features_example_add.tr(),
+      content: Semantics(
+        identifier: 'todo_title_field',
+        child: TextField(
+          key: const Key('todo_title_field'),
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: LocaleKeys.features_example_hint.tr(),
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(LocaleKeys.common_words_cancel.tr()),
+        ),
+        Semantics(
+          identifier: 'todo_save_button',
+          child: ElevatedButton(
+            key: const Key('todo_save_button'),
+            onPressed: _submit,
+            child: Text(LocaleKeys.common_words_save.tr()),
+          ),
+        ),
+      ],
+    );
+  }
+}

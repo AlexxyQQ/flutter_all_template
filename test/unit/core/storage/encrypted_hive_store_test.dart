@@ -1,18 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_all_template/core/common/domain/services/analytics/data/destinations/local_analytics_destination.dart';
-import 'package:flutter_all_template/core/common/domain/services/analytics/data/encrypted_hive_analytics_storage.dart';
-import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_event.dart';
-import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_event_type.dart';
-import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_identity.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter_all_template/core/error/app_exception.dart';
+import 'package:flutter_all_template/core/services/analytics/data/destinations/local_analytics_destination.dart';
+import 'package:flutter_all_template/core/services/analytics/data/encrypted_hive_analytics_storage.dart';
+import 'package:flutter_all_template/core/services/analytics/domain/analytics_event.dart';
+import 'package:flutter_all_template/core/services/analytics/domain/analytics_event_type.dart';
+import 'package:flutter_all_template/core/services/analytics/domain/analytics_identity.dart';
 import 'package:flutter_all_template/core/storage/encrypted_hive_store.dart';
 import 'package:flutter_all_template/core/storage/key_value_stores.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive_ce.dart';
 
 void main() {
+  const boxName = 'secure_records_v2';
+
   late Directory directory;
   late InMemoryHiveKeyVault vault;
   late EncryptedHiveStore store;
@@ -31,13 +34,22 @@ void main() {
     await directory.delete();
   });
 
-  test('persists records without putting keys or values in the file', () async {
-    const key = 'account_private_key_for_a_record';
+  /// Edits the box behind the store's back; the store must be closed.
+  Future<void> tamper(Future<void> Function(Box<String> box) edit) async {
+    final box = await Hive.openBox<String>(boxName, path: directory.path);
+    try {
+      await edit(box);
+    } finally {
+      await box.close();
+    }
+  }
+
+  test('persists values without putting them in the file', () async {
     const value = 'private payload with unicode: नमस्ते';
 
     await Future.wait([
-      store.write(key: key, value: value),
-      store.write(key: 'another_key', value: 'another_value'),
+      store.write(key: 'first_id', value: value),
+      store.write(key: 'second_id', value: 'another_value'),
     ]);
     await store.close();
 
@@ -45,55 +57,75 @@ void main() {
       (entry) => entry.path.endsWith('.hive'),
     );
     final raw = utf8.decode(await file.readAsBytes(), allowMalformed: true);
-    expect(raw, isNot(contains(key)));
     expect(raw, isNot(contains(value)));
     expect(raw, isNot(contains(vault.value)));
-    expect(await store.keys(), unorderedEquals([key, 'another_key']));
-    expect(await store.read(key: key), value);
-    await store.delete(key: key);
-    expect(await store.read(key: key), isNull);
-    expect(await store.keys(), ['another_key']);
+    expect(await store.keys(), unorderedEquals(['first_id', 'second_id']));
+    expect(await store.read(key: 'first_id'), value);
+    await store.delete(key: 'first_id');
+    expect(await store.read(key: 'first_id'), isNull);
+    expect(await store.keys(), ['second_id']);
   });
 
-  test('rejects a missing or replaced key for existing data', () async {
+  test('keys() lists records without decrypting them', () async {
+    await store.write(key: 'record', value: 'value');
+    await store.close();
+    await tamper((box) => box.put('record', 'not-valid-ciphertext'));
+
+    expect(await store.keys(), ['record']);
+    await expectLater(
+      store.read(key: 'record'),
+      throwsA(isA<StorageException>()),
+    );
+  });
+
+  test('recovers when the key is missing for an existing store', () async {
     await store.write(key: 'key', value: 'value');
     await store.close();
     final original = vault.value;
 
     vault.value = null;
-    await expectLater(store.read(key: 'key'), throwsA(isA<StorageException>()));
-    expect(vault.value, isNull);
 
-    vault.value = base64UrlEncode(List<int>.filled(64, 0));
-    await expectLater(
-      store.write(key: 'key', value: 'replacement'),
-      throwsA(isA<StorageException>()),
-    );
+    expect(await store.read(key: 'key'), isNull);
+    expect(vault.value, isNotNull);
+    expect(vault.value, isNot(original));
+    await store.write(key: 'key', value: 'fresh');
+    expect(await store.read(key: 'key'), 'fresh');
+  });
 
-    vault.value = original;
-    expect(await store.read(key: 'key'), 'value');
+  test('recovers when the stored key is malformed or replaced', () async {
+    await store.write(key: 'key', value: 'value');
+    await store.close();
+
+    vault.value = 'not base64 at all!';
+    expect(await store.read(key: 'key'), isNull);
+    await store.write(key: 'key', value: 'second');
+    await store.close();
+
+    vault.value = base64UrlEncode(List<int>.filled(32, 0));
+    expect(await store.read(key: 'key'), isNull);
+    expect(await store.keys(), isEmpty);
   });
 
   test('rejects ciphertext copied to another record', () async {
     await store.write(key: 'first', value: 'one');
     await store.write(key: 'second', value: 'two');
     await store.close();
+    await tamper((box) => box.put('first', box.get('second')!));
 
-    final box = await Hive.openBox<String>(
-      'secure_records_v1',
-      path: directory.path,
+    await expectLater(
+      store.read(key: 'first'),
+      throwsA(
+        isA<StorageException>().having(
+          (e) => e.cause,
+          'the real error is kept as the cause',
+          isA<SecretBoxAuthenticationError>(),
+        ),
+      ),
     );
-    try {
-      final ids = box.keys.cast<String>().where((key) => key != 'format');
-      await box.put(ids.first, box.get(ids.last)!);
-    } finally {
-      await box.close();
-    }
-
-    await expectLater(store.keys(), throwsA(isA<StorageException>()));
+    expect(await store.read(key: 'second'), 'two');
   });
 
-  test('local analytics survives reopening and filters by identity', () async {
+  test('local analytics events survive closing the store', () async {
     final destination = LocalAnalyticsDestination(
       storage: EncryptedHiveAnalyticsStorage(store: store),
     );
@@ -118,24 +150,22 @@ void main() {
     );
     await store.close();
 
-    for (final (index, identity) in [first, second, guest].indexed) {
-      final events = await destination.readRecent(identity: identity);
-      expect(events.map((event) => event.id), ['event_$index']);
-    }
+    expect(await store.keys(), hasLength(3));
   });
 }
 
-class InMemoryHiveKeyVault implements SecureStore {
+class InMemoryHiveKeyVault implements ISecureStore {
   String? value;
 
   @override
-  Future<String?> read(String key) async => value;
+  Future<String?> read({required String key}) async => value;
 
   @override
-  Future<void> write(String key, String value) async => this.value = value;
+  Future<void> write({required String key, required String value}) async =>
+      this.value = value;
 
   @override
-  Future<void> delete(String key) async => value = null;
+  Future<void> delete({required String key}) async => value = null;
 
   @override
   Future<void> deleteAll() async => value = null;

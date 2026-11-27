@@ -1,10 +1,10 @@
 import 'package:injectable/injectable.dart';
 
-import '../../../../config/constants/type_defs/typedef.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/error/guard.dart';
+import '../../../../core/error/typedef.dart';
 import '../../../../core/generic/domain/entities/page.dart';
-import '../../../../core/session/session.dart';
+import '../../../../core/services/logger/data/app_logger.dart';
 import '../../domain/entities/todo.dart';
 import '../../domain/params/todo_params.dart';
 import '../../domain/repositories/todo_repository.dart';
@@ -12,200 +12,113 @@ import '../data_sources/local/todo_local_data_source.dart';
 import '../data_sources/remote/todo_remote_data_source.dart';
 import '../models/todo_model.dart';
 
-/// Remote-first repository with an account-safe offline page cache.
+/// Remote-first repository with a small offline fallback.
 ///
-/// * **Reads** go to the API; the answer is cached per query and page. When
-///   the device is offline (`NetworkException`/`RequestTimeoutException`) the
-///   cached answer for the *same* query and page is served; with none cached
-///   the original network error is returned. Other queries are never
-///   approximated from cached data.
-/// * **Writes** go to the API and then patch the cache. There is no offline
-///   outbox: a write made offline fails.
-/// * **Cache writes are best-effort**: a failing one never fails a call that
-///   already succeeded.
-/// * **Account safety**: the cache is wiped by a logout hook, and every cache
-///   write is skipped when the session changed since the request started, so
-///   a response arriving *after* sign-out (or after another account signed
-///   in) can never be stored for, or served to, the wrong account.
-/// * **Ordering**: a list response is only cached if no mutation started or
-///   finished while it was in flight (it may predate the mutation).
-///
-/// Register this repository eagerly at start-up (resolve it once after DI) so
-/// the logout hook exists even when no to-do screen was ever opened.
+/// * **Reads** go to the API. A first page is cached (one entry: the last one
+///   served). When the device is offline (`NetworkException` /
+///   `RequestTimeoutException`) the cached first page of the *same* query is
+///   served; otherwise the original network error is returned.
+/// * **Writes** go to the API, then drop the cached page (it no longer
+///   matches the server). There is no offline outbox: a write made offline
+///   fails.
+/// * **Cache failures never fail a call** that already succeeded; they are
+///   logged.
+/// * **Account safety** is the cache key's job: it lives under
+///   `SessionScope.keyPrefix`, which sign-out wipes.
 @LazySingleton(as: ITodoRepository)
 class TodoRepositoryImpl implements ITodoRepository {
   TodoRepositoryImpl({
     required ITodoRemoteDataSource remote,
     required ITodoLocalDataSource local,
-    required SessionManager session,
   }) : _remote = remote,
-       _local = local,
-       _session = session {
-    _session.registerLogoutHook(hook: _onLogout);
-  }
+       _local = local;
+
+  static const String _logName = 'TodoRepository';
 
   final ITodoRemoteDataSource _remote;
   final ITodoLocalDataSource _local;
-  final SessionManager _session;
-
-  // Bumped on logout: invalidates every request started before it.
-  int _generation = 0;
-  // Bumped when a mutation starts and when it ends.
-  int _mutationVersion = 0;
-  int _activeMutations = 0;
-
-  Future<void> _onLogout() {
-    _generation++; // Synchronously: late writes are rejected from here on.
-    return _local.clear();
-  }
-
-  _Ticket _ticket() => _Ticket(
-    identity: _session.identity,
-    generation: _generation,
-    mutationVersion: _mutationVersion,
-  );
-
-  /// Whether the session is the one [t] was issued under.
-  bool _sameSession(_Ticket t) =>
-      t.identity != null &&
-      identical(t.identity, _session.identity) &&
-      t.generation == _generation;
 
   @override
   ResultFuture<PageResult<Todo>> getTodos({
     required PageRequest page,
     TodoQuery query = const TodoQuery(),
   }) => guard(() async {
-    final ticket = _ticket();
-    final startedDuringMutation = _activeMutations > 0;
     try {
       final result = await _remote.getTodos(page: page, query: query);
-      if (!startedDuringMutation &&
-          _activeMutations == 0 &&
-          ticket.mutationVersion == _mutationVersion) {
-        await _cache(
-          ticket,
-          () => _local.savePage(page: page, query: query, result: result),
+      if (page.isFirst) {
+        await _bestEffort(
+          () => _local.saveFirstPage(
+            query: query,
+            limit: page.limit,
+            result: result,
+          ),
         );
       }
       return result.map((model) => model.toEntity());
     } on AppException catch (e) {
-      if (!_isOffline(e) || !_sameSession(ticket)) {
+      if (!page.isFirst || !_isOffline(e)) {
         rethrow;
       }
-      final cached = await _readCache(
-        () => _local.getPage(page: page, query: query),
-      );
-      if (cached == null || !_sameSession(ticket)) {
-        rethrow;
+      final cached = await _readCache(query: query, limit: page.limit);
+      if (cached == null) {
+        rethrow; // Report the network problem, not the cache miss.
       }
       return cached.map((model) => model.toEntity());
     }
   });
 
   @override
-  ResultFuture<Todo> getTodo({required String id}) => guard(() async {
-    final ticket = _ticket();
-    try {
-      final model = await _remote.getTodo(id: id);
-      // A single read can't tell where the item sits in a page: don't cache.
-      return model.toEntity();
-    } on AppException catch (e) {
-      if (!_isOffline(e) || !_sameSession(ticket)) {
-        rethrow;
-      }
-      try {
-        final model = await _local.getTodo(id: id);
-        if (!_sameSession(ticket)) {
-          rethrow;
-        }
-        return model.toEntity();
-      } on CacheMissException {
-        // ignore: use_rethrow_when_possible
-        throw e; // Report the network problem, not the cache miss.
-      } on StorageException {
-        throw e;
-      }
-    }
-  });
-
-  @override
   ResultFuture<Todo> createTodo({required CreateTodoParams params}) =>
-      guard(() => _mutate(() => _remote.createTodo(params: params)));
+      guard(() async {
+        final model = await _remote.createTodo(params: params);
+        await _bestEffort(_local.clear);
+        return model.toEntity();
+      });
 
   @override
   ResultFuture<Todo> updateTodo({required UpdateTodoParams params}) =>
-      guard(() => _mutate(() => _remote.updateTodo(params: params)));
+      guard(() async {
+        final model = await _remote.updateTodo(params: params);
+        await _bestEffort(_local.clear);
+        return model.toEntity();
+      });
 
   @override
   ResultFuture<void> deleteTodo({required String id}) => guard(() async {
-    final ticket = _ticket();
-    _beginMutation();
-    try {
-      await _remote.deleteTodo(id: id);
-      await _cache(ticket, () => _local.deleteTodo(id: id));
-    } finally {
-      _endMutation();
-    }
+    await _remote.deleteTodo(id: id);
+    await _bestEffort(_local.clear);
   });
-
-  Future<Todo> _mutate(Future<TodoModel> Function() call) async {
-    final ticket = _ticket();
-    _beginMutation();
-    try {
-      final model = await call();
-      await _cache(ticket, () => _local.saveTodo(todo: model));
-      return model.toEntity();
-    } finally {
-      _endMutation();
-    }
-  }
-
-  void _beginMutation() {
-    _activeMutations++;
-    _mutationVersion++;
-  }
-
-  void _endMutation() {
-    _activeMutations--;
-    _mutationVersion++;
-  }
 
   static bool _isOffline(AppException e) =>
       e is NetworkException || e is RequestTimeoutException;
 
-  /// Cache writes are best-effort and only for the session that issued
-  /// [ticket]. The session check and the write's enqueue happen in the same
-  /// synchronous step, so a logout's `clear()` always lands after the write.
-  Future<void> _cache(_Ticket ticket, Future<void> Function() write) async {
-    if (!_sameSession(ticket)) {
-      return;
+  Future<PageResult<TodoModel>?> _readCache({
+    required TodoQuery query,
+    required int limit,
+  }) async {
+    try {
+      return await _local.getFirstPage(query: query, limit: limit);
+    } on StorageException catch (e, s) {
+      _logCacheFailure(e, s);
+      return null; // An unreadable cache behaves like an empty one.
     }
+  }
+
+  /// Cache writes are an optimisation: the remote call already succeeded, so
+  /// a store failure is logged, not surfaced.
+  static Future<void> _bestEffort(Future<void> Function() write) async {
     try {
       await write();
-    } on StorageException {
-      // Stale cache is acceptable; the next successful read rewrites it.
+    } on StorageException catch (e, s) {
+      _logCacheFailure(e, s);
     }
   }
 
-  static Future<T?> _readCache<T>(Future<T?> Function() read) async {
-    try {
-      return await read();
-    } on StorageException {
-      return null; // Unreadable cache behaves like an empty one.
-    }
-  }
-}
-
-/// Identifies the session (and mutation epoch) a request started under.
-final class _Ticket {
-  const _Ticket({
-    required this.identity,
-    required this.generation,
-    required this.mutationVersion,
-  });
-
-  final Object? identity;
-  final int generation;
-  final int mutationVersion;
+  static void _logCacheFailure(StorageException error, StackTrace stackTrace) =>
+      AppLogger.warning(
+        'To-do cache unavailable',
+        error: error,
+        stackTrace: stackTrace,
+        name: _logName,
+      );
 }

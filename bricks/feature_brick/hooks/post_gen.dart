@@ -4,91 +4,122 @@ import 'dart:io';
 import 'package:mason/mason.dart';
 
 const _apiPathsFile = 'lib/config/constants/api/api_paths.dart';
-const _routerFile = 'lib/core/common/presentation/routes/app_router.dart';
+const _routerFile = 'lib/app/router/app_router.dart';
 const _translationFiles = [
   'assets/translations/en-GB.json',
 ];
 const _testHelper = 'test/widget/helpers/test_app.dart';
 
 Future<void> run(HookContext context) async {
-  final name = context.vars['feature_name'] as String;
-  final useParams = context.vars['use_params'] as bool;
+  final vars = context.vars;
+  final name = vars['feature_name'] as String;
+  final useParams = vars['use_params'] == true;
+  final includeCreate = vars['include_create'] == true;
+  final generateTests = vars['generate_tests'] == true;
 
   // Must match the mustache lambdas used in the templates.
   final snake = name.snakeCase;
   final pascal = name.pascalCase;
-  final pathConstant = '${name.camelCase}s';
-  final pathValue = '/${name.paramCase}s';
+  final plural = vars['feature_plural'] as String; // set by pre_gen (snake)
+  final pathConstant = plural.camelCase;
+  final pathValue = vars['api_path'] as String;
   final featureDir = 'lib/features/$snake';
-  final testFile = 'test/widget/features/$snake/${snake}_flow_test.dart';
+  final testDir = 'test/widget/features/$snake';
+  final testFile = '$testDir/${snake}_flow_test.dart';
 
   final progress = context.logger.progress('Configuring $featureDir');
-  final addedPath = _addApiPath(pathConstant, pathValue);
-  final addedRoute = _addRoute(snake, pascal);
+  final addedPath =
+      vars['register_api_path'] == true && _addApiPath(pathConstant, pathValue);
+  final addedRoute = vars['register_route'] == true && _addRoute(snake, pascal);
   final translated = [
-    for (final file in _translationFiles) _addTranslations(file, snake, name),
+    if (vars['add_translations'] == true)
+      for (final file in _translationFiles)
+        _addTranslations(file, snake, name, plural, includeCreate),
   ];
-  final testPatched = _fixTestPackage(testFile, snake);
-  final formatted = await Process.run(
-    'dart',
-    ['format', featureDir, 'test/widget/features/$snake'],
-    runInShell: true,
-  );
-  if (formatted.exitCode != 0) {
-    progress.fail('dart format failed');
-    throw ProcessException(
-        'dart',
-        ['format', featureDir, 'test/widget/features/$snake'],
-        '${formatted.stdout}\n${formatted.stderr}',
-        formatted.exitCode);
+  final testPatched = !generateTests || _fixTestPackage(testFile, snake);
+  if (vars['format_code'] == true) {
+    final targets = [
+      featureDir,
+      if (generateTests) testDir,
+    ];
+    final formatted = await Process.run(
+      'dart',
+      ['format', ...targets],
+      runInShell: true,
+    );
+    if (formatted.exitCode != 0) {
+      progress.fail('dart format failed');
+      throw ProcessException('dart', ['format', ...targets],
+          '${formatted.stdout}\n${formatted.stderr}', formatted.exitCode);
+    }
   }
   progress.complete('Generated $featureDir');
 
   final log = context.logger;
-  log
-    ..info('')
-    ..info(
+  final keys = includeCreate ? '{title, add, hint}' : '{title}';
+  log.info('');
+  if (vars['register_api_path'] == true) {
+    log.info(
       addedPath
           ? 'Added ApiPaths.$pathConstant = $pathValue to $_apiPathsFile.'
           : 'Add to $_apiPathsFile (inside ApiPaths):\n'
               "  static const String $pathConstant = '$pathValue';",
-    )
-    ..info(
-      addedRoute
-          ? 'Registered ${pascal}Routes.route in $_routerFile.'
-          : 'Register the route by hand in $_routerFile:\n'
-              "  import '../../../../features/$snake/presentation/routes/"
-              "${snake}_route.dart';\n"
-              '  and add ${pascal}Routes.route, to the routes list.',
     );
-  for (var i = 0; i < _translationFiles.length; i++) {
+  } else {
     log.info(
-      translated[i]
-          ? 'Added features.$snake.* keys to ${_translationFiles[i]}.'
-          : 'Add features.$snake.presentation.screens.${snake}_list_screen '
-              '{title, add, hint} to ${_translationFiles[i]} by hand.',
+      'Add to $_apiPathsFile (inside ApiPaths):\n'
+      "  static const String $pathConstant = '$pathValue';",
     );
   }
-  log.info(
-      'Translate features.$snake.presentation.screens.${snake}_list_screen '
-      '{title, add, hint} in assets/translations/ne-NP.json.');
+  if (vars['register_route'] == true && addedRoute) {
+    log.info('Registered ${pascal}Routes.route in $_routerFile.');
+  } else {
+    log.info(
+      'Register the route by hand in $_routerFile:\n'
+      "  import '../../features/$snake/presentation/routes/"
+      "${snake}_routes.dart';\n"
+      '  and add ${pascal}Routes.route, to the routes list.',
+    );
+  }
+  if (vars['add_translations'] == true) {
+    for (var i = 0; i < _translationFiles.length; i++) {
+      log.info(
+        translated[i]
+            ? 'Added features.$snake.* keys to ${_translationFiles[i]}.'
+            : 'Add features.$snake $keys to '
+                '${_translationFiles[i]} by hand.',
+      );
+    }
+  } else {
+    log.info(
+        'Add features.$snake $keys to every file in assets/translations/.');
+  }
+  log.info('Translate features.$snake $keys in '
+      'assets/translations/ne-NP.json.');
   if (!testPatched) {
     log.warn(
       'No package name found in pubspec.yaml: in $testFile replace '
       '"package:__package__/" with your package name.',
     );
   }
-  if (!File(_testHelper).existsSync()) {
+  if (generateTests && !File(_testHelper).existsSync()) {
     log.warn('$_testHelper not found: the generated widget test needs it.');
   }
+  final usecases = [
+    'list',
+    if (includeCreate) 'create',
+    if (vars['include_update'] == true) 'update',
+    if (vars['include_delete'] == true) 'delete',
+  ];
   log
     ..info('')
     ..info('Next steps:')
     ..info('  1. Add your fields to $pascal, ${pascal}Model'
         '${useParams ? ' and the params in domain/params/' : ''}.')
     ..info('  2. dart run build_runner build --delete-conflicting-outputs')
-    ..info('     (generates Freezed/JSON code, registers the data sources,')
-    ..info('     ${pascal}RepositoryImpl, the use cases and ${pascal}ListBloc')
+    ..info('     (generates the JSON code, registers the data sources,')
+    ..info('     ${pascal}RepositoryImpl, the ${usecases.join('/')} use cases '
+        'and ${pascal}ListBloc')
     ..info('     with injectable, and the auto_route routes).')
     ..info('  3. dart run easy_localization:generate -S assets/translations '
         '-f keys -O lib/config/constants/gen -o locale_keys.g.dart')
@@ -109,28 +140,35 @@ bool _addApiPath(String constant, String value) {
     return false;
   }
   final source = file.readAsStringSync();
-  // Restrict automatic edits to the template's simple constant-only class.
-  final matches = RegExp(
-    r'^abstract final class ApiPaths \{\r?\n'
-    r"((?:[ \t]*static const String \w+ = '/[\w/-]*';[ \t]*\r?\n|[ \t]*\r?\n)*)"
-    r'\}',
+  // The class may carry doc comments and several constants; its members are
+  // indented, so its closing brace is the first `}` at the start of a line.
+  final start = RegExp(
+    r'^abstract final class ApiPaths \{[ \t]*\r?$',
     multiLine: true,
   ).allMatches(source).toList();
-  if (matches.length != 1 ||
-      source.contains('/*') ||
-      source.contains("'''") ||
-      source.contains('\"\"\"')) return false;
-  final match = matches.single;
-  final body = match.group(1)!;
-  if (RegExp('static const String $constant = ').hasMatch(body)) {
-    return body.contains("static const String $constant = '$value';");
+  if (start.length != 1) {
+    return false;
+  }
+  final rest = source.substring(start.single.end);
+  final close = RegExp(r'^\}', multiLine: true).firstMatch(rest);
+  if (close == null) {
+    return false;
+  }
+  final end = start.single.end + close.start;
+  final body = source.substring(start.single.end, end);
+  final existing = RegExp(
+    'static const String $constant = ([^;]*);',
+  ).firstMatch(body);
+  if (existing != null) {
+    return existing.group(1) == "'$value'";
   }
   final eol = source.contains('\r\n') ? '\r\n' : '\n';
-  final end = match.end - 1;
+  // Keep one blank line between the previous member and the new constant.
+  final blank = RegExp(r'\n[ \t]*\r?\n$').hasMatch(body) ? '' : eol;
   file.writeAsStringSync(source.replaceRange(
     end,
     end,
-    "  static const String $constant = '$value';$eol",
+    "$blank  static const String $constant = '$value';$eol",
   ));
   return true;
 }
@@ -147,8 +185,8 @@ bool _addRoute(String snake, String pascal) {
   final eol = source.contains('\r\n') ? '\r' : '';
   final lines = source.split('\n');
 
-  final importPath = '../../../../features/$snake/presentation/routes/'
-      '${snake}_route.dart';
+  final importPath = '../../features/$snake/presentation/routes/'
+      '${snake}_routes.dart';
   final importLine = "import '$importPath';$eol";
   final entry = '    ${pascal}Routes.route,$eol';
 
@@ -186,7 +224,7 @@ bool _addRoute(String snake, String pascal) {
   }
 
   if (!hasImport) {
-    final featureImport = RegExp(r"^import '\.\./\.\./\.\./\.\./features/");
+    final featureImport = RegExp(r"^import '\.\./\.\./features/");
     final features = [
       for (var i = 0; i < lines.length; i++)
         if (featureImport.hasMatch(lines[i])) i,
@@ -213,11 +251,17 @@ bool _addRoute(String snake, String pascal) {
   return true;
 }
 
-/// Adds `features.<snake>.presentation.screens.<snake>_list_screen` with
+/// Adds `features.<snake>` with
 /// `title`, `add` and `hint` to a translation file, keeping its indentation
 /// and key order and never overwriting existing keys. Returns `false` when
 /// the file is missing or not a JSON object.
-bool _addTranslations(String path, String snake, String name) {
+bool _addTranslations(
+  String path,
+  String snake,
+  String name,
+  String plural,
+  bool includeCreate,
+) {
   final file = File(path);
   if (!file.existsSync()) {
     return false;
@@ -233,18 +277,18 @@ bool _addTranslations(String path, String snake, String name) {
     return false;
   }
 
-  // English text derived from the name; ne-NP has no translation to offer.
-  final words = snake.split('_');
-  final label = words.join(' ');
-  final plural = '${words.map(_capitalize).join(' ')}s';
+  // English text derived from the names; ne-NP has no translation to offer.
+  final label = snake.split('_').join(' ');
+  final pluralLabel = plural.split('_').map(_capitalize).join(' ');
   final texts = {
-    'title': plural,
-    'add': 'Add $label',
-    'hint': '${_capitalize(label)} title',
+    'title': pluralLabel,
+    if (includeCreate) 'add': 'Add $label',
+    if (includeCreate) 'hint': '${_capitalize(label)} title',
   };
 
+  // The keys live directly under `features.<snake>` (LocaleKeys.features_<snake>_title).
   var node = decoded;
-  for (final key in ['features', snake, 'presentation', 'screens']) {
+  for (final key in ['features', snake]) {
     final next = node[key];
     if (next is Map<String, dynamic>) {
       node = next;
@@ -254,13 +298,7 @@ bool _addTranslations(String path, String snake, String name) {
       return false;
     }
   }
-  final screen = node.putIfAbsent(
-    '${snake}_list_screen',
-    () => <String, dynamic>{},
-  );
-  if (screen is! Map<String, dynamic>) {
-    return false;
-  }
+  final screen = node;
   var changed = false;
   for (final entry in texts.entries) {
     if (!screen.containsKey(entry.key)) {

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../common/domain/entities/failure.dart';
+import '../../../error/failure.dart';
 import '../../domain/entities/page.dart';
 
 /// What a paged list is currently doing. At most one load runs at a time
@@ -47,7 +47,7 @@ final class PagedState<T, Q> extends Equatable {
 
   /// The most recent error. Never clears [items]: show it as a banner or
   /// snackbar when [items] is non-empty, full screen otherwise.
-  /// `failure.message` is a localization key — translate it in the widget.
+  /// Show `failure.displayText` (see `core/presentation/failure_text.dart`).
   final Failure? failure;
 
   /// Whether at least one first page loaded successfully (distinguishes

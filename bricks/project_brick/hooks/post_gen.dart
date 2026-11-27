@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:mason/mason.dart';
@@ -8,6 +9,15 @@ Future<void> run(HookContext context) async {
   final useFirebase = context.vars['use_firebase'] as bool;
   final useNotifications = context.vars['use_notifications'] as bool;
   final usePermissions = context.vars['use_permissions'] as bool;
+  // Options added later default to on, so older config files keep working.
+  final useCi = context.vars['use_ci'] != false;
+  final useCodemagic = context.vars['use_codemagic'] != false;
+  final useMaestro = context.vars['use_maestro'] != false;
+  final displayName =
+      (context.vars['app_display_name'] as String?)?.trim().isNotEmpty == true
+          ? (context.vars['app_display_name'] as String).trim()
+          : appName.titleCase;
+  final baseUrl = ((context.vars['base_url'] as String?) ?? '').trim();
 
   final progress = context.logger.progress('Configuring project...');
 
@@ -32,6 +42,10 @@ Future<void> run(HookContext context) async {
     // 3. Update Android applicationId and namespace
     _updateAndroidConfig(appOrg, appName);
     _updateIosBundleId(appOrg, appName);
+    _setDisplayName(displayName, appName);
+    if (baseUrl.isNotEmpty) {
+      _setDevBaseUrl(baseUrl);
+    }
 
     // 3b. Template names inside CI/release/test config (codemagic.yaml,
     //     scripts/, .maestro/, docs/, .github/).
@@ -43,22 +57,40 @@ Future<void> run(HookContext context) async {
       _materialiseFirebaseConfig();
     } else {
       _deleteDir('lib/config/firebase');
-      _deleteDir('lib/core/common/domain/services/analytics/firebase');
-      _deleteDir('test/unit/core/analytics/firebase');
+      _deleteDir('lib/core/services/analytics/data/firebase');
+      _deleteDir('test/unit/core/services/analytics/firebase');
       for (final f in _firebaseConfigFiles) {
         _deleteFile(f);
         _deleteFile('$f.example');
       }
     }
     if (!useNotifications) {
-      _deleteDir('lib/core/common/domain/services/notification');
-      _deleteDir('test/unit/core/notification');
+      _deleteDir('lib/core/services/notification');
+      _deleteDir('test/unit/core/services/notification');
       // Its repository test constructs the notification-aware variant.
-      _deleteFile('test/unit/core/permission/permission_repository_test.dart');
+      _deleteFile(
+          'test/unit/features/permission/permission_repository_test.dart');
     }
     if (!usePermissions) {
-      _deleteDir('lib/core/common/features/permission');
-      _deleteDir('test/unit/core/permission');
+      _deleteDir('lib/features/permission');
+      _deleteDir('test/unit/features/permission');
+    }
+    // Delivery tooling. Source files don't reference these, except the rps
+    // `maestro` scripts in pubspec.yaml, which are conditional (brick:if).
+    if (!useCi) {
+      _deleteDir('.github');
+      _deleteFile('.gitleaks.toml');
+    }
+    if (!useCodemagic) {
+      _deleteFile('codemagic.yaml');
+    }
+    if (!useMaestro) {
+      _deleteDir('.maestro');
+      _deleteFile('scripts/maestro.sh');
+      _deleteFile('docs/MAESTRO.md');
+    }
+    if (!useCi && !useCodemagic) {
+      _deleteFile('docs/CI_CD.md');
     }
 
     progress.complete('Project configured successfully!');
@@ -93,11 +125,21 @@ Future<void> run(HookContext context) async {
     '(re-sorts imports after the package rename)',
   );
   context.logger.info(
-    '  ${step++}. cp env/dev.example.json env/dev.json   (set BASE_URL)',
+    baseUrl.isEmpty
+        ? '  ${step++}. cp env/dev.example.json env/dev.json   (set BASE_URL)'
+        : '  ${step++}. cp env/dev.example.json env/dev.json   '
+            '(BASE_URL is already $baseUrl)',
   );
   context.logger.info(
     '  ${step++}. flutter run --dart-define-from-file=env/dev.json',
   );
+  if (baseUrl.startsWith('http://') && !_isLocalHost(Uri.parse(baseUrl).host)) {
+    context.logger.warn(
+      'base_url uses plain http: debug builds only allow cleartext traffic '
+      'to the emulator/localhost (see android/app/src/debug/res/xml/'
+      'network_security_config.xml), and release builds block it.',
+    );
+  }
   context.logger.info('');
 }
 
@@ -148,6 +190,48 @@ void _replaceInFile(String path, String from, String to) {
     file.writeAsStringSync(content.replaceAll(from, to));
   }
 }
+
+bool _isLocalHost(String host) =>
+    host == 'localhost' || host == '10.0.2.2' || host == '127.0.0.1';
+
+/// Sets the name under the launcher icon (Android `android:label`, iOS
+/// `CFBundleDisplayName`). Runs before the package rename, which would
+/// otherwise turn the template's Android label into the snake_case name.
+void _setDisplayName(String displayName, String appName) {
+  _replaceInFile(
+    'android/app/src/main/AndroidManifest.xml',
+    'android:label="flutter_all_template"',
+    'android:label="${_xmlEscape(displayName)}"',
+  );
+  final plist = File('ios/Runner/Info.plist');
+  if (plist.existsSync()) {
+    final updated = plist.readAsStringSync().replaceFirstMapped(
+          RegExp(
+              r'(<key>CFBundleDisplayName</key>\s*<string>)[^<]*(</string>)'),
+          (m) => '${m[1]}${_xmlEscape(displayName)}${m[2]}',
+        );
+    plist.writeAsStringSync(updated);
+  }
+}
+
+/// Points `BASE_URL` of the dev environment at [baseUrl] (`env/dev.example.json`
+/// is the committed file; `dev.json` is git-ignored and copied from it).
+void _setDevBaseUrl(String baseUrl) {
+  final file = File('env/dev.example.json');
+  if (!file.existsSync()) {
+    return;
+  }
+  final updated = file.readAsStringSync().replaceFirstMapped(
+        RegExp(r'("BASE_URL"\s*:\s*)"[^"]*"'),
+        (m) => '${m[1]}${jsonEncode(baseUrl)}',
+      );
+  file.writeAsStringSync(updated);
+}
+
+String _xmlEscape(String value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 
 /// Updates Android `build.gradle.kts` with the correct applicationId / namespace.
 void _updateAndroidConfig(String appOrg, String appName) {
@@ -241,7 +325,7 @@ void _renameInConfigFiles(String appOrg, String appName) {
     '.gitleaks.toml',
     'ios/Runner/Info.plist',
     'android/app/src/main/AndroidManifest.xml',
-    'lib/core/common/domain/services/notification/docs',
+    'lib/core/services/notification/docs',
   ];
   const textExtensions = <String>[
     '.yaml', '.yml', '.sh', '.md', '.json', '.mjs', '.toml', '.plist',

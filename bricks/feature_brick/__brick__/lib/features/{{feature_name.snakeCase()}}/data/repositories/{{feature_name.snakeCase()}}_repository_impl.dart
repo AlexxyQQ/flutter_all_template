@@ -1,8 +1,8 @@
 import 'package:injectable/injectable.dart';
 
-import '../../../../config/constants/type_defs/typedef.dart';
 {{#use_local_datasource}}import '../../../../core/error/app_exception.dart';
 {{/use_local_datasource}}import '../../../../core/error/guard.dart';
+import '../../../../core/error/typedef.dart';
 import '../../../../core/generic/domain/entities/page.dart';
 import '../../domain/entities/{{feature_name.snakeCase()}}.dart';
 {{#use_params}}import '../../domain/params/{{feature_name.snakeCase()}}_params.dart';
@@ -28,21 +28,21 @@ class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pas
 {{#use_local_datasource}}  final I{{feature_name.pascalCase()}}LocalDataSource _local;
 {{/use_local_datasource}}
   @override
-  ResultFuture<PageResult<{{feature_name.pascalCase()}}>> get{{feature_name.pascalCase()}}s({
+  ResultFuture<PageResult<{{feature_name.pascalCase()}}>> get{{feature_plural.pascalCase()}}({
     required PageRequest page,
     {{#use_params}}{{feature_name.pascalCase()}}Query{{/use_params}}{{^use_params}}String{{/use_params}} query = {{#use_params}}const {{feature_name.pascalCase()}}Query(){{/use_params}}{{^use_params}}''{{/use_params}},
   }) => guard(() async {
-{{^use_local_datasource}}    final result = await _remote.get{{feature_name.pascalCase()}}s(page: page, query: query);
+{{^use_local_datasource}}    final result = await _remote.get{{feature_plural.pascalCase()}}(page: page, query: query);
     return result.map((model) => model.toEntity());
 {{/use_local_datasource}}{{#use_local_datasource}}    try {
-      final result = await _remote.get{{feature_name.pascalCase()}}s(page: page, query: query);
-      await _cache(() => _local.save{{feature_name.pascalCase()}}s(items: result.items));
+      final result = await _remote.get{{feature_plural.pascalCase()}}(page: page, query: query);
+      await _cache(() => _local.save{{feature_plural.pascalCase()}}(items: result.items));
       return result.map((model) => model.toEntity());
     } on AppException catch (e) {
       if (!_isOffline(e)) {
         rethrow;
       }
-      final cached = await _local.get{{feature_name.pascalCase()}}s();
+      final cached = await _local.get{{feature_plural.pascalCase()}}();
       if (cached.isEmpty) {
         rethrow;
       }
@@ -68,28 +68,28 @@ class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pas
         throw e; // Report the network problem, not the cache miss.
       }
     }
-{{/use_local_datasource}}  });
+{{/use_local_datasource}}  });{{#include_create}}
 
   @override
   ResultFuture<{{feature_name.pascalCase()}}> create{{feature_name.pascalCase()}}({{#use_params}}{required Create{{feature_name.pascalCase()}}Params params}{{/use_params}}{{^use_params}}{required String title}{{/use_params}}) => guard(() async {
     final model = await _remote.create{{feature_name.pascalCase()}}({{#use_params}}params: params{{/use_params}}{{^use_params}}title: title{{/use_params}});
 {{#use_local_datasource}}    await _cache(() => _local.save{{feature_name.pascalCase()}}(item: model));
 {{/use_local_datasource}}    return model.toEntity();
-  });
+  });{{/include_create}}{{#include_update}}
 
   @override
   ResultFuture<{{feature_name.pascalCase()}}> update{{feature_name.pascalCase()}}({{#use_params}}{required Update{{feature_name.pascalCase()}}Params params}{{/use_params}}{{^use_params}}{required {{feature_name.pascalCase()}} item}{{/use_params}}) => guard(() async {
     final model = await _remote.update{{feature_name.pascalCase()}}({{#use_params}}params: params{{/use_params}}{{^use_params}}item: item{{/use_params}});
 {{#use_local_datasource}}    await _cache(() => _local.save{{feature_name.pascalCase()}}(item: model));
 {{/use_local_datasource}}    return model.toEntity();
-  });
+  });{{/include_update}}{{#include_delete}}
 
   @override
   ResultFuture<void> delete{{feature_name.pascalCase()}}({required String id}) => guard(() async {
     await _remote.delete{{feature_name.pascalCase()}}(id: id);
 {{#use_local_datasource}}    await _cache(() => _local.delete{{feature_name.pascalCase()}}(id: id));
-{{/use_local_datasource}}  });
-{{#use_local_datasource}}
+{{/use_local_datasource}}  });{{/include_delete}}{{#use_local_datasource}}
+
   static bool _isOffline(AppException e) =>
       e is NetworkException || e is RequestTimeoutException;
 
@@ -120,6 +120,5 @@ class {{feature_name.pascalCase()}}RepositoryImpl implements I{{feature_name.pas
       items: items,
       hasMore: page.offset + items.length < matching.length,
     );
-  }
-{{/use_local_datasource}}
+  }{{/use_local_datasource}}
 }

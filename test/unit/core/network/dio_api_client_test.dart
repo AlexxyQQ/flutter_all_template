@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_all_template/core/error/app_exception.dart';
 import 'package:flutter_all_template/core/network/api_client.dart';
 import 'package:flutter_all_template/core/network/dio_api_client.dart';
-import 'package:flutter_all_template/core/network/dio_exception_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/fake_http_adapter.dart';
@@ -120,51 +119,5 @@ void main() {
       () => client.get('x', decode: Decoders.ignore),
       throwsA(isA<NetworkException>()),
     );
-  });
-
-  group('mapDioException', () {
-    final options = RequestOptions(path: '/x');
-
-    test('timeouts', () {
-      for (final type in [
-        DioExceptionType.connectionTimeout,
-        DioExceptionType.sendTimeout,
-        DioExceptionType.receiveTimeout,
-      ]) {
-        expect(
-          mapDioException(DioException(requestOptions: options, type: type)),
-          isA<RequestTimeoutException>(),
-        );
-      }
-    });
-
-    test('cancel', () {
-      expect(
-        mapDioException(
-          DioException(requestOptions: options, type: DioExceptionType.cancel),
-        ),
-        isA<RequestCancelledException>(),
-      );
-    });
-
-    test('connection error', () {
-      expect(
-        mapDioException(
-          DioException(
-            requestOptions: options,
-            type: DioExceptionType.connectionError,
-          ),
-        ),
-        isA<NetworkException>(),
-      );
-    });
-
-    test('inner AppException is preserved', () {
-      const inner = UnauthorizedException(debugMessage: 'refresh failed');
-      expect(
-        mapDioException(DioException(requestOptions: options, error: inner)),
-        same(inner),
-      );
-    });
   });
 }

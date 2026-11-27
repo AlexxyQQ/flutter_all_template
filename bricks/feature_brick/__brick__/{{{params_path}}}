@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+import 'package:equatable/equatable.dart';{{#include_create}}
 
 /// Input for creating a {{feature_name.pascalCase()}}. The server assigns `id` and `updatedAt`.
 final class Create{{feature_name.pascalCase()}}Params extends Equatable {
@@ -8,7 +8,7 @@ final class Create{{feature_name.pascalCase()}}Params extends Equatable {
 
   @override
   List<Object?> get props => [title];
-}
+}{{/include_create}}{{#include_update}}
 
 /// Partial update of a {{feature_name.pascalCase()}}: only non-null fields are changed.
 final class Update{{feature_name.pascalCase()}}Params extends Equatable {
@@ -19,7 +19,7 @@ final class Update{{feature_name.pascalCase()}}Params extends Equatable {
 
   @override
   List<Object?> get props => [id, title];
-}
+}{{/include_update}}
 
 /// Filter for the {{feature_name.pascalCase()}} list.
 final class {{feature_name.pascalCase()}}Query extends Equatable {

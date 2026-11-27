@@ -1,14 +1,26 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'todo.freezed.dart';
+import 'package:equatable/equatable.dart';
 
 /// A to-do item. Pure domain object: no JSON, no Flutter.
-@freezed
-abstract class Todo with _$Todo {
-  const factory Todo({
-    required String id,
-    required String title,
-    required bool isDone,
-    required DateTime updatedAt,
-  }) = _Todo;
+final class Todo extends Equatable {
+  const Todo({
+    required this.id,
+    required this.title,
+    required this.isDone,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String title;
+  final bool isDone;
+  final DateTime updatedAt;
+
+  Todo copyWith({String? title, bool? isDone, DateTime? updatedAt}) => Todo(
+    id: id,
+    title: title ?? this.title,
+    isDone: isDone ?? this.isDone,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+
+  @override
+  List<Object?> get props => [id, title, isDone, updatedAt];
 }

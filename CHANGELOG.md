@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- Layer boundaries: `core/common/domain/services/**` is now `core/services/<name>/{domain,data,presentation}` (domain folders are pure Dart); the app composition root (bootstrap, DI, router, observers, global providers) moved to `lib/app/`; `core/` no longer imports features; `Failure` and `ResultFuture` live in `core/error/`; `permission` and `app_settings` are regular features under `lib/features/`. See `FOLDER_STRUCTURE.md`.
+- All abstract interfaces use the `I` prefix (`ISessionManager`, `IApiClient`, `ISecureStore`, `IPreferencesStore`, `ITokenStore`, `ITokenRefresher`, `IPushTokenRepository`, ...); `ILoggerService` methods are `debug`/`info`/`warning`/`error`; `ResultVoid` was removed in favour of `ResultFuture<void>`.
+- Route holders are `<Feature>Routes.route`; generated routes drop `Screen`/`Page`/`Wrapper` (`TodoRoute` shell, `TodoListRoute` screen). `*_widget.dart` files lost the suffix; folders are `repositories` and `views` everywhere.
+- Translation keys are semantic (`features.permission.camera.title`, `features.home.title`) instead of mirroring file paths.
+
+### Removed
+
+- Dead code: `AppEnv` log-upload settings, `isProd`/`isDev`, `SingleFlightCache`, `LoadCubit`/`LoadState`, `SelectionCubit`, the model helper classes, `GetTodoUseCase`, `TodoModel.fromEntity`, `clearSkipped`, `AllPermissionsChecked`, `getInt`/`setInt`, notification stream and simple/progress notification helpers, `AppLocales.fromString`/`appLocalesNames`, `LocaleState.isInitialized`, `LocalAnalyticsDestination.readRecent`, the legacy token-key migration, and `NoopAnalyticsService` (now a test helper).
+
+---
+
 ## [3.0.0]
 
 ### Fixed

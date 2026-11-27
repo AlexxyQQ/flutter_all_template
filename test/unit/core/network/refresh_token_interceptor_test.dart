@@ -6,17 +6,19 @@ import 'package:flutter_all_template/core/network/api_client.dart';
 import 'package:flutter_all_template/core/network/dio_api_client.dart';
 import 'package:flutter_all_template/core/network/interceptors/auth_interceptor.dart';
 import 'package:flutter_all_template/core/network/interceptors/refresh_token_interceptor.dart';
+import 'package:flutter_all_template/core/network/network_constants.dart';
 import 'package:flutter_all_template/core/network/token_refresher.dart';
 import 'package:flutter_all_template/core/session/session.dart';
 import 'package:flutter_all_template/core/session/session_manager_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/in_memory_preferences_store.dart';
 import 'helpers/fake_http_adapter.dart';
 
-class _MockRefresher extends Mock implements TokenRefresher {}
+class _MockRefresher extends Mock implements ITokenRefresher {}
 
-class _InMemoryTokenStore implements TokenStore {
+class _InMemoryTokenStore implements ITokenStore {
   _InMemoryTokenStore(this.tokens);
 
   AuthTokens? tokens;
@@ -38,7 +40,7 @@ void main() {
   late _InMemoryTokenStore tokenStore;
   late SessionManagerImpl sessionManager;
   late _MockRefresher refresher;
-  late ApiClient client;
+  late IApiClient client;
 
   Future<void> Function()? beforeResponse;
 
@@ -47,7 +49,7 @@ void main() {
     // Only the "new" token is accepted by the fake server.
     adapter = FakeHttpAdapter((options) async {
       await beforeResponse?.call();
-      final auth = options.headers['Authorization'];
+      final auth = options.headers[AuthHeader.name];
       return auth == 'Bearer new'
           ? jsonBody({'ok': true}, 200)
           : jsonBody({'message': 'expired'}, 401);
@@ -55,7 +57,10 @@ void main() {
     tokenStore = _InMemoryTokenStore(
       const AuthTokens(accessToken: 'old', refreshToken: 'r1'),
     );
-    sessionManager = SessionManagerImpl(tokenStore: tokenStore);
+    sessionManager = SessionManagerImpl(
+      tokenStore: tokenStore,
+      preferences: InMemoryPreferencesStore(),
+    );
     addTearDown(sessionManager.dispose);
     refresher = _MockRefresher();
 
@@ -65,33 +70,40 @@ void main() {
       ..httpClientAdapter = adapter
       ..interceptors.addAll([
         AuthInterceptor(
-          sessionManager: sessionManager,
+          authority: sessionManager,
           tokenStore: tokenStore,
           baseUrl: _baseUrl,
         ),
         RefreshTokenInterceptor(
           tokenStore: tokenStore,
-          sessionManager: sessionManager,
+          authority: sessionManager,
           refresher: refresher,
           retryDio: retryDio,
-          baseUrl: _baseUrl,
         ),
       ]);
     client = DioApiClient(dio: dio);
   });
 
   test('refreshes once for concurrent 401s and retries each request', () async {
-    when(() => refresher.refresh(refreshToken: 'r1')).thenAnswer((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      return const AuthTokens(accessToken: 'new', refreshToken: 'r2');
+    final refreshStarted = Completer<void>();
+    final refreshGate = Completer<AuthTokens>();
+    when(() => refresher.refresh(refreshToken: 'r1')).thenAnswer((_) {
+      refreshStarted.complete();
+      return refreshGate.future;
     });
 
-    final results = await Future.wait([
+    final results = Future.wait([
       for (var i = 0; i < 3; i++)
         client.get('items/$i', decode: Decoders.object),
     ]);
+    // Hold the refresh until every request had the chance to fail with 401.
+    await refreshStarted.future;
+    await pumpEventQueue();
+    refreshGate.complete(
+      const AuthTokens(accessToken: 'new', refreshToken: 'r2'),
+    );
 
-    expect(results, everyElement({'ok': true}));
+    expect(await results, everyElement({'ok': true}));
     verify(() => refresher.refresh(refreshToken: 'r1')).called(1);
     expect(tokenStore.tokens?.accessToken, 'new');
     expect(tokenStore.tokens?.refreshToken, 'r2');
@@ -115,6 +127,9 @@ void main() {
     release.complete();
     await request;
     expect(adapter.requests, hasLength(1));
+    verifyNever(
+      () => refresher.refresh(refreshToken: any(named: 'refreshToken')),
+    );
   });
 
   for (final rejected in [true, false]) {
@@ -142,6 +157,7 @@ void main() {
         }
         await request;
         expect(tokenStore.tokens?.accessToken, 'replacement');
+        expect(sessionManager.status, SessionStatus.authenticated);
         expect(adapter.requests, hasLength(1));
       },
     );
@@ -168,6 +184,7 @@ void main() {
       throwsA(isA<UnauthorizedException>()),
     );
     expect(sessionManager.status, SessionStatus.unauthenticated);
+    expect(tokenStore.tokens, isNull);
   });
 
   test('no refresh token -> sign out without calling the refresher', () async {
@@ -199,6 +216,35 @@ void main() {
     await expectLater(
       client.get('https://other.example.org/x', decode: Decoders.object),
       throwsA(isA<UnauthorizedException>()),
+    );
+    verifyNever(
+      () => refresher.refresh(refreshToken: any(named: 'refreshToken')),
+    );
+  });
+
+  test('a request marked as the refresh request is never refreshed', () async {
+    final dio = Dio(BaseOptions(baseUrl: _baseUrl))
+      ..httpClientAdapter = adapter
+      ..interceptors.addAll([
+        AuthInterceptor(
+          authority: sessionManager,
+          tokenStore: tokenStore,
+          baseUrl: _baseUrl,
+        ),
+        RefreshTokenInterceptor(
+          tokenStore: tokenStore,
+          authority: sessionManager,
+          refresher: refresher,
+          retryDio: Dio(),
+        ),
+      ]);
+
+    await expectLater(
+      dio.post<Object?>(
+        'auth/refresh',
+        options: Options(extra: {RequestExtras.isRefreshRequest: true}),
+      ),
+      throwsA(isA<DioException>()),
     );
     verifyNever(
       () => refresher.refresh(refreshToken: any(named: 'refreshToken')),

@@ -13,8 +13,33 @@ abstract final class RequestExtras {
   /// Set to `true` to never attach the bearer token to this request.
   static const String skipAuth = 'skipAuth';
 
+  /// Internal: set on the token-refresh request so it is never itself
+  /// refreshed.
+  static const String isRefreshRequest = 'isRefreshRequest';
+
   /// Internal: marks a request already retried after a token refresh.
   static const String retried = 'authRetried';
+
+  /// Internal: the `ISessionAuthority.generation` whose token this request
+  /// carries. Absent when no token was attached.
+  static const String sessionGeneration = 'sessionGeneration';
+}
+
+/// The `Authorization: Bearer <token>` header, in one place.
+abstract final class AuthHeader {
+  static const String name = 'Authorization';
+  static const String _scheme = 'Bearer ';
+
+  static String bearer({required String token}) => '$_scheme$token';
+
+  /// The token of the request's bearer header, or `null` if it has none.
+  static String? tokenOf({required Map<String, Object?> headers}) {
+    final value = headers[name];
+    if (value is String && value.startsWith(_scheme)) {
+      return value.substring(_scheme.length);
+    }
+    return null;
+  }
 }
 
 /// Decides whether a request targets the configured API host.
