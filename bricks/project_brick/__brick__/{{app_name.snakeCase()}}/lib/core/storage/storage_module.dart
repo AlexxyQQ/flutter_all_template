@@ -14,30 +14,33 @@ abstract class StorageModule {
     // Default Android options: AES-GCM data encryption with an RSA-OAEP
     // wrapped key in the Android Keystore. (The deprecated
     // `encryptedSharedPreferences` option is intentionally not used.)
-    // iOS: readable after first unlock so background tasks (e.g. push
-    // handling, token refresh) can access tokens.
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    iOptions: IOSOptions(accessibility: FlutterSecureStore.accessibility),
+    mOptions: MacOsOptions(accessibility: FlutterSecureStore.accessibility),
   );
 
   /// Hive's separate key vault remains available across session resets.
-  @lazySingleton
   @Named(EncryptedHiveStore.keyVaultName)
-  SecureStore get hiveKeyVault => FlutterSecureStore(
-    storage: const FlutterSecureStorage(
-      aOptions: AndroidOptions(
-        resetOnError: false,
-        storageNamespace: 'encrypted_hive',
-      ),
-      iOptions: IOSOptions(
-        accountName: 'encrypted_hive',
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      ),
-      mOptions: MacOsOptions(
-        accountName: 'encrypted_hive',
-        accessibility: KeychainAccessibility.first_unlock_this_device,
-      ),
+  @lazySingleton
+  FlutterSecureStorage get hiveKeyVaultStorage => const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      resetOnError: false,
+      storageNamespace: 'encrypted_hive',
+    ),
+    iOptions: IOSOptions(
+      accountName: 'encrypted_hive',
+      accessibility: FlutterSecureStore.accessibility,
+    ),
+    mOptions: MacOsOptions(
+      accountName: 'encrypted_hive',
+      accessibility: FlutterSecureStore.accessibility,
     ),
   );
+
+  @Named(EncryptedHiveStore.keyVaultName)
+  @lazySingleton
+  ISecureStore hiveKeyVault(
+    @Named(EncryptedHiveStore.keyVaultName) FlutterSecureStorage storage,
+  ) => FlutterSecureStore(storage: storage);
 
   /// Preferences are loaded once at startup so reads are synchronous.
   @preResolve

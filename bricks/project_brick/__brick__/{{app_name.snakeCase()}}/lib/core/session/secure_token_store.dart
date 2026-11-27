@@ -1,59 +1,65 @@
+import 'dart:convert';
+
 import 'package:injectable/injectable.dart';
 
+import '../generic/data/async_lock.dart';
 import '../storage/key_value_stores.dart';
 import 'session.dart';
 
-/// [TokenStore] persisting each token under its own [SecureStore] key.
+/// [ITokenStore] persisting the token pair under one [ISecureStore] key.
 ///
 /// Keeps an in-memory copy after the first read so the auth interceptor does
 /// not hit the Keychain/Keystore on every request.
-@LazySingleton(as: TokenStore)
-class SecureTokenStore implements TokenStore {
-  SecureTokenStore({required SecureStore secureStore})
+@LazySingleton(as: ITokenStore)
+class SecureTokenStore implements ITokenStore {
+  SecureTokenStore({required ISecureStore secureStore})
     : _secureStore = secureStore;
 
-  static const String accessTokenKey = 'auth.access_token';
-  static const String refreshTokenKey = 'auth.refresh_token';
+  static const String pairKey = 'auth.token_pair';
 
-  final SecureStore _secureStore;
+  final ISecureStore _secureStore;
+  final AsyncLock _lock = AsyncLock();
 
   AuthTokens? _cache;
   bool _loaded = false;
 
   @override
-  Future<AuthTokens?> read() async {
+  Future<AuthTokens?> read() => _lock.synchronized(() async {
     if (_loaded) {
       return _cache;
     }
-    final access = await _secureStore.read(accessTokenKey);
-    final refresh = await _secureStore.read(refreshTokenKey);
-    _cache = access == null || access.isEmpty
-        ? null
-        : AuthTokens(accessToken: access, refreshToken: refresh);
+    final pair = await _secureStore.read(key: pairKey);
+    if (pair != null) {
+      final data = jsonDecode(pair) as Map<String, dynamic>;
+      _cache = AuthTokens(
+        accessToken: data['access'] as String,
+        refreshToken: data['refresh'] as String?,
+      );
+    }
     _loaded = true;
     return _cache;
-  }
+  });
 
   @override
-  Future<void> save({required AuthTokens tokens}) async {
-    // Invalidate first so a failed write never leaves a stale cache.
-    _loaded = false;
-    await _secureStore.write(accessTokenKey, tokens.accessToken);
-    final refresh = tokens.refreshToken;
-    if (refresh == null) {
-      await _secureStore.delete(refreshTokenKey);
-    } else {
-      await _secureStore.write(refreshTokenKey, refresh);
-    }
-    _cache = tokens;
-    _loaded = true;
-  }
+  Future<void> save({required AuthTokens tokens}) =>
+      _lock.synchronized(() async {
+        // Drop the cache first so a failed write cannot leave stale tokens.
+        _loaded = false;
+        await _secureStore.write(
+          key: pairKey,
+          value: jsonEncode({
+            'access': tokens.accessToken,
+            'refresh': tokens.refreshToken,
+          }),
+        );
+        _cache = tokens;
+        _loaded = true;
+      });
 
   @override
-  Future<void> clear() async {
+  Future<void> clear() => _lock.synchronized(() async {
+    await _secureStore.delete(key: pairKey);
     _cache = null;
     _loaded = true;
-    await _secureStore.delete(accessTokenKey);
-    await _secureStore.delete(refreshTokenKey);
-  }
+  });
 }

@@ -3,14 +3,14 @@
 ## Philosophy
 
 **Build locally, upload to GitHub. Codemagic only for iOS, started by hand.**
-GitHub Actions only runs a cheap Linux quality check on pull requests. It never builds an
+GitHub Actions only runs a cheap Linux quality check on pull requests and on pushes to `main`. It never builds an
 app, never runs an emulator or Maestro, and never uses macOS runners (10x minute cost).
 
 ## What runs where
 
 | What | Where | Trigger | Cost |
 |---|---|---|---|
-| Format, analyze, custom_lint, tests, brick-sync check | GitHub Actions, Linux (`ci.yml`) | pull request touching code; manual | about 5-8 min per run |
+| Format, analyze, custom_lint, tests, brick generation smoke test | GitHub Actions, Linux (`ci.yml`) | pull request or push to `main` touching code; manual | about 5-8 min per run |
 | OSV dependency scan | GitHub Actions, Linux (`security.yml`) | weekly + manual | about 1 min per run |
 | Dependency updates | Dependabot | monthly, grouped (4 PRs max) | triggers `ci.yml` a few times a month |
 | Android APK / AAB | Your machine (`scripts/release.sh`) | you run it | 0 GitHub minutes |
@@ -18,8 +18,7 @@ app, never runs an emulator or Maestro, and never uses macOS runners (10x minute
 | Maestro / emulator tests | Your machine | you run them | 0 |
 
 Estimated GitHub usage: about 15 PRs x 7 min + 4 scans = roughly 110-150 Linux min/month,
-far below the 2,000 free. The old setup ran on every PR **and** every push to main and
-added a full-history gitleaks job, about 2-3x more.
+far below the 2,000 free. The old setup also ran a full-history gitleaks job, about 2-3x more.
 
 Secret scanning: `gitleaks-action` was removed because it needs a paid license for
 organization repos. Run `gitleaks detect --config .gitleaks.toml` locally or as a
@@ -56,12 +55,14 @@ One-time setup:
 3. Environment variables > group `ios_release`:
    - `ENV_JSON_DEV`, `ENV_JSON_STAGING`, `ENV_JSON_PROD` (secure): the full content of
      each `env/<flavor>.json`;
-   - optional `FIREBASE_IOS_PLIST_BASE64`, `FIREBASE_ANDROID_JSON_BASE64`, `FIREBASE_OPTIONS_DART_BASE64`
-     (secure): `base64` of the real Firebase files (git-ignored). When unset, the build step
-     `scripts/firebase_init.sh` falls back to the tracked `*.example` placeholders;
+   - `FIREBASE_IOS_PLIST_BASE64`, `FIREBASE_ANDROID_JSON_BASE64`, `FIREBASE_OPTIONS_DART_BASE64`
+     (secure): `base64` of the real Firebase files (git-ignored). **Required for `FLAVOR=prod`**:
+     the build fails when one is missing instead of shipping placeholder Firebase config. Other
+     flavors fall back to the tracked `*.example` placeholders (`scripts/firebase_init.sh`);
    - optional `GITHUB_TOKEN` (secure, fine-grained token with Contents: read/write on this
      repo) and `GITHUB_REPO` (`owner/name`) to attach the IPA to the GitHub Release.
-4. In `codemagic.yaml` set the `bundle_id` anchor (and `flutter:` if `.fvmrc` changes).
+4. In `codemagic.yaml` set the `bundle_id` anchor (and `flutter:` if `.fvmrc` changes). `xcode:` is
+   pinned; bump it deliberately. Every build runs `flutter analyze` and `flutter test` before building.
 
 Run a build, either way:
 

@@ -4,11 +4,11 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../../app/router/app_router.gr.dart';
 import '../../../../../config/constants/gen/locale_keys.g.dart';
-import '../../../../../core/common/presentation/routes/app_router.gr.dart';
 
 /// Minimal landing page. Replace with the app's real home.
-@RoutePage(name: 'HomeRoute')
+@RoutePage()
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -20,8 +20,7 @@ class HomeScreen extends StatelessWidget {
         title: Semantics(
           identifier: 'home_title',
           child: Text(
-            LocaleKeys.features_home_presentation_screens_home_screen_title
-                .tr(),
+            LocaleKeys.features_home_title.tr(),
             key: const Key('home_title'),
           ),
         ),
@@ -33,16 +32,12 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                LocaleKeys
-                    .features_home_presentation_screens_home_screen_welcome
-                    .tr(),
+                LocaleKeys.features_home_welcome.tr(),
                 style: theme.textTheme.headlineMedium,
               ),
               const SizedBox(height: 12),
               Text(
-                LocaleKeys
-                    .features_home_presentation_screens_home_screen_subtitle
-                    .tr(),
+                LocaleKeys.features_home_subtitle.tr(),
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: 32),
@@ -51,12 +46,8 @@ class HomeScreen extends StatelessWidget {
                 child: ElevatedButton(
                   key: const Key('home_open_todos_button'),
                   onPressed: () =>
-                      unawaited(context.router.push(const TodoWrapperRoute())),
-                  child: Text(
-                    LocaleKeys
-                        .features_home_presentation_screens_home_screen_openTodos
-                        .tr(),
-                  ),
+                      unawaited(context.router.push(const TodoRoute())),
+                  child: Text(LocaleKeys.features_home_openTodos.tr()),
                 ),
               ),
             ],

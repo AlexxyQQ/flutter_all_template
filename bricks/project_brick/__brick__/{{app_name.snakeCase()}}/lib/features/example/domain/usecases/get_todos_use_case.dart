@@ -1,6 +1,6 @@
 import 'package:injectable/injectable.dart';
 
-import '../../../../config/constants/type_defs/typedef.dart';
+import '../../../../core/error/typedef.dart';
 import '../../../../core/generic/domain/entities/page.dart';
 import '../entities/todo.dart';
 import '../params/todo_params.dart';

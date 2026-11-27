@@ -1,7 +1,9 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../config/constants/type_defs/typedef.dart';
+import '../../../error/failure.dart';
+import '../../../error/typedef.dart';
 import '../../domain/entities/page.dart';
 import 'event_transformers.dart';
 import 'paged_list_event.dart';
@@ -11,32 +13,41 @@ export '../../domain/entities/page.dart';
 export 'paged_list_event.dart';
 export 'paged_state.dart';
 
-/// Fetches one page of [T] for [query]. Usually a repository method.
+/// Fetches one page of [T] for [query]. Usually a use case.
 typedef PageFetcher<T, Q> =
     ResultFuture<PageResult<T>> Function(PageRequest request, Q query);
 
 /// Generic infinite list: first load, pull-to-refresh, load-more and
 /// debounced query changes, for page-number **or** cursor APIs.
 ///
-/// Guarantees:
-/// * only one next-page request at a time (`droppable`);
-/// * query changes are debounced and only the latest one is applied
-///   (`restartable`); a refresh or query change also discards a load-more
-///   that was still in flight, so stale pages are never appended;
-/// * the cursor/page of the previous result is passed to the next request;
-/// * errors set [PagedState.failure] and never clear loaded items.
+/// Concurrency is declared with `bloc_concurrency` transformers, never with
+/// counters:
+/// * start and load-more are `droppable` (a second request while one runs is
+///   ignored);
+/// * refresh is `restartable`; a query change is debounced and `restartable`
+///   (only the latest of a burst is fetched).
 ///
-/// Use directly, or extend it to register as an injectable feature bloc and
-/// add feature events:
+/// A result is applied only if it still answers the list on screen: a
+/// first-page result is dropped when the query changed meanwhile, and a
+/// load-more result is dropped when a refresh or query change replaced the
+/// list it was requested for.
+///
+/// A failed **refresh or load-more** sets [PagedState.failure] and keeps the
+/// loaded items; a failed **query change** clears the previous query's items
+/// (they belong to another query) and its paging position, so the list shows
+/// the failure with nothing to load more from until a refresh or another
+/// query change succeeds.
+///
+/// Extend it to register an injectable feature bloc, add feature events and
+/// observe loads through [onLoadStarted] / [onLoadFailed]:
 ///
 /// ```dart
 /// @injectable
 /// class TodoListBloc extends PagedListBloc<Todo, TodoQuery> {
-///   TodoListBloc({required ITodoRepository repository})
+///   TodoListBloc({required GetTodosUseCase getTodos})
 ///     : super(
 ///         initialQuery: const TodoQuery(),
-///         fetchPage: (page, query) =>
-///             repository.getTodos(page: page, query: query),
+///         fetchPage: (page, query) => getTodos(page: page, query: query),
 ///       );
 /// }
 /// ```
@@ -60,14 +71,19 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     );
   }
 
-  final PageFetcher<T, Q> _fetchPage;
-
   /// Items requested per page.
   final int pageSize;
 
-  // Incremented by every first-page load; results of loads started under an
-  // older generation are discarded.
-  int _generation = 0;
+  final PageFetcher<T, Q> _fetchPage;
+
+  /// Called when [event] starts a load (analytics, logging). No-op by default.
+  @protected
+  void onLoadStarted({required PagedListEvent event}) {}
+
+  /// Called when a load ended with [failure] (analytics, logging). No-op by
+  /// default.
+  @protected
+  void onLoadFailed({required Failure failure}) {}
 
   Future<void> _onStarted(
     PagedListStarted event,
@@ -76,13 +92,24 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     if (!state.isInitial) {
       return;
     }
+    onLoadStarted(event: event);
     await _loadFirstPage(emit, query: state.query);
   }
 
   Future<void> _onRefreshed(
     PagedListRefreshed event,
     Emitter<PagedState<T, Q>> emit,
-  ) => _loadFirstPage(emit, query: state.query);
+  ) async {
+    onLoadStarted(event: event);
+    try {
+      await _loadFirstPage(emit, query: state.query);
+    } finally {
+      final completion = event.completion;
+      if (completion != null && !completion.isCompleted) {
+        completion.complete();
+      }
+    }
+  }
 
   Future<void> _onQueryChanged(
     PagedListQueryChanged<Q> event,
@@ -91,6 +118,7 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     if (event.query == state.query && state.hasLoaded) {
       return;
     }
+    onLoadStarted(event: event);
     await _loadFirstPage(emit, query: event.query);
   }
 
@@ -102,17 +130,27 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     if (!state.canLoadMore || request == null) {
       return;
     }
-    final generation = _generation;
+    final query = state.query;
+    onLoadStarted(event: event);
     emit(state.copyWith(status: PagedStatus.loadingMore, failure: () => null));
 
-    final result = await _fetchPage(request, state.query);
-    if (generation != _generation) {
-      return; // Superseded by a refresh/query change.
+    final result = await _fetchPage(request, query);
+
+    // A refresh or query change replaced the list this page was requested for.
+    if (emit.isDone ||
+        state.status != PagedStatus.loadingMore ||
+        state.query != query) {
+      return;
     }
     emit(
       result.fold(
-        (failure) =>
-            state.copyWith(status: PagedStatus.idle, failure: () => failure),
+        (failure) {
+          onLoadFailed(failure: failure);
+          return state.copyWith(
+            status: PagedStatus.idle,
+            failure: () => failure,
+          );
+        },
         (page) => state.copyWith(
           items: [...state.items, ...page.items],
           hasMore: page.hasMore,
@@ -127,26 +165,45 @@ class PagedListBloc<T, Q> extends Bloc<PagedListEvent, PagedState<T, Q>> {
     Emitter<PagedState<T, Q>> emit, {
     required Q query,
   }) async {
-    final generation = ++_generation;
+    // Items and paging position of another query must never survive into
+    // this one: on a failure nothing would replace them, and load-more would
+    // then request page 2 of the old query with the new query's filter.
+    final queryChanged = query != state.query;
     emit(
-      state.copyWith(
-        query: query,
-        status: state.items.isEmpty
-            ? PagedStatus.loadingFirst
-            : PagedStatus.refreshing,
-        failure: () => null,
-      ),
+      queryChanged
+          ? state.copyWith(
+              query: query,
+              items: const [],
+              hasMore: false,
+              nextPage: () => null,
+              hasLoaded: false,
+              status: PagedStatus.loadingFirst,
+              failure: () => null,
+            )
+          : state.copyWith(
+              status: state.items.isEmpty
+                  ? PagedStatus.loadingFirst
+                  : PagedStatus.refreshing,
+              failure: () => null,
+            ),
     );
 
     final request = PageRequest.first(limit: pageSize);
     final result = await _fetchPage(request, query);
-    if (generation != _generation) {
+
+    // Restarted by a newer event, or another query replaced this one.
+    if (emit.isDone || state.query != query) {
       return;
     }
     emit(
       result.fold(
-        (failure) =>
-            state.copyWith(status: PagedStatus.idle, failure: () => failure),
+        (failure) {
+          onLoadFailed(failure: failure);
+          return state.copyWith(
+            status: PagedStatus.idle,
+            failure: () => failure,
+          );
+        },
         (page) => state.copyWith(
           items: page.items,
           hasMore: page.hasMore,

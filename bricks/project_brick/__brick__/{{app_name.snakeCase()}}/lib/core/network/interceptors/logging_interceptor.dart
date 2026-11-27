@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-import '../../common/domain/services/logger/log_redactor.dart';
-import '../../common/domain/services/logger/logger_service.dart';
+import '../../services/logger/data/app_logger.dart';
+import '../../services/logger/data/log_redactor.dart';
 
 /// Debug-only HTTP logging. Added to Dio only when `kDebugMode` is true.
 ///

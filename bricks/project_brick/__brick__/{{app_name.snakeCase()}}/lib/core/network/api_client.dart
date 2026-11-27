@@ -11,7 +11,7 @@ typedef JsonDecoder<T> = T Function(Object? json);
 /// * Failures are thrown as `AppException` subtypes (see
 ///   `lib/core/error/app_exception.dart`) — never as Dio/HTTP types.
 /// * Decoding errors inside [decode] are rethrown as `ParseException`.
-abstract interface class ApiClient {
+abstract interface class IApiClient {
   Future<T> get<T>(
     String path, {
     required JsonDecoder<T> decode,

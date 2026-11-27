@@ -20,7 +20,7 @@ definitions:
 
   environment: &ios_environment
     flutter: 3.44.1 # keep equal to .fvmrc
-    xcode: latest # or pin, e.g. 26.0
+    xcode: 26.0 # pinned for reproducible builds; bump deliberately
     cocoapods: default
     groups:
       - ios_release
@@ -34,10 +34,11 @@ definitions:
   scripts: &ios_scripts
     - name: Install dependencies
       script: flutter pub get
-    # Firebase client config is git-ignored. Real files come from optional
-    # base64 secrets (FIREBASE_IOS_PLIST_BASE64, FIREBASE_ANDROID_JSON_BASE64,
-    # FIREBASE_OPTIONS_DART_BASE64 in group ios_release); anything not provided
-    # falls back to the placeholder *.example files (scripts/firebase_init.sh).
+    # Firebase client config is git-ignored. Real files come from base64 secrets
+    # (FIREBASE_IOS_PLIST_BASE64, FIREBASE_ANDROID_JSON_BASE64,
+    # FIREBASE_OPTIONS_DART_BASE64 in group ios_release). dev/staging builds may
+    # fall back to the placeholder *.example files (scripts/firebase_init.sh);
+    # a prod build fails instead of shipping an app with placeholder Firebase.
     - name: Firebase config
       script: |
         #!/usr/bin/env bash
@@ -46,12 +47,25 @@ definitions:
         decode "${FIREBASE_IOS_PLIST_BASE64:-}" ios/Runner/GoogleService-Info.plist
         decode "${FIREBASE_ANDROID_JSON_BASE64:-}" android/app/google-services.json
         decode "${FIREBASE_OPTIONS_DART_BASE64:-}" lib/config/firebase/firebase_options.dart
-        bash scripts/firebase_init.sh
+        if [ "$FLAVOR" = "prod" ]; then
+          for f in ios/Runner/GoogleService-Info.plist android/app/google-services.json lib/config/firebase/firebase_options.dart; do
+            if [ ! -s "$f" ]; then
+              echo "prod build needs real Firebase config: $f is missing (set the FIREBASE_*_BASE64 secrets in group ios_release)" >&2
+              exit 1
+            fi
+          done
+        else
+          bash scripts/firebase_init.sh
+        fi
     - name: Code generation
       script: |
         dart run build_runner build --delete-conflicting-outputs
         dart run easy_localization:generate -S assets/translations -f keys \
           -O lib/config/constants/gen -o locale_keys.g.dart
+    - name: Analyze
+      script: flutter analyze
+    - name: Test
+      script: flutter test
     - name: Write env file from secret
       script: |
         #!/usr/bin/env bash

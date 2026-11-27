@@ -23,9 +23,22 @@ features/<name>/
 └── presentation/  bloc/, routes/, views/{wrappers,screens,widgets}/   (a wrapper route provides the bloc)
 ```
 
+Shared code lives in `core/`, which never imports `features/` or `app/`:
+
+```
+core/<area>/                 error, network, storage, session, generic, presentation (modals)
+core/services/<name>/        domain/        interfaces + entities (pure Dart)
+                             data/          implementations, DI modules, helpers (Dio, Hive, Firebase, plugins)
+                             presentation/  only when the service touches Flutter UI (observers, NavigationService)
+app/                         composition root: bootstrap, DI, router, observers, global providers
+```
+
+`app/` is the only place that knows every feature (the router composes feature routes).
+Feature route files import the generated route classes from `app/router/app_router.gr.dart`.
+
 | Layer | May import | Must NOT import |
 |---|---|---|
-| `domain` | Dart, `equatable`, `freezed_annotation`, `fpdart` | Flutter, Dio, JSON, other layers |
+| `domain` | Dart, `equatable`, `freezed_annotation`, `fpdart`, `injectable` (annotations only) | Flutter, Dio, Hive, Firebase, auto_route, plugins, JSON, other layers |
 | `data` | `domain`, `core/network`, `core/storage` | `presentation`, Flutter widgets |
 | `presentation` | `domain`, `core/*`, Flutter | `data` (talk to **use cases**, not repositories) |
 
@@ -67,16 +80,17 @@ catch errors: the repository's `guard()` already returns `Either<Failure, T>`.
 
 ```dart
 @lazySingleton
-class GetTodoUseCase {
-  const GetTodoUseCase({required ITodoRepository repository})
+class DeleteTodoUseCase {
+  const DeleteTodoUseCase({required ITodoRepository repository})
     : _repository = repository;
 
   final ITodoRepository _repository;
 
-  ResultFuture<Todo> call({required String id}) => _repository.getTodo(id: id);
+  ResultFuture<void> call({required String id}) =>
+      _repository.deleteTodo(id: id);
 }
 
-final result = await getTodo(id: id);   // in the bloc: GetTodoUseCase getTodo
+final result = await _deleteTodo(id: id);   // in the bloc: DeleteTodoUseCase deleteTodo
 ```
 
 ❌ **Don't**
@@ -156,8 +170,8 @@ class TodoListBloc extends PagedListBloc<Todo, TodoQuery> {
 }
 
 @lazySingleton
-class GetTodoUseCase {
-  const GetTodoUseCase({required ITodoRepository repository})
+class DeleteTodoUseCase {
+  const DeleteTodoUseCase({required ITodoRepository repository})
     : _repository = repository;
 
   final ITodoRepository _repository;
@@ -216,11 +230,15 @@ try {
   final todo = await _remote.getTodo(id: id);       // ✗ try/catch in a repository
   return Right(todo.toEntity());
 } catch (e) {
-  return Left(Failure(message: e.toString()));      // ✗ leaks raw exception text
+  return Left(Failure(messageKey: e.toString()));   // ✗ leaks raw exception text
 }
 ```
 
-- `Failure.message` is a **localization key**, never raw exception text, a stack trace, a URL or a token.
+- `Failure.messageKey` is **always** a localization key, never raw exception text, a stack trace, a URL or a token.
+  `Failure.serverMessage` is the optional backend text that is safe to show verbatim. Widgets display
+  `failure.displayText` (`core/presentation/failure_text.dart`), never `.tr()` on a failure field.
+- Local data that belongs to the signed-in user goes in `IPreferencesStore` under `SessionScope.keyPrefix`
+  (`'session.'`); sign-out and forced session expiry remove every such key, so no per-feature cleanup hook is needed.
 - Throw `AppException` subclasses from data sources; never throw `String`s or bare `Exception`s.
 - Don't swallow errors (`catch (_) {}`). If a failure is genuinely ignorable (e.g. a cache write),
   say why in a comment.
@@ -253,7 +271,7 @@ final class TodoDeleted extends PagedListEvent {
 class TodoDeleted { String id; TodoDeleted(this.id); }   // ✗ mutable, no equality
 ```
 
-- Reuse `PagedListBloc` / `LoadCubit` / `SelectionCubit` from `core/generic` before writing a new one.
+- Reuse `PagedListBloc` from `core/generic` before writing a new one.
 - UI never holds business state in `setState` beyond purely visual state (focus, animation, form text).
 
 ---
@@ -305,7 +323,7 @@ Keep product-specific design systems in the app.
 ```dart
 FloatingActionButton(
   key: const Key('todo_add_button'),
-  tooltip: LocaleKeys.features_example_presentation_screens_todo_list_screen_add.tr(),
+  tooltip: LocaleKeys.features_example_add.tr(),
   onPressed: () => _addTodo(context),
   child: const Icon(Icons.add),
 )
@@ -334,7 +352,9 @@ Semantics(
 ```
 
 - Screens are `@RoutePage` classes in `presentation/views/screens/`; route definitions live in
-  `presentation/routes/`. Navigate between screens through the auto_route router /
+  `presentation/routes/<feature>_routes.dart` as one `<Feature>Routes` holder with `static final route`
+  (and `path`), registered in `app/router/app_router.dart`. Generated route names drop the
+  `Screen` / `Page` / `Wrapper` suffix (`TodoListScreen` → `TodoListRoute`, `TodoWrapper` → `TodoRoute`). Navigate between screens through the auto_route router /
   `NavigationService`, never `Navigator.push` with a raw `MaterialPageRoute`. (`Navigator.pop` to close
   a dialog is fine.)
 
@@ -355,10 +375,11 @@ Text(LocaleKeys.common_errors_somethingWentWrong.tr())
 
 ```dart
 Text('Something went wrong')              // ✗ hard-coded (also flagged by custom_lint)
-Text(failure.message)                     // ✗ shows the key; call .tr() on it
+Text(failure.messageKey)                  // ✗ shows the key; use failure.displayText
 ```
 
-- Key names are `snake_case` JSON paths grouped by area (`common.errors.*`, `features.<name>.*`).
+- Keys are **semantic**, never a mirror of a file path: `common.*` for shared text and
+  `features.<name>.<key>` for one feature (`features.home.title`). Moving a file must not rename a key.
 - Delete keys when you delete the UI that used them.
 
 ---
@@ -382,7 +403,9 @@ Text(failure.message)                     // ✗ shows the key; call .tr() on it
 
 - Types are explicit where inference would be `dynamic` (`strict-casts`, `strict-inference`, `strict-raw-types`
   are on): `List<String>`, not `List`.
-- Files are `snake_case.dart`; classes `UpperCamelCase`; interfaces are prefixed `I` (`ITodoRepository`).
+- Files are `snake_case.dart`; classes `UpperCamelCase`; **every** abstract interface is prefixed `I`
+  (`ITodoRepository`, `ISessionManager`, `IApiClient`, `ISecureStore`). Widget files drop a `_widget`
+  suffix (`todo_tile.dart` → `TodoTile`). Use `ResultFuture<void>` for "no value" results.
 - Declare at most one class or interface per hand-written Dart file. Split
   implementations, models, events, states, and widgets into their own files. Use Dart library
   parts when related sealed types must share a library.
@@ -425,7 +448,7 @@ debugPrint(response.headers.toString()) // ✗ may contain Authorization
 - Real Firebase config is git-ignored; copy it from the `*.example` files with `rps firebase:init`.
 - **Never commit:** keystores, `android/key.properties`, real `google-services.json` /
   `GoogleService-Info.plist`, API keys, tokens. See [`SECURITY.md`](SECURITY.md).
-- Tokens go in `SecureStore`; non-secret settings in `PreferencesStore`. Never put a token in
+- Tokens go in `ISecureStore`; non-secret settings in `IPreferencesStore`. Never put a token in
   `SharedPreferences`.
 - Use `EncryptedHiveStore` for sensitive local records such as diagnostic events. Keep
   signing keys, tokens, and the store's encryption keys in platform secure storage.
@@ -472,9 +495,9 @@ class, route, asset or translation.
 - Commit messages: [Conventional Commits](https://www.conventionalcommits.org) —
   `feat(todo): add search`, `fix(network): retry on 502`, `chore: bump deps`.
 - Before pushing: `rps check` (format, analyze, test).
-- Changed anything the Mason brick copies? Run `rps brick` and commit the result — CI fails if the
-  brick is stale.
-- **CI is deliberately cheap** (Linux-only, PRs only). Don't add macOS runners, emulators, or release builds
+- The Mason project brick (`bricks/project_brick/__brick__`) is generated and git-ignored: run
+  `rps brick` before `mason make`; never edit or commit it. CI runs the generator as a smoke test.
+- **CI is deliberately cheap** (Linux-only, PRs and pushes to `main`). Don't add macOS runners, emulators, or release builds
   to GitHub Actions. Releases are built locally with `scripts/release.sh`, iOS via the manual Codemagic
   workflow. Details: [`docs/CI_CD.md`](docs/CI_CD.md).
 - User-visible changes get a line in `CHANGELOG.md` (template repo).
@@ -492,4 +515,4 @@ class, route, asset or translation.
 - [ ] One class per file, no private helper classes, and no top-level variables or helper functions
 - [ ] New interactive widgets have `Key` + `Semantics(identifier: ...)` when E2E-relevant
 - [ ] Tests added/updated; `rps check` passes
-- [ ] `rps gen` / `rps brick` run if annotations or template files changed
+- [ ] `rps gen` run if annotations, routes or translations changed

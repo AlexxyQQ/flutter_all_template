@@ -25,25 +25,34 @@ abstract class NetworkModule {
   @Named(NetworkNames.refreshDio)
   @lazySingleton
   Dio refreshDio(@Named(NetworkNames.apiBaseUrl) String baseUrl) =>
-      buildBaseDio(baseUrl);
+      buildBaseDio(
+        baseUrl: baseUrl,
+        interceptors: [if (kDebugMode) LoggingInterceptor()],
+      );
 
   @lazySingleton
   Dio dio(
     @Named(NetworkNames.apiBaseUrl) String baseUrl,
     AuthInterceptor authInterceptor,
     RefreshTokenInterceptor refreshTokenInterceptor,
-  ) {
-    final dio = buildBaseDio(baseUrl);
+  ) => buildBaseDio(
+    baseUrl: baseUrl,
     // Order matters: auth first, refresh next, logging (debug) last so it
     // reports what actually went over the wire.
-    dio.interceptors.insertAll(0, [authInterceptor, refreshTokenInterceptor]);
-    return dio;
-  }
+    interceptors: [
+      authInterceptor,
+      refreshTokenInterceptor,
+      if (kDebugMode) LoggingInterceptor(),
+    ],
+  );
 }
 
-/// A Dio with base URL, timeouts, default headers, debug-only logging and
-/// debug-only dev adapter. No auth.
-Dio buildBaseDio(String baseUrl) {
+/// A Dio with base URL, timeouts, default headers, the given [interceptors]
+/// (in order) and the debug-only dev adapter. Carries no auth by itself.
+Dio buildBaseDio({
+  required String baseUrl,
+  List<Interceptor> interceptors = const [],
+}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
@@ -57,8 +66,6 @@ Dio buildBaseDio(String baseUrl) {
   if (devAdapter != null) {
     dio.httpClientAdapter = devAdapter;
   }
-  if (kDebugMode) {
-    dio.interceptors.add(LoggingInterceptor());
-  }
+  dio.interceptors.addAll(interceptors);
   return dio;
 }

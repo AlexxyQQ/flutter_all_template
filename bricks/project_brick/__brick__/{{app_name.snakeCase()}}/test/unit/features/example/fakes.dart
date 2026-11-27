@@ -1,6 +1,6 @@
 import 'package:flutter_all_template/core/network/api_client.dart';
 
-/// A recorded [ApiClient] call.
+/// A recorded [IApiClient] call.
 typedef ApiCall = ({
   String method,
   String path,
@@ -8,9 +8,9 @@ typedef ApiCall = ({
   Map<String, Object?>? query,
 });
 
-/// [ApiClient] fake: records calls and feeds [respond]'s raw JSON through the
+/// [IApiClient] fake: records calls and feeds [respond]'s raw JSON through the
 /// caller's `decode`, so data-source decoding is exercised too.
-class FakeApiClient implements ApiClient {
+class FakeApiClient implements IApiClient {
   FakeApiClient(this.respond);
 
   /// Returns the raw JSON body for a call, or throws an `AppException`.

@@ -1,14 +1,21 @@
 {{=<% %>=}}
 name: CI
 
-# Lean, Linux-only. Runs on pull requests (not on push to main, to avoid double
-# runs) and manually. See docs/CI_CD.md for the cost model.
+# Lean, Linux-only. Runs on pull requests, on every push to main (so main is
+# always verified, including merges made without a PR) and manually.
+# `scripts/**` is NOT ignored: firebase_init.sh runs in this very job.
+# See docs/CI_CD.md for the cost model.
 on:
   pull_request:
     paths-ignore:
       - "**.md"
       - "docs/**"
-      - "scripts/**"
+      - "codemagic.yaml"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
       - "codemagic.yaml"
   workflow_dispatch:
 

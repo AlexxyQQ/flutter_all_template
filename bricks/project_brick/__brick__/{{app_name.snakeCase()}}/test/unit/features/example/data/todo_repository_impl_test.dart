@@ -1,5 +1,5 @@
-import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
 import 'package:flutter_all_template/core/error/app_exception.dart';
+import 'package:flutter_all_template/core/error/failure.dart';
 import 'package:flutter_all_template/core/generic/domain/entities/page.dart';
 import 'package:flutter_all_template/features/example/data/data_sources/local/todo_local_data_source.dart';
 import 'package:flutter_all_template/features/example/data/data_sources/remote/todo_remote_data_source.dart';
@@ -22,6 +22,7 @@ TodoModel _todo(String id, {bool isDone = false, int day = 1}) => TodoModel(
 );
 
 const _firstPage = PageRequest.first(limit: 2);
+const _secondPage = PageRequest(page: 2, limit: 2, cursor: 'c');
 
 void main() {
   late MockRemote remote;
@@ -31,8 +32,11 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_firstPage);
     registerFallbackValue(const TodoQuery());
-    registerFallbackValue(<TodoModel>[]);
-    registerFallbackValue(_todo('fallback'));
+    registerFallbackValue(const CreateTodoParams(title: ''));
+    registerFallbackValue(const UpdateTodoParams(id: ''));
+    registerFallbackValue(
+      const PageResult<TodoModel>(items: [], hasMore: false),
+    );
   });
 
   setUp(() {
@@ -40,12 +44,13 @@ void main() {
     local = MockLocal();
     repository = TodoRepositoryImpl(remote: remote, local: local);
     when(
-      () => local.saveTodos(todos: any(named: 'todos')),
+      () => local.saveFirstPage(
+        query: any(named: 'query'),
+        limit: any(named: 'limit'),
+        result: any(named: 'result'),
+      ),
     ).thenAnswer((_) async {});
-    when(
-      () => local.saveTodo(todo: any(named: 'todo')),
-    ).thenAnswer((_) async {});
-    when(() => local.deleteTodo(id: any(named: 'id'))).thenAnswer((_) async {});
+    when(() => local.clear()).thenAnswer((_) async {});
   });
 
   void remoteListThrows(AppException e) => when(
@@ -55,21 +60,55 @@ void main() {
     ),
   ).thenThrow(e);
 
+  void cachedPage(PageResult<TodoModel>? page) => when(
+    () => local.getFirstPage(
+      query: any(named: 'query'),
+      limit: any(named: 'limit'),
+    ),
+  ).thenAnswer((_) async => page);
+
   group('getTodos', () {
-    test('returns remote items and caches them', () async {
-      final models = [_todo('1'), _todo('2')];
+    test('returns remote items and caches the first page', () async {
+      final remotePage = PageResult(
+        items: [_todo('1'), _todo('2')],
+        hasMore: true,
+        nextCursor: 'c',
+      );
       when(
         () => remote.getTodos(page: _firstPage, query: const TodoQuery()),
-      ).thenAnswer(
-        (_) async => PageResult(items: models, hasMore: true, nextCursor: 'c'),
-      );
+      ).thenAnswer((_) async => remotePage);
 
       final result = await repository.getTodos(page: _firstPage);
 
       final page = result.getRight().toNullable()!;
       expect(page.items.map((t) => t.id), ['1', '2']);
       expect(page.nextCursor, 'c');
-      verify(() => local.saveTodos(todos: models)).called(1);
+      verify(
+        () => local.saveFirstPage(
+          query: const TodoQuery(),
+          limit: 2,
+          result: remotePage,
+        ),
+      ).called(1);
+    });
+
+    test('later pages are not cached', () async {
+      when(
+        () => remote.getTodos(page: _secondPage, query: const TodoQuery()),
+      ).thenAnswer(
+        (_) async => PageResult(items: [_todo('3')], hasMore: false),
+      );
+
+      final result = await repository.getTodos(page: _secondPage);
+
+      expect(result.isRight(), isTrue);
+      verifyNever(
+        () => local.saveFirstPage(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
+      );
     });
 
     test('a failing cache write does not fail the call', () async {
@@ -82,7 +121,11 @@ void main() {
         (_) async => PageResult(items: [_todo('1')], hasMore: false),
       );
       when(
-        () => local.saveTodos(todos: any(named: 'todos')),
+        () => local.saveFirstPage(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
       ).thenThrow(const StorageException());
 
       final result = await repository.getTodos(page: _firstPage);
@@ -90,40 +133,59 @@ void main() {
       expect(result.isRight(), isTrue);
     });
 
-    test(
-      'offline: serves filtered, paged, newest-first cached items',
-      () async {
-        remoteListThrows(const NetworkException());
-        when(() => local.getTodos()).thenAnswer(
-          (_) async => [
-            _todo('old'),
-            _todo('done', isDone: true, day: 5),
-            _todo('new', day: 9),
-            _todo('mid', day: 3),
-          ],
-        );
-
-        final first = await repository.getTodos(
-          page: _firstPage,
-          query: const TodoQuery(onlyOpen: true),
-        );
-        final second = await repository.getTodos(
-          page: const PageRequest(page: 2, limit: 2),
-          query: const TodoQuery(onlyOpen: true),
-        );
-
-        final p1 = first.getRight().toNullable()!;
-        final p2 = second.getRight().toNullable()!;
-        expect(p1.items.map((t) => t.id), ['new', 'mid']);
-        expect(p1.hasMore, isTrue);
-        expect(p2.items.map((t) => t.id), ['old']);
-        expect(p2.hasMore, isFalse);
-      },
-    );
-
-    test('offline with an empty cache returns the network failure', () async {
+    test('offline: serves the cached first page of that query', () async {
       remoteListThrows(const NetworkException());
-      when(() => local.getTodos()).thenAnswer((_) async => []);
+      cachedPage(
+        PageResult(
+          items: [_todo('new', day: 9), _todo('mid', day: 3)],
+          hasMore: true,
+          nextCursor: 'c2',
+        ),
+      );
+
+      final result = await repository.getTodos(
+        page: _firstPage,
+        query: const TodoQuery(onlyOpen: true),
+      );
+
+      final page = result.getRight().toNullable()!;
+      expect(page.items.map((t) => t.id), ['new', 'mid']);
+      expect(page.hasMore, isTrue);
+      expect(page.nextCursor, 'c2');
+      verify(
+        () => local.getFirstPage(
+          query: const TodoQuery(onlyOpen: true),
+          limit: 2,
+        ),
+      ).called(1);
+    });
+
+    test('offline timeouts also fall back to the cache', () async {
+      remoteListThrows(const RequestTimeoutException());
+      cachedPage(PageResult(items: [_todo('1')], hasMore: false));
+
+      final result = await repository.getTodos(page: _firstPage);
+
+      expect(result.getRight().toNullable()?.items.single.id, '1');
+    });
+
+    test('offline on a later page reports the network failure', () async {
+      remoteListThrows(const NetworkException());
+
+      final result = await repository.getTodos(page: _secondPage);
+
+      expect(result.getLeft().toNullable()?.type, FailureType.network);
+      verifyNever(
+        () => local.getFirstPage(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+        ),
+      );
+    });
+
+    test('offline with nothing cached returns the network failure', () async {
+      remoteListThrows(const NetworkException());
+      cachedPage(null);
 
       final result = await repository.getTodos(page: _firstPage);
 
@@ -131,43 +193,40 @@ void main() {
     });
 
     test(
-      'server errors are returned as Failure without touching the cache',
+      'offline with an unreadable cache returns the network failure',
       () async {
-        remoteListThrows(const ServerException(statusCode: 500));
+        remoteListThrows(const NetworkException());
+        when(
+          () => local.getFirstPage(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const StorageException());
 
         final result = await repository.getTodos(page: _firstPage);
 
-        expect(result.getLeft().toNullable()?.type, FailureType.server);
-        expect(result.getLeft().toNullable()?.statusCode, 500);
-        verifyNever(() => local.getTodos());
+        expect(result.getLeft().toNullable()?.type, FailureType.network);
       },
     );
-  });
 
-  group('getTodo', () {
-    test('falls back to the cached item when offline', () async {
-      when(
-        () => remote.getTodo(id: '1'),
-      ).thenThrow(const RequestTimeoutException());
-      when(() => local.getTodo(id: '1')).thenAnswer((_) async => _todo('1'));
+    test('server errors are returned as Failure without the cache', () async {
+      remoteListThrows(const ServerException(statusCode: 500));
 
-      final result = await repository.getTodo(id: '1');
+      final result = await repository.getTodos(page: _firstPage);
 
-      expect(result.getRight().toNullable()?.id, '1');
-    });
-
-    test('offline and not cached reports the network problem', () async {
-      when(() => remote.getTodo(id: '1')).thenThrow(const NetworkException());
-      when(() => local.getTodo(id: '1')).thenThrow(const CacheMissException());
-
-      final result = await repository.getTodo(id: '1');
-
-      expect(result.getLeft().toNullable()?.type, FailureType.network);
+      expect(result.getLeft().toNullable()?.type, FailureType.server);
+      expect(result.getLeft().toNullable()?.statusCode, 500);
+      verifyNever(
+        () => local.getFirstPage(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+        ),
+      );
     });
   });
 
   group('writes', () {
-    test('create calls the API and caches the result', () async {
+    test('create calls the API and drops the cached page', () async {
       const params = CreateTodoParams(title: 'New');
       when(
         () => remote.createTodo(params: params),
@@ -176,7 +235,7 @@ void main() {
       final result = await repository.createTodo(params: params);
 
       expect(result.getRight().toNullable()?.id, '9');
-      verify(() => local.saveTodo(todo: _todo('9'))).called(1);
+      verify(() => local.clear()).called(1);
     });
 
     test('update failure is mapped and the cache is untouched', () async {
@@ -190,19 +249,25 @@ void main() {
       final failure = result.getLeft().toNullable()!;
       expect(failure.type, FailureType.validation);
       expect(failure.fieldErrors, {'title': 'x'});
-      verifyNever(() => local.saveTodo(todo: any(named: 'todo')));
+      verifyNever(() => local.clear());
     });
 
-    test('delete removes the item remotely, then from the cache', () async {
+    test('delete removes the item remotely, then drops the cache', () async {
       when(() => remote.deleteTodo(id: '1')).thenAnswer((_) async {});
 
       final result = await repository.deleteTodo(id: '1');
 
       expect(result, const Right<Failure, void>(null));
-      verifyInOrder([
-        () => remote.deleteTodo(id: '1'),
-        () => local.deleteTodo(id: '1'),
-      ]);
+      verifyInOrder([() => remote.deleteTodo(id: '1'), () => local.clear()]);
+    });
+
+    test('a failing cache invalidation does not fail the write', () async {
+      when(() => remote.deleteTodo(id: '1')).thenAnswer((_) async {});
+      when(() => local.clear()).thenThrow(const StorageException());
+
+      final result = await repository.deleteTodo(id: '1');
+
+      expect(result.isRight(), isTrue);
     });
 
     test('unexpected errors become an unknown Failure', () async {

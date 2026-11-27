@@ -1,6 +1,6 @@
 import 'package:injectable/injectable.dart';
 
-import '../../../../config/constants/type_defs/typedef.dart';
+import '../../../../core/error/typedef.dart';
 import '../repositories/todo_repository.dart';
 
 /// Deletes a to-do by id.

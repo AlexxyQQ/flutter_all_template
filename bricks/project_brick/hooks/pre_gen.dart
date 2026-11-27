@@ -66,7 +66,7 @@ void run(HookContext context) {
     'app_display_name': displayName.isEmpty ? appName.titleCase : displayName,
     'base_url': baseUrl,
     'use_firebase': useNotifications || vars['use_firebase'] == true,
-    // Defaults for configs written before these options existed.
+    // Normalised so the post-gen hook and the templates see real booleans.
     'use_ci': useCi,
     'use_codemagic': useCodemagic,
     'use_maestro': vars['use_maestro'] != false,

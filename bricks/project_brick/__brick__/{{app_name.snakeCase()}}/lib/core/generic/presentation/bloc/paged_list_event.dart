@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 
 /// Events understood by `PagedListBloc`.
@@ -19,8 +21,13 @@ final class PagedListStarted extends PagedListEvent {
 
 /// Reloads from the first page with the current query (pull-to-refresh,
 /// retry). Items stay visible until the new first page arrives.
+///
+/// [completion] (optional) completes when the reload finished, successfully or
+/// not, so a `RefreshIndicator` can keep spinning until then.
 final class PagedListRefreshed extends PagedListEvent {
-  const PagedListRefreshed();
+  const PagedListRefreshed({this.completion});
+
+  final Completer<void>? completion;
 }
 
 /// Loads the next page if there is one. Dropped while another page load is

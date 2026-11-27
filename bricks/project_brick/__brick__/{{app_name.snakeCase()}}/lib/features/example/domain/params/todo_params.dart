@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../entities/todo.dart';
+
 /// Input for creating a [Todo]. The server assigns `id` and `updatedAt`.
 final class CreateTodoParams extends Equatable {
   const CreateTodoParams({required this.title});
@@ -36,6 +38,16 @@ final class TodoQuery extends Equatable {
     search: search ?? this.search,
     onlyOpen: onlyOpen ?? this.onlyOpen,
   );
+
+  /// Whether [todo] belongs in a list filtered by this query. The one place
+  /// the filter rule lives on the client; the server applies the same rule.
+  bool matches(Todo todo) {
+    if (onlyOpen && todo.isDone) {
+      return false;
+    }
+    final needle = search.trim().toLowerCase();
+    return needle.isEmpty || todo.title.toLowerCase().contains(needle);
+  }
 
   @override
   List<Object?> get props => [search, onlyOpen];

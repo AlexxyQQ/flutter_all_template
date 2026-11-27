@@ -25,8 +25,8 @@ Every prompt has a default, so pressing Enter through all of them gives the full
 | `api_path` | Collection path **relative to the base URL**, no leading slash (like every `ApiPaths` entry), e.g. `v1/notes` | `<plural-in-kebab-case>` |
 | `route_path` | In-app / deep-link path of the page, e.g. `/my-notes` | `/<plural-in-kebab-case>` |
 
-The plural must differ from the singular (`news` → pass `feature_plural: news_items`),
-otherwise `getNews()` and `getNews({id})` would clash; the hook refuses it.
+The plural must differ from the singular, otherwise `getNews()` (list) and `getNews({id})` would
+clash; the hook refuses an identical value (use e.g. `news_items`).
 
 ### What to generate
 
@@ -69,12 +69,18 @@ Non-interactive: `mason make flutter_feature -c config.json`, for example
   "include_delete": true,
   "include_search": true,
   "use_local_datasource": true,
-  "use_params": true
+  "use_params": true,
+  "generate_tests": true,
+  "register_api_path": true,
+  "register_route": true,
+  "add_translations": true,
+  "format_code": true
 }
 ```
 
-Variables you leave out of a config file get their default only in interactive runs; pass the
-ones you care about and keep the full list (see `brick.yaml`) for CI use.
+Mason prompts for every variable missing from the config file, and fails when there is no
+terminal, so for CI or scripts list **all** variables (as above) and use the defaults for the ones
+you don't care about.
 
 ## Output (`feature_name: note`, everything on)
 

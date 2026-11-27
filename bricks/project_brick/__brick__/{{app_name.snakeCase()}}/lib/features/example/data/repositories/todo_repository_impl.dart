@@ -1,9 +1,10 @@
 import 'package:injectable/injectable.dart';
 
-import '../../../../config/constants/type_defs/typedef.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/error/guard.dart';
+import '../../../../core/error/typedef.dart';
 import '../../../../core/generic/domain/entities/page.dart';
+import '../../../../core/services/logger/data/app_logger.dart';
 import '../../domain/entities/todo.dart';
 import '../../domain/params/todo_params.dart';
 import '../../domain/repositories/todo_repository.dart';
@@ -11,12 +12,19 @@ import '../data_sources/local/todo_local_data_source.dart';
 import '../data_sources/remote/todo_remote_data_source.dart';
 import '../models/todo_model.dart';
 
-/// Remote-first repository with an offline read cache:
-/// * reads go to the API and are cached locally; if the device is offline
-///   (`NetworkException`/`RequestTimeoutException`) cached data is served
-///   instead, and the original error is returned when nothing is cached;
-/// * writes go to the API and then update the cache (no offline outbox);
-/// * a failing cache write never fails an otherwise successful call.
+/// Remote-first repository with a small offline fallback.
+///
+/// * **Reads** go to the API. A first page is cached (one entry: the last one
+///   served). When the device is offline (`NetworkException` /
+///   `RequestTimeoutException`) the cached first page of the *same* query is
+///   served; otherwise the original network error is returned.
+/// * **Writes** go to the API, then drop the cached page (it no longer
+///   matches the server). There is no offline outbox: a write made offline
+///   fails.
+/// * **Cache failures never fail a call** that already succeeded; they are
+///   logged.
+/// * **Account safety** is the cache key's job: it lives under
+///   `SessionScope.keyPrefix`, which sign-out wipes.
 @LazySingleton(as: ITodoRepository)
 class TodoRepositoryImpl implements ITodoRepository {
   TodoRepositoryImpl({
@@ -24,6 +32,8 @@ class TodoRepositoryImpl implements ITodoRepository {
     required ITodoLocalDataSource local,
   }) : _remote = remote,
        _local = local;
+
+  static const String _logName = 'TodoRepository';
 
   final ITodoRemoteDataSource _remote;
   final ITodoLocalDataSource _local;
@@ -35,92 +45,80 @@ class TodoRepositoryImpl implements ITodoRepository {
   }) => guard(() async {
     try {
       final result = await _remote.getTodos(page: page, query: query);
-      await _cache(() => _local.saveTodos(todos: result.items));
+      if (page.isFirst) {
+        await _bestEffort(
+          () => _local.saveFirstPage(
+            query: query,
+            limit: page.limit,
+            result: result,
+          ),
+        );
+      }
       return result.map((model) => model.toEntity());
     } on AppException catch (e) {
-      if (!_isOffline(e)) {
+      if (!page.isFirst || !_isOffline(e)) {
         rethrow;
       }
-      final cached = await _local.getTodos();
-      if (cached.isEmpty) {
-        rethrow;
+      final cached = await _readCache(query: query, limit: page.limit);
+      if (cached == null) {
+        rethrow; // Report the network problem, not the cache miss.
       }
-      return _pageOf(cached, page: page, query: query);
+      return cached.map((model) => model.toEntity());
     }
   });
 
   @override
-  ResultFuture<Todo> getTodo({required String id}) => guard(() async {
-    try {
-      return await _fetchAndCacheTodo(fetch: () => _remote.getTodo(id: id));
-    } on AppException catch (e) {
-      if (!_isOffline(e)) {
-        rethrow;
-      }
-      try {
-        return (await _local.getTodo(id: id)).toEntity();
-      } on CacheMissException {
-        throw e; // Report the network problem, not the cache miss.
-      }
-    }
-  });
+  ResultFuture<Todo> createTodo({required CreateTodoParams params}) =>
+      guard(() async {
+        final model = await _remote.createTodo(params: params);
+        await _bestEffort(_local.clear);
+        return model.toEntity();
+      });
 
   @override
-  ResultFuture<Todo> createTodo({required CreateTodoParams params}) => guard(
-    () => _fetchAndCacheTodo(fetch: () => _remote.createTodo(params: params)),
-  );
-
-  @override
-  ResultFuture<Todo> updateTodo({required UpdateTodoParams params}) => guard(
-    () => _fetchAndCacheTodo(fetch: () => _remote.updateTodo(params: params)),
-  );
+  ResultFuture<Todo> updateTodo({required UpdateTodoParams params}) =>
+      guard(() async {
+        final model = await _remote.updateTodo(params: params);
+        await _bestEffort(_local.clear);
+        return model.toEntity();
+      });
 
   @override
   ResultFuture<void> deleteTodo({required String id}) => guard(() async {
     await _remote.deleteTodo(id: id);
-    await _cache(() => _local.deleteTodo(id: id));
+    await _bestEffort(_local.clear);
   });
 
   static bool _isOffline(AppException e) =>
       e is NetworkException || e is RequestTimeoutException;
 
-  Future<Todo> _fetchAndCacheTodo({
-    required Future<TodoModel> Function() fetch,
+  Future<PageResult<TodoModel>?> _readCache({
+    required TodoQuery query,
+    required int limit,
   }) async {
-    final model = await fetch();
-    await _cache(() => _local.saveTodo(todo: model));
-    return model.toEntity();
-  }
-
-  /// Cache writes are best-effort: the remote call already succeeded.
-  static Future<void> _cache(Future<void> Function() write) async {
     try {
-      await write();
-    } on StorageException {
-      // Stale cache is acceptable; the next successful read rewrites it.
+      return await _local.getFirstPage(query: query, limit: limit);
+    } on StorageException catch (e, s) {
+      _logCacheFailure(e, s);
+      return null; // An unreadable cache behaves like an empty one.
     }
   }
 
-  /// Applies [query] and page-number pagination to the cached items.
-  static PageResult<Todo> _pageOf(
-    List<TodoModel> cached, {
-    required PageRequest page,
-    required TodoQuery query,
-  }) {
-    final search = query.search.trim().toLowerCase();
-    final matching =
-        cached
-            .where((t) => !query.onlyOpen || !t.isDone)
-            .where(
-              (t) => search.isEmpty || t.title.toLowerCase().contains(search),
-            )
-            .map((t) => t.toEntity())
-            .toList()
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    final items = matching.skip(page.offset).take(page.limit).toList();
-    return PageResult(
-      items: items,
-      hasMore: page.offset + items.length < matching.length,
-    );
+  /// Cache writes are an optimisation: the remote call already succeeded, so
+  /// a store failure is logged, not surfaced.
+  static Future<void> _bestEffort(Future<void> Function() write) async {
+    try {
+      await write();
+    } on StorageException catch (e, s) {
+      _logCacheFailure(e, s);
+    }
   }
+
+  static void _logCacheFailure(StorageException error, StackTrace stackTrace) =>
+      AppLogger.warning(
+        'To-do cache unavailable',
+        error: error,
+        stackTrace: stackTrace,
+        name: _logName,
+      );
 }

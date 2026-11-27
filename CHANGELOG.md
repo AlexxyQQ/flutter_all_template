@@ -7,7 +7,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Customizable bricks. `flutter_feature` (3.1.0): `feature_plural` (derived, e.g. `category` -> `categories`), `api_path` and `route_path`, `include_create` / `include_update` / `include_delete` / `include_search`, `generate_tests`, and `register_api_path` / `register_route` / `add_translations` / `format_code` to choose what the post-gen hook edits; invalid names and a plural equal to the singular are rejected. `flutter_all_template` (3.1.0): `app_display_name`, `base_url`, and `use_ci` / `use_codemagic` / `use_maestro` to drop the delivery tooling; `app_name`, `app_org` and `base_url` are validated.
+
 ### Changed
+
+- The feature brick now matches the current `lib/`: Equatable entity and `json_serializable` model (no Freezed), `failure.displayText`, named `JsonCollectionStore` arguments, slash-less `ApiPaths` entries, and translation keys at `features.<name>.*`.
 
 - Layer boundaries: `core/common/domain/services/**` is now `core/services/<name>/{domain,data,presentation}` (domain folders are pure Dart); the app composition root (bootstrap, DI, router, observers, global providers) moved to `lib/app/`; `core/` no longer imports features; `Failure` and `ResultFuture` live in `core/error/`; `permission` and `app_settings` are regular features under `lib/features/`. See `FOLDER_STRUCTURE.md`.
 - All abstract interfaces use the `I` prefix (`ISessionManager`, `IApiClient`, `ISecureStore`, `IPreferencesStore`, `ITokenStore`, `ITokenRefresher`, `IPushTokenRepository`, ...); `ILoggerService` methods are `debug`/`info`/`warning`/`error`; `ResultVoid` was removed in favour of `ResultFuture<void>`.

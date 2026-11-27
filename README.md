@@ -69,9 +69,14 @@ You are asked for:
 |---|---|---|
 | `app_name` | App name; snake_cased for the package | `my_flutter_app` |
 | `app_org` | Organization id, e.g. `com.acme` | `com.example` |
+| `app_display_name` | Name under the launcher icon (empty: derived from `app_name`) | derived |
+| `base_url` | Dev API base URL for `env/dev.example.json` (empty: emulator default) | emulator default |
 | `use_firebase` | Firebase Core, Firebase Analytics and FlutterFire config | `false` |
 | `use_notifications` | Push notifications (FCM + local; implies Firebase) | `false` |
 | `use_permissions` | Permission bloc, screen and route guard | `false` |
+| `use_ci` | GitHub Actions CI, OSV scan, Dependabot, gitleaks config | `true` |
+| `use_codemagic` | `codemagic.yaml` cloud builds | `true` |
+| `use_maestro` | Maestro end-to-end flows and scripts | `true` |
 
 Everything lands in `./<app_name>/`. Disabled modules are removed completely (files,
 dependencies, routes, tests), so you start with nothing you do not use.
@@ -129,8 +134,10 @@ Do these in the first hour:
 
 ## Add features
 
-Generate a feature slice (paged, searchable list with create / read / update / delete),
-run from the project root:
+Generate a feature slice (paged list with optional search, create, update and delete),
+run from the project root. Every prompt has a default; you can rename the plural and the API /
+route paths, switch operations and the offline cache on or off, and choose which project files
+the hook edits for you (see the brick README):
 
 ```bash
 mason make flutter_feature

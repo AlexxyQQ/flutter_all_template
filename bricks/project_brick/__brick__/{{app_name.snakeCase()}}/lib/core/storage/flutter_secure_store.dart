@@ -4,27 +4,33 @@ import 'package:injectable/injectable.dart';
 import '../error/app_exception.dart';
 import 'key_value_stores.dart';
 
-/// [SecureStore] backed by Keychain (iOS) / Keystore-wrapped AES-GCM (Android).
+/// [ISecureStore] backed by Keychain (iOS) / Keystore-wrapped AES-GCM (Android).
 ///
 /// Never logs keys' values. Platform errors are wrapped in [StorageException]
 /// whose `debugMessage` contains only the operation and key name.
-@LazySingleton(as: SecureStore)
-class FlutterSecureStore implements SecureStore {
+@LazySingleton(as: ISecureStore)
+class FlutterSecureStore implements ISecureStore {
   FlutterSecureStore({required FlutterSecureStorage storage})
     : _storage = storage;
+
+  /// Keychain accessibility for every secure store: readable after the first
+  /// unlock (so background tasks such as push handling can use tokens) and
+  /// never migrated to another device through backups.
+  static const KeychainAccessibility accessibility =
+      KeychainAccessibility.first_unlock_this_device;
 
   final FlutterSecureStorage _storage;
 
   @override
-  Future<String?> read(String key) =>
+  Future<String?> read({required String key}) =>
       _guard('read', key, () => _storage.read(key: key));
 
   @override
-  Future<void> write(String key, String value) =>
+  Future<void> write({required String key, required String value}) =>
       _guard('write', key, () => _storage.write(key: key, value: value));
 
   @override
-  Future<void> delete(String key) =>
+  Future<void> delete({required String key}) =>
       _guard('delete', key, () => _storage.delete(key: key));
 
   @override
@@ -38,12 +44,16 @@ class FlutterSecureStore implements SecureStore {
   ) async {
     try {
       return await body();
-    } catch (e) {
-      throw StorageException(
-        debugMessage:
-            'SecureStore.$operation${key == null ? '' : '($key)'} failed '
-            '(${e.runtimeType})',
-        cause: e,
+    } catch (e, s) {
+      // Keep the platform error as `cause` and its stack as the stack.
+      Error.throwWithStackTrace(
+        StorageException(
+          debugMessage:
+              'ISecureStore.$operation${key == null ? '' : '($key)'} failed '
+              '(${e.runtimeType})',
+          cause: e,
+        ),
+        s,
       );
     }
   }

@@ -1,12 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter_all_template/core/error/app_exception.dart';
 import 'package:flutter_all_template/core/generic/domain/entities/page.dart';
+import 'package:flutter_all_template/core/session/session_scope.dart';
 import 'package:flutter_all_template/features/example/data/data_sources/local/todo_local_data_source.dart';
 import 'package:flutter_all_template/features/example/data/data_sources/remote/todo_remote_data_source.dart';
 import 'package:flutter_all_template/features/example/data/models/todo_model.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../core/generic/data/in_memory_preferences_store.dart';
+import '../../../../helpers/in_memory_preferences_store.dart';
 import '../fakes.dart';
 
 TodoModel _todo(String id, {String title = 'Title', bool isDone = false}) =>
@@ -24,7 +27,6 @@ void main() {
 
       expect(model.isDone, isTrue);
       expect(model.toEntity().updatedAt, DateTime.utc(2026));
-      expect(TodoModel.fromEntity(model.toEntity()), model);
       expect(model.toJson(), containsPair('is_done', true));
     });
 
@@ -58,7 +60,7 @@ void main() {
 
       final call = client.calls.single;
       expect(call.method, 'GET');
-      expect(call.path, '/todos');
+      expect(call.path, 'todos');
       expect(call.query, {
         'page': 2,
         'limit': 2,
@@ -86,7 +88,6 @@ void main() {
     });
 
     test('uses the right verb and path for each call', () async {
-      await dataSource.getTodo(id: 'a/b');
       await dataSource.createTodo(params: const CreateTodoParams(title: 'New'));
       await dataSource.updateTodo(
         params: const UpdateTodoParams(id: '1', isDone: true),
@@ -95,10 +96,9 @@ void main() {
       await dataSource.deleteTodo(id: '1');
 
       expect(client.calls.map((c) => '${c.method} ${c.path} ${c.body}'), [
-        'GET /todos/a%2Fb null',
-        'POST /todos {title: New}',
-        'PATCH /todos/1 {is_done: true}',
-        'DELETE /todos/1 null',
+        'POST todos {title: New}',
+        'PATCH todos/1 {is_done: true}',
+        'DELETE todos/1 null',
       ]);
     });
 
@@ -106,53 +106,95 @@ void main() {
       client.respond = (_) => throw const NetworkException();
 
       expect(
-        () => dataSource.getTodo(id: '1'),
+        () => dataSource.deleteTodo(id: '1'),
         throwsA(isA<NetworkException>()),
       );
     });
   });
 
   group('TodoLocalDataSource', () {
+    late InMemoryPreferencesStore store;
     late TodoLocalDataSource dataSource;
 
-    setUp(
-      () => dataSource = TodoLocalDataSource(store: InMemoryPreferencesStore()),
+    const all = TodoQuery();
+    const open = TodoQuery(onlyOpen: true);
+
+    PageResult<TodoModel> result(List<TodoModel> items, {bool more = true}) =>
+        PageResult(items: items, hasMore: more, nextCursor: 'c');
+
+    Future<void> save(
+      TodoQuery query,
+      List<TodoModel> items, {
+      int limit = 2,
+    }) => dataSource.saveFirstPage(
+      query: query,
+      limit: limit,
+      result: result(items),
     );
 
-    test('get/update/delete target only the requested id', () async {
-      await dataSource.saveTodos(todos: [_todo('1'), _todo('2'), _todo('3')]);
+    Future<PageResult<TodoModel>?> read(TodoQuery query, {int limit = 2}) =>
+        dataSource.getFirstPage(query: query, limit: limit);
 
-      expect((await dataSource.getTodo(id: '2')).id, '2');
-
-      await dataSource.saveTodo(todo: _todo('2', title: 'Updated'));
-      await dataSource.deleteTodo(id: '3');
-
-      final todos = await dataSource.getTodos();
-      expect(todos.map((t) => (t.id, t.title)), [
-        ('1', 'Title'),
-        ('2', 'Updated'),
-      ]);
+    setUp(() {
+      store = InMemoryPreferencesStore();
+      dataSource = TodoLocalDataSource(store: store);
     });
 
-    test('deleting an unknown id leaves other items untouched', () async {
-      await dataSource.saveTodos(todos: [_todo('1')]);
-      await dataSource.deleteTodo(id: 'nope');
-
-      expect(await dataSource.getTodos(), hasLength(1));
-    });
-
-    test('missing items throw CacheMissException', () {
+    test('is stored under the session scope so sign-out wipes it', () {
       expect(
-        () => dataSource.getTodo(id: 'x'),
-        throwsA(isA<CacheMissException>()),
+        TodoLocalDataSource.storageKey,
+        startsWith(SessionScope.keyPrefix),
       );
     });
 
+    test('replays exactly what the server returned for that query', () async {
+      await save(all, [_todo('1'), _todo('2')]);
+
+      final hit = await read(all);
+      expect(hit!.items.map((t) => t.id), ['1', '2']);
+      expect(hit.hasMore, isTrue);
+      expect(hit.nextCursor, 'c');
+      // Another query / page size is never approximated from this one.
+      expect(await read(open), isNull);
+      expect(await read(const TodoQuery(search: 'milk')), isNull);
+      expect(await read(all, limit: 5), isNull);
+    });
+
+    test('keeps only the most recent first page', () async {
+      await save(all, [_todo('1')]);
+      await save(open, [_todo('2')]);
+
+      expect(await read(all), isNull);
+      expect((await read(open))!.items.single.id, '2');
+    });
+
+    test('an unreadable entry is discarded and reads as a miss', () async {
+      store.values[TodoLocalDataSource.storageKey] = '{not json';
+
+      expect(await read(all), isNull);
+      expect(store.values, isNot(contains(TodoLocalDataSource.storageKey)));
+    });
+
+    test('an entry of the wrong shape is discarded', () async {
+      store.values[TodoLocalDataSource.storageKey] = jsonEncode({
+        'search': '',
+        'only_open': false,
+        'limit': 2,
+        'items': [
+          {'garbage': true},
+        ],
+        'has_more': true,
+      });
+
+      expect(await read(all), isNull);
+      expect(store.values, isNot(contains(TodoLocalDataSource.storageKey)));
+    });
+
     test('clear empties the cache', () async {
-      await dataSource.saveTodos(todos: [_todo('1')]);
+      await save(all, [_todo('1')]);
       await dataSource.clear();
 
-      expect(await dataSource.getTodos(), isEmpty);
+      expect(await read(all), isNull);
     });
   });
 }

@@ -6,111 +6,31 @@
   },
   "common": {
     "errors": {
+      "network": {
+        "badCertificate": "सर्भरको सुरक्षा प्रमाणपत्र प्रमाणित गर्न सकिएन। आफ्नो जडान जाँचेर फेरि प्रयास गर्नुहोस्।"
+      },
       "somethingWentWrong": "केही गलत भयो",
       "noInternetConnection": "इन्टरनेट जडान छैन",
       "serverError": "सर्भर त्रुटि"
     }
   },
-  "core": {
-    "generic": {
-      "data": {
-        "data_sources": {
-          "local": {
-            "secure_storage_data_source": {
-              "itemAlreadyExists": "वस्तु पहिले नै अवस्थित छ",
-              "indexOutOfBounds": "इन्डेक्स {index}, {length} लम्बाइको सूचीको सीमा बाहिर छ",
-              "keysNotSupported": "FlutterSecureStorage द्वारा सबै कुञ्जीहरू प्राप्त गर्न समर्थित छैन। यदि आवश्यक भएमा कुञ्जी ट्र्याकिङ संयन्त्र लागू गर्ने विचार गर्नुहोस्।",
-              "seedPathNotSet": "सीड सम्पत्ति मार्ग (Seed asset path) सेट गरिएको छैन",
-              "createFailed": "\"{modelKey}\" कुञ्जीको साथ वस्तु सिर्जना गर्न असफल: {error}",
-              "createMultipleFailed": "\"{modelKey}\" कुञ्जीको साथ धेरै वस्तुहरू सिर्जना गर्न असफल: {error}",
-              "readFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू पढ्न असफल: {error}",
-              "updateFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू अद्यावधिक गर्न असफल: {error}",
-              "updateByIndexFailed": "\"{modelKey}\" कुञ्जीको साथ इन्डेक्स {index} मा वस्तु अद्यावधिक गर्न असफल: {error}",
-              "updateWhereFailed": "\"{modelKey}\" कुञ्जीको लागि सर्त सहित वस्तु अद्यावधिक गर्न असफल: {error}",
-              "updateAllWhereFailed": "\"{modelKey}\" कुञ्जीको लागि सर्त सहित वस्तुहरू अद्यावधिक गर्न असफल: {error}",
-              "upsertFailed": "\"{modelKey}\" कुञ्जीको लागि वस्तु अपसर्ट (Upsert) गर्न असफल: {error}",
-              "deleteFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू मेटाउन असफल: {error}",
-              "deleteByIndexFailed": "\"{modelKey}\" कुञ्जीको साथ इन्डेक्स {index} मा वस्तु मेटाउन असफल: {error}",
-              "deleteWhereFailed": "\"{modelKey}\" कुञ्जीको लागि सर्त सहित वस्तुहरू मेटाउन असफल: {error}",
-              "clearFailed": "स्टोरेज खाली गर्न असफल: {error}",
-              "containsKeyFailed": "\"{modelKey}\" कुञ्जी अवस्थित छ कि छैन जाँच गर्न असफल: {error}",
-              "countFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू गणना गर्न असफल: {error}",
-              "isEmptyFailed": "\"{modelKey}\" कुञ्जीको लागि सूची खाली छ कि छैन जाँच गर्न असफल: {error}",
-              "whereFailed": "\"{modelKey}\" कुञ्जी भएका वस्तुहरू फिल्टर गर्न असफल: {error}",
-              "firstWhereFailed": "\"{modelKey}\" कुञ्जी भएको पहिलो वस्तु फेला पार्न असफल: {error}",
-              "readMultipleFailed": "धेरै कुञ्जीहरू पढ्न असफल: {error}",
-              "writeMultipleFailed": "धेरै वस्तुहरू लेख्न असफल: {error}",
-              "seedFailed": "डेटा सीड (Seed) गर्न असफल: {error}"
-            }
-          }
-        }
-      },
-      "presentation": {
-        "views": {
-          "widgets": {
-            "pagination_list_view_widget": {
-              "no_more_data": "थप डाटा छैन",
-              "no_data_found": "कुनै डाटा फेला परेन"
-            }
-          }
-        }
-      }
-    },
-    "common": {
-      "presentation": {
-        "views": {
-          "pages": {
-            "bottom_sheets": {
-              "app_date_selector_bottom_sheet": {
-                "reset": "रिसेट गर्नुहोस्"
-              }
-            }
-          },
-          "widgets": {
-            "system": {
-              "text_fields": {
-                "app_dropdown": {
-                  "required_char": "*"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
   "features": {
     "splash": {
-      "presentation": {
-        "screens": {
-          "splash_screen": {
-            "loading": "लोड हुँदैछ…",
-            "logoLabel": "एपको लोगो"
-          }
-        }
-      }
+      "loading": "लोड हुँदैछ…",
+      "logoLabel": "एपको लोगो"
     },
     "home": {
-      "presentation": {
-        "screens": {
-          "home_screen": {
-            "title": "गृहपृष्ठ",
-            "welcome": "स्वागत छ",
-            "subtitle": "तपाईंको एप यहाँबाट सुरु हुन्छ। यो स्क्रिनलाई आफ्नो पहिलो फिचरले बदल्नुहोस्।",
-            "openTodos": "टु-डु उदाहरण खोल्नुहोस्"
-          }
-        }
-      }
+      "title": "गृहपृष्ठ",
+      "welcome": "स्वागत छ",
+      "subtitle": "तपाईंको एप यहाँबाट सुरु हुन्छ। यो स्क्रिनलाई आफ्नो पहिलो फिचरले बदल्नुहोस्।",
+      "openTodos": "टु-डु उदाहरण खोल्नुहोस्"
     },
     "example": {
-      "presentation": {
-        "screens": {
-          "todo_list_screen": {
-            "title": "टु-डुहरू",
-            "add": "टु-डु थप्नुहोस्",
-            "hint": "के गर्नुपर्छ?"
-          }
-        }
+      "title": "टु-डुहरू",
+      "add": "टु-डु थप्नुहोस्",
+      "hint": "के गर्नुपर्छ?",
+      "errors": {
+        "emptyTitle": "टु-डुको शीर्षक लेख्नुहोस्।"
       }
     }
   }

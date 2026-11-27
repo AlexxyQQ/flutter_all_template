@@ -11,7 +11,7 @@ A real app almost never needs all of them. Every declared permission:
 - widens what an attacker can do if the app is compromised.
 
 **When you start a project, delete every permission you don't use on both platforms**,
-and remove the matching `AppPermission`/screen from `lib/core/common/features/permission/`.
+and remove the matching `AppPermission`/screen from `lib/features/permission/`.
 
 ---
 

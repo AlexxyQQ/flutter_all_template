@@ -21,6 +21,11 @@ final class NetworkException extends AppException {
   const NetworkException({super.debugMessage, super.cause});
 }
 
+/// The server's TLS certificate was rejected (not an offline problem).
+final class BadCertificateException extends AppException {
+  const BadCertificateException({super.debugMessage, super.cause});
+}
+
 /// Connect/send/receive timeout.
 final class RequestTimeoutException extends AppException {
   const RequestTimeoutException({super.debugMessage, super.cause});
@@ -49,18 +54,23 @@ final class NotFoundException extends AppException {
 /// HTTP 400/422 with optional server-provided, user-safe message and field errors.
 final class ValidationException extends AppException {
   const ValidationException({
+    this.statusCode = 400,
     this.serverMessage,
     this.fieldErrors = const {},
     super.debugMessage,
     super.cause,
   });
 
+  /// The real response status (400 or 422).
+  final int statusCode;
+
   /// A message the backend explicitly marked as safe to display, if any.
   final String? serverMessage;
   final Map<String, String> fieldErrors;
 }
 
-/// Any other non-2xx HTTP response.
+/// Any other non-2xx HTTP response. [serverMessage] is only filled for 4xx
+/// responses; 5xx bodies are never shown to users.
 final class ServerException extends AppException {
   const ServerException({
     required this.statusCode,

@@ -65,14 +65,25 @@ if grep -qE '^[[:space:]]+firebase_core:' pubspec.yaml; then
   elif grep -q 'YOUR_PROJECT_ID' android/app/google-services.json; then
     check "android/app/google-services.json is still the placeholder: run 'flutterfire configure'"
   fi
-  if grep -qs 'YOUR_' lib/config/firebase/firebase_options.dart; then
-    echo "WARN: lib/config/firebase/firebase_options.dart still has YOUR_* placeholders" >&2
+  if [ ! -r lib/config/firebase/firebase_options.dart ] || grep -q 'YOUR_' lib/config/firebase/firebase_options.dart; then
+    check "Dart Firebase options missing or still contain placeholders: run 'flutterfire configure'"
   fi
 fi
+build_commit="$(git rev-parse HEAD)"
+check_release_tag() {
+  # ls-remote includes a peeled ^{} entry for annotated tags.
+  local refs target
+  refs="$(git ls-remote "$release_url" "refs/tags/$TAG" "refs/tags/$TAG^{}")" || fail "cannot verify release tag $TAG"
+  target="$(awk 'NF == 2 { sha=$1 } END { print sha }' <<< "$refs")"
+  [ -z "$target" ] || [ "$target" = "$build_commit" ] || fail "$TAG points to $target, but this build is from $build_commit"
+  tag_exists="${target:+yes}"
+}
 if [ "$DRY" = 0 ]; then
   command -v gh >/dev/null || fail "GitHub CLI (gh) not installed"
   gh auth status >/dev/null 2>&1 || fail "not logged in: run 'gh auth login'"
   [ -n "$(git branch -r --contains HEAD)" ] || fail "HEAD is not pushed; push your commit first"
+  release_url="$(gh repo view --json url --jq .url)"
+  check_release_tag
   if gh release view "$TAG" >/dev/null 2>&1; then
     echo "Release $TAG exists; artifacts will be re-uploaded (--clobber)."
   fi
@@ -102,11 +113,19 @@ run tar -czf "$OUT/$BASE-symbols.tar.gz" "$SYMBOLS_DIR" \
 ASSETS+=("$OUT/$BASE-symbols.tar.gz")
 
 # --- Publish ----------------------------------------------------------------
+if [ "$DRY" = 0 ]; then
+  [ "$(git rev-parse HEAD)" = "$build_commit" ] || fail "HEAD changed during build"
+  check_release_tag
+  if [ -z "$tag_exists" ]; then
+    # Atomically claim the tag. A concurrently created tag fails this request.
+    gh api --method POST 'repos/{owner}/{repo}/git/refs' -f "ref=refs/tags/$TAG" -f "sha=$build_commit" >/dev/null
+  fi
+fi
 if [ "$DRY" = 0 ] && gh release view "$TAG" >/dev/null 2>&1; then
   run gh release upload "$TAG" "${ASSETS[@]}" --clobber
 else
   NOTE_ARGS=(--generate-notes); [ -z "$NOTES" ] || NOTE_ARGS=(--notes "$NOTES")
   run gh release create "$TAG" "${ASSETS[@]}" --title "$TAG" \
-    --target "$(git rev-parse HEAD)" "${NOTE_ARGS[@]}" ${PRERELEASE[@]+"${PRERELEASE[@]}"}
+    --verify-tag "${NOTE_ARGS[@]}" ${PRERELEASE[@]+"${PRERELEASE[@]}"}
 fi
 echo "Done: $TAG"

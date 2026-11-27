@@ -1,6 +1,11 @@
 part of 'todo_list_bloc.dart';
 
-final class TodoCreated extends PagedListEvent {
+/// Events that change a to-do. Handled one at a time, in order.
+sealed class TodoMutation extends PagedListEvent {
+  const TodoMutation();
+}
+
+final class TodoCreated extends TodoMutation {
   const TodoCreated(this.title);
 
   final String title;
@@ -9,7 +14,7 @@ final class TodoCreated extends PagedListEvent {
   List<Object?> get props => [title];
 }
 
-final class TodoToggled extends PagedListEvent {
+final class TodoToggled extends TodoMutation {
   const TodoToggled(this.todo);
 
   final Todo todo;
@@ -18,7 +23,7 @@ final class TodoToggled extends PagedListEvent {
   List<Object?> get props => [todo];
 }
 
-final class TodoDeleted extends PagedListEvent {
+final class TodoDeleted extends TodoMutation {
   const TodoDeleted(this.id);
 
   final String id;

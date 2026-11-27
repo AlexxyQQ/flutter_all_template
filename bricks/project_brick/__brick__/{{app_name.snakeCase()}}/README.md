@@ -22,7 +22,7 @@ injectable classes or translations.
 
 - `FOLDER_STRUCTURE.md` - where things live and the layering rules
 - `RULES.md` - coding rules with do/don't examples (read before your first PR)
-- `docs/CI_CD.md` - PR CI, local Android releases, Codemagic for iOS
-- `docs/MAESTRO.md` - end-to-end tests
-- `docs/FLAVORS.md`, `docs/CODE_SIGNING.md`, `docs/PLATFORM_SETUP.md`
+{{#use_ci_docs}}- `docs/CI_CD.md` - PR CI, local Android releases, Codemagic for iOS
+{{/use_ci_docs}}{{#use_maestro}}- `docs/MAESTRO.md` - end-to-end tests
+{{/use_maestro}}- `docs/FLAVORS.md`, `docs/CODE_SIGNING.md`, `docs/PLATFORM_SETUP.md`
 - `SECURITY.md` - secret handling and release hardening

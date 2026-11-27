@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_all_template/core/common/domain/entities/failure.dart';
-import 'package:flutter_all_template/core/common/domain/services/analytics/domain/analytics_service.dart';
+import 'package:flutter_all_template/core/error/failure.dart';
 import 'package:flutter_all_template/core/generic/presentation/bloc/paged_list_bloc.dart';
+import 'package:flutter_all_template/core/services/analytics/domain/analytics_service.dart';
 import 'package:flutter_all_template/features/example/domain/entities/todo.dart';
 import 'package:flutter_all_template/features/example/domain/params/todo_params.dart';
 import 'package:flutter_all_template/features/example/domain/usecases/create_todo_use_case.dart';
@@ -26,7 +28,7 @@ class MockAnalytics extends Mock implements IAnalyticsService {}
 Todo _todo(String id, {bool isDone = false}) =>
     Todo(id: id, title: 'Todo $id', isDone: isDone, updatedAt: DateTime(2026));
 
-const _failure = Failure(message: 'error.key', type: FailureType.network);
+const _failure = Failure(messageKey: 'error.key', type: FailureType.network);
 
 void main() {
   late MockGetTodos getTodos;
@@ -100,7 +102,6 @@ void main() {
     build: build,
     act: (bloc) =>
         bloc.add(const PagedListQueryChanged(TodoQuery(search: 'milk'))),
-    wait: const Duration(milliseconds: 10),
     verify: (bloc) {
       expect(bloc.state.query, const TodoQuery(search: 'milk'));
       verify(
@@ -181,6 +182,134 @@ void main() {
     ],
   );
 
+  group('filtered lists', () {
+    const search = TodoQuery(search: 'todo 1');
+    const onlyOpen = TodoQuery(onlyOpen: true);
+
+    TodoListState seeded(TodoQuery query, List<Todo> items) =>
+        loaded(items).copyWith(query: query);
+
+    blocTest<TodoListBloc, TodoListState>(
+      'create does not insert an item the active search would hide',
+      setUp: () => when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('3'))),
+      build: build,
+      seed: () => seeded(search, [_todo('1')]),
+      act: (bloc) => bloc.add(const TodoCreated('New')),
+      verify: (bloc) => expect(bloc.state.items.map((t) => t.id), ['1']),
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'create inserts an item that matches the active search',
+      setUp: () => when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('10'))),
+      build: build,
+      seed: () => seeded(search, [_todo('1')]),
+      act: (bloc) => bloc.add(const TodoCreated('New')),
+      verify: (bloc) => expect(bloc.state.items.map((t) => t.id), ['10', '1']),
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'completing an item leaves an "only open" list, and a failure puts it '
+      'back where it was',
+      setUp: () => when(
+        () => updateTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => const Left(_failure)),
+      build: build,
+      seed: () => seeded(onlyOpen, [_todo('1'), _todo('2'), _todo('3')]),
+      act: (bloc) => bloc.add(TodoToggled(_todo('2'))),
+      expect: () => [
+        seeded(onlyOpen, [_todo('1'), _todo('3')]),
+        seeded(onlyOpen, [
+          _todo('1'),
+          _todo('2'),
+          _todo('3'),
+        ]).copyWith(failure: () => _failure),
+      ],
+    );
+
+    blocTest<TodoListBloc, TodoListState>(
+      'a successful completion stays out of an "only open" list',
+      setUp: () => when(
+        () => updateTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => Right(_todo('2', isDone: true))),
+      build: build,
+      seed: () => seeded(onlyOpen, [_todo('1'), _todo('2')]),
+      act: (bloc) => bloc.add(TodoToggled(_todo('2'))),
+      verify: (bloc) => expect(bloc.state.items.map((t) => t.id), ['1']),
+    );
+
+    test(
+      'a mutation finishing after the query changed leaves the new list alone',
+      () async {
+        final updating = Completer<Either<Failure, Todo>>();
+        when(
+          () => updateTodo(params: any(named: 'params')),
+        ).thenAnswer((_) => updating.future);
+        final bloc = build()
+          ..emit(seeded(const TodoQuery(), [_todo('1'), _todo('2')]))
+          ..add(TodoToggled(_todo('1')));
+        await pumpEventQueue();
+        bloc.add(const PagedListQueryChanged(onlyOpen));
+        await pumpEventQueue();
+        expect(bloc.state.query, onlyOpen);
+        expect(bloc.state.items.map((t) => t.id), ['1', '2']); // The new load.
+
+        updating.complete(const Left(_failure)); // Rollback must not touch it.
+        await pumpEventQueue();
+
+        expect(bloc.state.query, onlyOpen);
+        expect(bloc.state.items.map((t) => t.id), ['1', '2']);
+        await bloc.close();
+      },
+    );
+  });
+
+  group('mutation serialization', () {
+    test('mutations run one at a time, in the order they were added', () async {
+      final firstToggle = Completer<Either<Failure, Todo>>();
+      when(
+        () => updateTodo(params: const UpdateTodoParams(id: '1', isDone: true)),
+      ).thenAnswer((_) => firstToggle.future);
+      when(
+        () => deleteTodo(id: '2'),
+      ).thenAnswer((_) async => const Right(null));
+      final bloc = build()
+        ..emit(loaded([_todo('1'), _todo('2')]))
+        ..add(TodoToggled(_todo('1')))
+        ..add(const TodoDeleted('2'));
+      await pumpEventQueue();
+
+      verifyNever(() => deleteTodo(id: any(named: 'id'))); // Still queued.
+
+      firstToggle.complete(Right(_todo('1', isDone: true)));
+      await pumpEventQueue();
+
+      verify(() => deleteTodo(id: '2')).called(1);
+      expect(bloc.state.items.map((t) => t.id), ['1']);
+      await bloc.close();
+    });
+
+    test('a blank title comes back as the use case failure', () async {
+      const blank = Failure.validation(
+        messageKey: 'features.example.errors.emptyTitle',
+      );
+      when(
+        () => createTodo(params: any(named: 'params')),
+      ).thenAnswer((_) async => const Left(blank));
+      final bloc = build()
+        ..emit(loaded([_todo('1')]))
+        ..add(const TodoCreated('   '));
+      await pumpEventQueue();
+
+      expect(bloc.state.failure, blank);
+      expect(bloc.state.items.map((t) => t.id), ['1']);
+      await bloc.close();
+    });
+  });
+
   group('analytics', () {
     blocTest<TodoListBloc, TodoListState>(
       'create tracks the title length, never the title',
@@ -256,7 +385,6 @@ void main() {
       act: (bloc) => bloc.add(
         const PagedListQueryChanged(TodoQuery(search: 'milk', onlyOpen: true)),
       ),
-      wait: const Duration(milliseconds: 10),
       verify: (_) => verify(
         () => analytics.trackAction(
           name: 'todo_search',
